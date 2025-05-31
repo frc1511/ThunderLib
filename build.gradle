@@ -80,14 +80,7 @@ javadoc {
 // Set up exports properly
 nativeUtils {
   exportsConfigs {
-    // Main library is just default empty. This will export everything
-    Vendor {
-    }
-  }
-  privateExportsConfigs {
-    // Only export explicit symbols from driver library
-    VendorDriver {
-      exportsFile = project.file("src/main/driver/symbols.txt")
+    ThunderLib {
     }
   }
 }
@@ -100,7 +93,7 @@ def systemArch = getCurrentArch()
 
 model {
   components {
-    Vendor(NativeLibrarySpec) {
+    ThunderLib(NativeLibrarySpec) {
       sources {
         cpp {
           source {
@@ -112,36 +105,11 @@ model {
           }
         }
       }
-      binaries.all {
-        lib library: 'VendorDriver', linkage: 'shared'
-      }
       nativeUtils.useRequiredLibrary(it, 'wpilib_shared')
-    }
-
-    VendorDriver(JniNativeLibrarySpec) {
-      enableCheckTask true
-      javaCompileTasks << compileJava
-      jniCrossCompileOptions << JniCrossCompileOptions(nativeUtils.wpi.platforms.roborio)
-      // Leave these for future proofing
-      jniCrossCompileOptions << JniCrossCompileOptions(nativeUtils.wpi.platforms.linuxarm32)
-      jniCrossCompileOptions << JniCrossCompileOptions(nativeUtils.wpi.platforms.linuxarm64)
-      sources {
-        cpp {
-          source {
-            srcDirs 'src/main/driver/cpp'
-            include '**/*.cpp'
-          }
-          exportedHeaders {
-            srcDirs 'src/main/driver/include'
-          }
-        }
-      }
-
-      nativeUtils.useRequiredLibrary(it, "driver_shared")
     }
   }
   testSuites {
-    VendorTest {
+    ThunderLibTest {
         sources.cpp {
             source {
                 srcDir 'src/test/native/cpp'
@@ -149,29 +117,6 @@ model {
             }
         }
 
-        binaries.all {
-          lib library: 'VendorDriver', linkage: 'shared'
-
-          def arch = it.targetPlatform.name
-          if (systemArch == arch && it.buildType.name == 'debug') {
-            def filePath = it.tasks.install.installDirectory.get().toString() + File.separatorChar + 'lib'
-            test.dependsOn it.tasks.install
-            test.systemProperty 'java.library.path', filePath
-            test.environment 'LD_LIBRARY_PATH', filePath
-            test.workingDir filePath
-          }
-        }
-
-        nativeUtils.useRequiredLibrary(it, "wpilib_executable_shared", "googletest_static")
-    }
-
-    VendorDriverTest {
-        sources.cpp {
-            source {
-                srcDir 'src/test/driver/cpp'
-                include '**/*.cpp'
-            }
-        }
         nativeUtils.useRequiredLibrary(it, "wpilib_executable_shared", "googletest_static")
     }
   }
