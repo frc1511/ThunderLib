@@ -1,0 +1,10 @@
+{
+    "recommendations": [
+        "ms-vscode.cpptools",                   // (dependencies to ms-vscode.cpptools-extension-pack)
+        "ms-vscode.cmake-tools",                // (dependencies to ms-vscode.cpptools-extension-pack)
+        "ms-vscode.cpptools-extension-pack",    // Provides CMake and C++ file coloring, completion & support
+        "jeff-hykin.better-cpp-syntax",         // Provides syntax highlighting for C++
+        "redhat.java",                          // Provides Java support
+        "microsoft.vscode-java-pack",           // Provides Java support
+    ]
+}
