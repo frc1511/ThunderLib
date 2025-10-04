@@ -1,0 +1,114 @@
+#include <gtest/gtest.h>
+
+#include <ThunderLib/Types/CanonicalAngle.hpp>
+#include <numbers>
+
+using namespace thunder;
+
+TEST(TestCanonicalAngle, DefaultConstructor) {
+  CanonicalAngle angle;
+  EXPECT_DOUBLE_EQ(angle.radians().value(), 0.0);
+}
+
+TEST(TestCanonicalAngle, ConstructorFromRotation2d) {
+  frc::Rotation2d rotation(1.0_rad);
+  CanonicalAngle angle(rotation);
+  EXPECT_DOUBLE_EQ(angle.radians().value(), 1.0);
+}
+
+TEST(TestCanonicalAngle, ConstructorFromAngle) {
+  CanonicalAngle angle(1.0_rad);
+  EXPECT_DOUBLE_EQ(angle.radians().value(), 1.0);
+}
+
+TEST(TestCanonicalAngle, ConstructorFromComponents) {
+  double angleRad = units::radian_t(30_deg).value();
+  CanonicalAngle angle(gcem::cos(angleRad), gcem::sin(angleRad));
+  EXPECT_DOUBLE_EQ(angle.radians().value(), angleRad);
+}
+
+TEST(TestCanonicalAngle, CosSinTanMethods) {
+  CanonicalAngle angle(1.0_rad);
+  EXPECT_DOUBLE_EQ(angle.cos(), gcem::cos(1.0));
+  EXPECT_DOUBLE_EQ(angle.sin(), gcem::sin(1.0));
+  EXPECT_DOUBLE_EQ(angle.tan(), gcem::tan(1.0));
+}
+
+TEST(TestCanonicalAngle, RadiansDegreesConversion) {
+  double angleRad = 1.0;
+  double angleDeg = units::degree_t(1.0_rad).value();
+  CanonicalAngle angle(1.0_rad);
+  EXPECT_DOUBLE_EQ(angle.radians().value(), angleRad);
+  EXPECT_DOUBLE_EQ(angle.degrees().value(), angleDeg);
+}
+
+TEST(TestCanonicalAngle, ImplicitConversionToRotation2d) {
+  CanonicalAngle angle(1.0_rad);
+  frc::Rotation2d rotation = angle;
+  EXPECT_DOUBLE_EQ(rotation.Radians().value(), 1.0);
+}
+
+TEST(TestCanonicalAngle, ImplicitConversionToAngleUnit) {
+  CanonicalAngle angle(1.0_rad);
+  units::radian_t radian = angle;
+  EXPECT_DOUBLE_EQ(radian.value(), 1.0);
+}
+
+TEST(TestCanonicalAngle, Equalit) {
+  CanonicalAngle angle1(1.0_rad);
+  CanonicalAngle angle2(1.0_rad);
+  CanonicalAngle angle3(2.0_rad);
+
+  EXPECT_TRUE(angle1 == angle2);
+  EXPECT_FALSE(angle1 == angle3);
+  EXPECT_FALSE(angle1 != angle2);
+  EXPECT_TRUE(angle1 != angle3);
+}
+
+TEST(TestCanonicalAngle, Negation) {
+  CanonicalAngle angle(1.0_rad);
+  CanonicalAngle negated = -angle;
+  EXPECT_DOUBLE_EQ(negated.radians().value(), -1.0);
+}
+
+TEST(TestCanonicalAngle, Addition) {
+  CanonicalAngle angle1(1.0_rad);
+  CanonicalAngle angle2(0.5_rad);
+  CanonicalAngle sum = angle1 + angle2;
+  EXPECT_DOUBLE_EQ(sum.radians().value(), (1.0 + 0.5));
+}
+
+TEST(TestCanonicalAngle, AdditionWrap) {
+  CanonicalAngle angle1(90_deg);
+  CanonicalAngle angle2(180_deg);
+  CanonicalAngle sum = angle1 + angle2;
+  EXPECT_DOUBLE_EQ(sum.degrees().value(), -90.0);
+}
+
+TEST(TestCanonicalAngle, Subtraction) {
+  CanonicalAngle angle1(1.0_rad);
+  CanonicalAngle angle2(0.5_rad);
+  CanonicalAngle difference = angle1 - angle2;
+  EXPECT_DOUBLE_EQ(difference.radians().value(), (1.0 - 0.5));
+}
+
+TEST(TestCanonicalAngle, RotateBy) {
+  CanonicalAngle angle1(1.0_rad);
+  CanonicalAngle angle2(0.5_rad);
+  CanonicalAngle rotated = angle1.rotateBy(angle2);
+  EXPECT_DOUBLE_EQ(rotated.radians().value(), (1.0 + 0.5));
+}
+
+TEST(TestCanonicalAngle, SupplementaryAngle) {
+  CanonicalAngle angle(1.0_rad);
+  CanonicalAngle supplementary = angle.supplementary();
+  EXPECT_DOUBLE_EQ(supplementary.radians().value(), 1.0 - std::numbers::pi);
+}
+
+TEST(TestCanonicalAngle, IsSupplementaryTo) {
+  CanonicalAngle angle(1.0_rad);
+  CanonicalAngle supplementary = angle.supplementary();
+  EXPECT_TRUE(angle.isSupplementaryTo(supplementary));
+  EXPECT_FALSE(angle.isSupplementaryTo(CanonicalAngle(2.0_rad)));
+}
+

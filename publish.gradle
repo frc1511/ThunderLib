@@ -5,9 +5,10 @@ apply plugin: 'maven-publish'
 
 ext.licenseFile = files("$rootDir/LICENSE.txt")
 
-def vendorJsonFile = "ThunderLib.json"
+def vendorJsonFile = "ThunderLib2026.json"
 
-def pubVersion = '2026.0.0'
+def pubVersion = readThunderLibVersion().full
+println "ThunderLib version: $pubVersion"
 
 def outputsFolder = file("$buildDir/outputs")
 
@@ -49,6 +50,7 @@ ext.addTaskToCopyAllOutputs = { task ->
 
 def artifactGroupId = 'com.thunder.lib'
 def baseArtifactId = 'ThunderLib'
+def coreZipBaseName = "_GROUP_com_thunder_lib_ID_${baseArtifactId}-core_CLS"
 def zipBaseName = "_GROUP_com_thunder_lib_ID_${baseArtifactId}-cpp_CLS"
 def javaBaseName = "_GROUP_com_thunder_lib_ID_${baseArtifactId}-java_CLS"
 
@@ -80,10 +82,26 @@ task cppSourceZip(type: Zip) {
     }
 }
 
+task cppCoreHeadersZip(type: Zip) {
+    destinationDirectory = outputsFolder
+    archiveBaseName = coreZipBaseName
+    archiveClassifier = "headers"
+
+    from(licenseFile) {
+        into '/'
+    }
+
+    from('src/main/core/include') {
+        into '/'
+    }
+}
+
 build.dependsOn cppHeadersZip
 addTaskToCopyAllOutputs(cppHeadersZip)
 build.dependsOn cppSourceZip
 addTaskToCopyAllOutputs(cppSourceZip)
+build.dependsOn cppCoreHeadersZip
+addTaskToCopyAllOutputs(cppCoreHeadersZip)
 
 task sourcesJar(type: Jar, dependsOn: classes) {
     archiveClassifier = 'sources'
@@ -131,6 +149,16 @@ task vendordepJson() {
     }
 }
 
+task vendordepJsonZip(type: Zip) {
+    destinationDirectory = outputsFolder
+    archiveBaseName = "vendordepJson"
+
+    from("$buildDir/repos/$vendorJsonFile") {
+        into '/'
+    }
+    dependsOn vendordepJson
+}
+
 artifacts {
     archives sourcesJar
     archives javadocJar
@@ -142,10 +170,12 @@ artifacts {
 addTaskToCopyAllOutputs(outputSourcesJar)
 addTaskToCopyAllOutputs(outputJavadocJar)
 addTaskToCopyAllOutputs(outputJar)
+addTaskToCopyAllOutputs(vendordepJsonZip)
 
 build.dependsOn outputSourcesJar
 build.dependsOn outputJavadocJar
 build.dependsOn outputJar
+build.dependsOn vendordepJsonZip
 
 libraryBuild.dependsOn build
 
@@ -169,6 +199,8 @@ model {
     publishing {
         def taskList = createComponentZipTasks($.components, ['ThunderLib'], zipBaseName, Zip, project, includeStandardZipFormat)
 
+        def coreTaskList = createComponentZipTasks($.components, ['ThunderLibCore'], coreZipBaseName, Zip, project, includeStandardZipFormat)
+
         publications {
             cpp(MavenPublication) {
                 taskList.each {
@@ -181,12 +213,29 @@ model {
                 groupId artifactGroupId
                 version pubVersion
             }
+            core(MavenPublication) {
+                coreTaskList.each {
+                    artifact it
+                }
+                artifact cppCoreHeadersZip
+
+                artifactId = "${baseArtifactId}-core"
+                groupId artifactGroupId
+                version pubVersion
+            }
             java(MavenPublication) {
                 artifact jar
                 artifact sourcesJar
                 artifact javadocJar
 
                 artifactId = "${baseArtifactId}-java"
+                groupId artifactGroupId
+                version pubVersion
+            }
+            vendordep(MavenPublication) {
+                artifact vendordepJsonZip
+
+                artifactId = "${baseArtifactId}-vendordep"
                 groupId artifactGroupId
                 version pubVersion
             }

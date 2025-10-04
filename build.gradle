@@ -1,30 +1,30 @@
 import edu.wpi.first.toolchain.*
 
 plugins {
-  id 'cpp'
-  id 'java'
-  id 'google-test'
-  id 'edu.wpi.first.wpilib.repositories.WPILibRepositoriesPlugin' version '2025.0'
-  id 'edu.wpi.first.NativeUtils' version '2025.9.0'
-  id 'edu.wpi.first.GradleJni' version '1.1.0'
-  id 'edu.wpi.first.GradleVsCode' version '2.1.0'
+    id 'cpp'
+    id 'java'
+    id 'google-test'
+    id 'edu.wpi.first.wpilib.repositories.WPILibRepositoriesPlugin' version '2025.0'
+    id 'edu.wpi.first.NativeUtils' version '2025.9.0'
+    id 'edu.wpi.first.GradleJni' version '1.1.0'
+    id 'edu.wpi.first.GradleVsCode' version '2.1.0'
 }
 
 // WPILib Version
 ext.wpilibVersion = "2025.+"
 
 repositories {
-  mavenCentral()
+    mavenCentral()
 }
 if (project.hasProperty('releaseMode')) {
-  wpilibRepositories.addAllReleaseRepositories(project)
+    wpilibRepositories.addAllReleaseRepositories(project)
 } else {
-  wpilibRepositories.addAllDevelopmentRepositories(project)
+    wpilibRepositories.addAllDevelopmentRepositories(project)
 }
 
 java {
-  sourceCompatibility = JavaVersion.VERSION_17
-  targetCompatibility = JavaVersion.VERSION_17
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
 }
 var javaVersion = "17"
 
@@ -37,11 +37,14 @@ dependencies {
     implementation "edu.wpi.first.cameraserver:cameraserver-java:$wpilibVersion"
     implementation "edu.wpi.first.ntcore:ntcore-java:$wpilibVersion"
     implementation "edu.wpi.first.wpilibj:wpilibj-java:$wpilibVersion"
+    implementation "edu.wpi.first.wpilibNewCommands:wpilibNewCommands-java:$wpilibVersion"
     implementation "edu.wpi.first.wpiutil:wpiutil-java:$wpilibVersion"
     implementation "edu.wpi.first.wpimath:wpimath-java:$wpilibVersion"
     implementation "edu.wpi.first.wpiunits:wpiunits-java:$wpilibVersion"
     implementation "edu.wpi.first.hal:hal-java:$wpilibVersion"
     implementation "org.ejml:ejml-simple:0.43.1"
+    implementation "com.google.protobuf:protobuf-java:4.31.1"
+    implementation "us.hebi.quickbuf:quickbuf-runtime:1.4"
     implementation "com.fasterxml.jackson.core:jackson-annotations:2.15.2"
     implementation "com.fasterxml.jackson.core:jackson-core:2.15.2"
     implementation "com.fasterxml.jackson.core:jackson-databind:2.15.2"
@@ -79,10 +82,17 @@ javadoc {
 
 // Set up exports properly
 nativeUtils {
-  exportsConfigs {
-    ThunderLib {
+    exportsConfigs {
+        // Main library is just default empty. This will export everything
+        ThunderLib {
+        }
+        ThunderLibCore {
+        }
     }
-  }
+    privateExportsConfigs {
+        // Only export explicit symbols from core library
+        // exportsFile = project.file("src/main/core/symbols.txt")
+    }
 }
 
 ext.getCurrentArch = {
@@ -91,39 +101,156 @@ ext.getCurrentArch = {
 
 def systemArch = getCurrentArch()
 
-model {
-  components {
-    ThunderLib(NativeLibrarySpec) {
-      sources {
-        cpp {
-          source {
-            srcDirs 'src/main/native/cpp'
-            include '**/*.cpp'
-          }
-          exportedHeaders {
-            srcDirs 'src/main/native/include'
-          }
-        }
-      }
-      nativeUtils.useRequiredLibrary(it, 'wpilib_shared')
+// Version information
+
+def readThunderLibVersion() {
+    def file = file('ThunderLib-Version.txt')
+    if (!file.exists()) {
+        throw new FileNotFoundException("ThunderLib-Version.txt file not found.")
     }
-  }
-  testSuites {
-    ThunderLibTest {
-        sources.cpp {
-            source {
-                srcDir 'src/test/native/cpp'
-                include '**/*.cpp'
+
+    def versionLines = file.readLines()
+    if (versionLines.size() < 3) {
+        throw new GradleException("ThunderLib-Version.txt file must contain 3 lines: major, minor, patch")
+    }
+
+    def (major, minor, patch) = versionLines.take(3).collect { it.trim() }
+
+    return [
+        major : major.toInteger(),
+        minor : minor.toInteger(),
+        patch : patch.toInteger(),
+        full  : "${major}.${minor}.${patch}",
+    ]
+}
+
+def readThunderAutoProjectVersion() {
+    def file = file('ThunderAutoProject-Version.txt')
+    if (!file.exists()) {
+        throw new FileNotFoundException("ThunderAutoProject-Version.txt file not found.")
+    }
+
+    def versionLines = file.readLines()
+    if (versionLines.size() < 2) {
+        throw new GradleException("ThunderAutoProject-Version.txt file must contain 2 lines: major, minor")
+    }
+
+    def (major, minor) = versionLines.take(2).collect { it.trim() }
+
+    return [
+        major : major.toInteger(),
+        minor : minor.toInteger(),
+        full  : "${major}.${minor}",
+    ]
+}
+
+def thunderLibVersionInfo = readThunderLibVersion()
+def thunderAutoProjectVersionInfo = readThunderAutoProjectVersion()
+
+// Build targets
+model {
+    components {
+        ThunderLib(NativeLibrarySpec) {
+            sources.cpp {
+                source {
+                    srcDirs 'src/main/native/cpp'
+                    include '**/*.cpp'
+                }
+                exportedHeaders {
+                    srcDirs 'src/main/native/include'
+                }
             }
+            binaries.all {
+                lib library: 'ThunderLibCore', linkage: 'shared'
+            }
+            nativeUtils.useRequiredLibrary(it, 'wpilib_shared')
+        }
+        ThunderLibCore(JniNativeLibrarySpec) {
+            enableCheckTask true
+            javaCompileTasks << compileJava
+            jniCrossCompileOptions << JniCrossCompileOptions(nativeUtils.wpi.platforms.roborio)
+            // Leave these for future proofing
+            jniCrossCompileOptions << JniCrossCompileOptions(nativeUtils.wpi.platforms.linuxarm32)
+            jniCrossCompileOptions << JniCrossCompileOptions(nativeUtils.wpi.platforms.linuxarm64)
+            sources.cpp {
+                source {
+                    srcDirs 'src/main/core/cpp'
+                    include '**/*.cpp'
+                }
+                exportedHeaders {
+                    srcDirs 'src/main/core/include'
+                }
+            }
+
+            nativeUtils.useRequiredLibrary(it, "driver_shared")
+        }
+    }
+    testSuites {
+        ThunderLibTest {
+            sources.cpp {
+                source {
+                    srcDir 'src/test/native/cpp'
+                    include '**/*.cpp'
+                }
+                exportedHeaders {
+                    srcDirs 'src/test/native/include'
+                }
+            }
+
+            binaries.all {
+                lib library: 'ThunderLibCore', linkage: 'shared'
+
+                def arch = it.targetPlatform.name
+                if (systemArch == arch && it.buildType.name == 'debug') {
+                    def filePath = it.tasks.install.installDirectory.get().toString() + File.separatorChar + 'lib'
+                    test.dependsOn it.tasks.install
+                    test.systemProperty 'java.library.path', filePath
+                    test.environment 'LD_LIBRARY_PATH', filePath
+                    test.workingDir filePath
+                }
+            }
+
+            nativeUtils.useRequiredLibrary(it, "wpilib_executable_shared", "googletest_static")
         }
 
-        nativeUtils.useRequiredLibrary(it, "wpilib_executable_shared", "googletest_static")
+        ThunderLibCoreTest {
+            sources.cpp {
+                source {
+                    srcDir 'src/test/core/cpp'
+                    include '**/*.cpp'
+                }
+                exportedHeaders {
+                    srcDirs 'src/test/core/include'
+                }
+            }
+
+            nativeUtils.useRequiredLibrary(it, "wpilib_executable_shared", "googletest_static")
+        }
     }
-  }
+
+    binaries {
+        all {
+            cppCompiler.define 'SPDLOG_COMPILED_LIB'
+            cppCompiler.define 'SPDLOG_FMT_EXTERNAL'
+            cppCompiler.define 'SPDLOG_CLOCK_COARSE'
+            cppCompiler.define 'SPDLOG_NO_THREAD_ID'
+            cppCompiler.define 'SPDLOG_NO_ATOMIC_LEVELS'
+
+            cppCompiler.define "THUNDERLIB_VERSION_MAJOR=$thunderLibVersionInfo.major"
+            cppCompiler.define "THUNDERLIB_VERSION_MINOR=$thunderLibVersionInfo.minor"
+            cppCompiler.define "THUNDERLIB_VERSION_PATCH=$thunderLibVersionInfo.patch"
+            cppCompiler.define "THUNDERLIB_VERSION_STR=\"$thunderLibVersionInfo.full\""
+
+            cppCompiler.define "THUNDERAUTO_PROJECT_VERSION_MAJOR=$thunderAutoProjectVersionInfo.major"
+            cppCompiler.define "THUNDERAUTO_PROJECT_VERSION_MINOR=$thunderAutoProjectVersionInfo.minor"
+            cppCompiler.define "THUNDERAUTO_PROJECT_VERSION_STR=\"$thunderAutoProjectVersionInfo.full\""
+        }
+    }
 }
 
 apply from: 'publish.gradle'
 
 wrapper {
-  gradleVersion '8.11'
+    gradleVersion '8.11'
 }
+

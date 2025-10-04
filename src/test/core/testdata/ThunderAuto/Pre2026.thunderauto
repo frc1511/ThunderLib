@@ -1,0 +1,135 @@
+{
+  "settings": {
+    "auto_export": false,
+    "auto_save": true,
+    "drive_ctrl": 0,
+    "field": {
+      "img": "2025",
+      "img_type": 1
+    },
+    "robot_length": 0.800000011920929,
+    "robot_width": 0.800000011920929,
+    "version_major": 2025,
+    "version_minor": 4,
+    "version_patch": 0
+  },
+  "state": {
+    "actions": [
+      "Action1",
+      "Action2"
+    ],
+    "paths": [
+      [
+        "Trajectory1",
+        {
+          "points": [
+            {
+              "actions": 0,
+              "h0": 0.0,
+              "h1": 3.1415927410125732,
+              "link_index": -1,
+              "locked": false,
+              "rotation": 3.1415927410125732,
+              "segment_rotation_time_percent": 1.0,
+              "stop": false,
+              "w0": 1.0,
+              "w1": 1.0,
+              "x": 7.570000171661377,
+              "y": 7.0
+            },
+            {
+              "actions": 1,
+              "h0": 0.43633222579956055,
+              "h1": 3.577924966812134,
+              "link_index": -1,
+              "locked": true,
+              "rotation": 1.5707963705062866,
+              "segment_rotation_time_percent": 0.6499999761581421,
+              "stop": false,
+              "w0": 1.5,
+              "w1": 1.0,
+              "x": 3.5,
+              "y": 6.5
+            },
+            {
+              "actions": 0,
+              "h0": 1.0471975803375244,
+              "h1": 4.188790321350098,
+              "link_index": 0,
+              "locked": false,
+              "rotation": 0.0,
+              "segment_rotation_time_percent": 1.0,
+              "stop": false,
+              "w0": 1.0,
+              "w1": 0.5,
+              "x": 2.0,
+              "y": 5.0
+            }
+          ],
+          "settings": {
+            "max_centripetal_accel": 19.6200008392334,
+            "max_linear_accel": 1.5,
+            "max_linear_vel": 2.0
+          }
+        }
+      ],
+      [
+        "Trajectory2",
+        {
+          "points": [
+            {
+              "actions": 0,
+              "h0": 3.1415927410125732,
+              "h1": 0.0,
+              "link_index": 0,
+              "locked": false,
+              "rotation": 0.0,
+              "segment_rotation_time_percent": 1.0,
+              "stop": false,
+              "w0": 1.0,
+              "w1": 1.0,
+              "x": 2.0,
+              "y": 5.0
+            },
+            {
+              "actions": 3,
+              "h0": 3.1415927410125732,
+              "h1": 0.7853981852531433,
+              "link_index": -1,
+              "locked": false,
+              "rotation": 1.5707963705062866,
+              "segment_rotation_time_percent": 1.0,
+              "stop": true,
+              "w0": 1.0,
+              "w1": 1.0,
+              "x": 3.0,
+              "y": 1.5
+            },
+            {
+              "actions": 2,
+              "h0": 2.356194496154785,
+              "h1": 5.4977874755859375,
+              "link_index": -1,
+              "locked": false,
+              "rotation": 0.0,
+              "segment_rotation_time_percent": 1.0,
+              "stop": false,
+              "w0": 1.0,
+              "w1": 0.5,
+              "x": 6.0,
+              "y": 1.5
+            }
+          ],
+          "settings": {
+            "max_centripetal_accel": 19.6200008392334,
+            "max_linear_accel": 1.5,
+            "max_linear_vel": 2.0
+          }
+        }
+      ]
+    ],
+    "waypoint_links": [
+      "MyLink1"
+    ]
+  }
+}
