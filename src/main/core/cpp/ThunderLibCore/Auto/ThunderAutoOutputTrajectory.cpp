@@ -929,11 +929,10 @@ static void CalculateAngularVelocitiesAndRotations(
        * and hope that nobody notices.
        */
       if (discriminant.value() < 0.0) {  // !isTriangularAccelGood
-        units::radians_per_second_squared_t accelDiff = units::math::abs(triangularAccel - angularAccel);
         ThunderLibAssert(
-            accelDiff.value() < 1e-9,
+            units::math::abs(triangularAccel - angularAccel).value() < 1e-9,
             "Angular velocity profile impossible: triangularAccel: {}, angularAccel: {}, diff: {}",
-            triangularAccel.value(), angularAccel.value(), accelDiff.value());
+            triangularAccel.value(), angularAccel.value(), (triangularAccel - angularAccel).value());
 
         discriminant = decltype(discriminant)(0.0);
         angularAccel = triangularAccel;
@@ -975,7 +974,7 @@ static void CalculateAngularVelocitiesAndRotations(
       } else if (time < timeTotal) {
         // Decelerating
         time -= timeAccel + timeCruise;
-        point.rotation =  // distanceAccel + distanceCruise;
+        point.rotation =
             startRotation.rotateBy(distanceAccel + distanceCruise + (peakAngularVelocity * time) -
                                    (0.5 * angularAccel * units::math::pow<2>(time)));
         point.angularVelocity = peakAngularVelocity - (angularAccel * time);
@@ -1397,4 +1396,3 @@ void BuildAndCSVExportThunderAutoOutputTrajectory(const ThunderAutoTrajectorySke
 }  // namespace thunder::core
 
 // hi chris!!
-
