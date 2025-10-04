@@ -176,8 +176,8 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE ${LIB_SOURCES})
 include(FetchContent)
 FetchContent_Declare(
   allwpilib
-  GIT_REPOSITORY https://github.com/petelilley/allwpilib.git #https://github.com/wpilibsuite/allwpilib.git
-  GIT_TAG fc70487#v2025.3.2
+  GIT_REPOSITORY https://github.com/wpilibsuite/allwpilib.git
+  GIT_TAG f1b9be5 # TODO: Update to 2026 release tag when available
   GIT_SHALLOW TRUE
 )
 
