@@ -3,7 +3,7 @@ import org.apache.tools.ant.filters.ReplaceTokens
 
 apply plugin: 'maven-publish'
 
-ext.licenseFile = files("$rootDir/LICENSE.txt")
+ext.licenseFile = files("$rootDir/LICENSE")
 
 def vendorJsonFile = "ThunderLib2026.json"
 
@@ -91,9 +91,12 @@ task cppCoreHeadersZip(type: Zip) {
         into '/'
     }
 
+    // Currently, the user should not need to use ThunderLibCore directly.
+    /*
     from('src/main/core/include') {
         into '/'
     }
+    */
 }
 
 build.dependsOn cppHeadersZip
