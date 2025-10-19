@@ -66,6 +66,11 @@ struct ThunderAutoOutputTrajectory {
   std::vector<ThunderAutoOutputTrajectoryPoint> points;  // Ordered by time.
   std::vector<ThunderAutoOutputTrajectorySegment> segments;
 
+  std::unordered_set<std::string> startActions;
+  std::unordered_set<std::string> endActions;
+  std::map<units::second_t, std::unordered_set<std::string>> stopActions;
+  std::multimap<units::second_t, std::string> actions;
+
   /**
    * Returns the index of an output trajectory point at the given trajectory position. This function completes
    * in constant O(1) time. This function requires that the points vector is not empty and that the segments

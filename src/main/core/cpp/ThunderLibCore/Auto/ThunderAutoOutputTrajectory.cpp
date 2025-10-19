@@ -1080,6 +1080,7 @@ static std::multimap<ThunderAutoTrajectoryPosition, ThunderAutoTrajectoryAction>
  * @param output The output trajectory to update with actions.
  */
 static void FillActions(
+    const ThunderAutoTrajectorySkeleton& skeleton,
     const std::multimap<ThunderAutoTrajectoryPosition, ThunderAutoTrajectoryAction>& actions,
     ThunderAutoOutputTrajectory& output) {
   for (auto actionIt = actions.cbegin(); actionIt != actions.cend(); ++actionIt) {
@@ -1096,6 +1097,27 @@ static void FillActions(
 
     ThunderAutoOutputTrajectoryPoint& point = output.points[outputIndex];
     point.actions.push_back(action.action);
+  }
+
+  output.startActions = skeleton.startActions();
+  output.endActions = skeleton.endActions();
+  output.stopActions.clear();
+
+  size_t waypointIndex = 0;
+  for (auto waypointIt = skeleton.begin(); waypointIt != skeleton.end(); ++waypointIt, ++waypointIndex) {
+    const ThunderAutoTrajectorySkeletonWaypoint& waypoint = *waypointIt;
+    if (!waypoint.isStopped())
+      continue;
+
+    double position = static_cast<double>(waypointIndex);
+
+    size_t outputPointIndex = output.trajectoryPositionToPointIndex(position);
+    output.stopActions.emplace(output.points[outputPointIndex].time, waypoint.stopActions());
+  }
+
+  for (const auto& [position, action] : skeleton.actions()) {
+    size_t outputPointIndex = output.trajectoryPositionToPointIndex(position);
+    output.actions.emplace(output.points[outputPointIndex].time, action.action);
   }
 }
 
@@ -1150,7 +1172,7 @@ std::unique_ptr<ThunderAutoOutputTrajectory> BuildThunderAutoOutputTrajectory(
   CalculateCentripetalAccelerations(*output);
 
   std::multimap<ThunderAutoTrajectoryPosition, ThunderAutoTrajectoryAction> actions = GetAllActions(skeleton);
-  FillActions(actions, *output);
+  FillActions(skeleton, actions, *output);
 
   /*
   ThunderLibCoreLogger::Info("Built trajectory with {} points, total distance: {:.2f} m, total time: {:.2f}
