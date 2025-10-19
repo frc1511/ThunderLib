@@ -223,7 +223,7 @@ static units::curvature_t MengerCurvature(Point2d a, Point2d b, Point2d c) {
  * @param output The output trajectory segment to store the sampled points and length.
  */
 static void SampleSegmentPoints(const EquationFunc& f, size_t samples, ThunderAutoOutputTrajectory& output) {
-  ThunderLibAssert(samples > 0);
+  ThunderLibCoreAssert(samples > 0);
   double delta = 1.0 / static_cast<double>(samples);
 
   ThunderAutoOutputTrajectorySegment segment;
@@ -249,7 +249,7 @@ static void SampleSegmentPoints(const EquationFunc& f, size_t samples, ThunderAu
 static void SampleSegmentPoints(const EquationFunc& f,
                                 size_t samples,
                                 ThunderAutoPartialOutputTrajectory& output) {
-  ThunderLibAssert(samples > 0);
+  ThunderLibCoreAssert(samples > 0);
   double delta = 1.0 / static_cast<double>(samples);
 
   ThunderAutoOutputTrajectorySegment segment;
@@ -312,14 +312,14 @@ static void CalculateSegmentCurvatures(ThunderAutoOutputTrajectorySegment& segme
 static void ResamplePoints(const ThunderAutoTrajectorySkeletonSettings& settings,
                            size_t samplesPerMeter,
                            ThunderAutoOutputTrajectory& output) {
-  ThunderLibAssert(!output.segments.empty());
+  ThunderLibCoreAssert(!output.segments.empty());
 
   for (auto segmentIt = output.segments.begin(); segmentIt != output.segments.end(); segmentIt++) {
     ThunderAutoOutputTrajectorySegment& segment = *segmentIt;
 
     size_t samples = static_cast<size_t>(segment.length.value() * static_cast<double>(samplesPerMeter));
-    ThunderLibAssert(samples > 0);
-    ThunderLibAssert(segment.length == segment.sampledPoints.back().distance);
+    ThunderLibCoreAssert(samples > 0);
+    ThunderLibCoreAssert(segment.length == segment.sampledPoints.back().distance);
 
     units::meter_t deltaDistance = segment.length / static_cast<double>(samples);
 
@@ -388,7 +388,7 @@ static void ResamplePoints(const ThunderAutoTrajectorySkeletonSettings& settings
       output.points.push_back(point);
     }
 
-    ThunderLibAssert(segment.endIndex == (output.points.size() - 1));
+    ThunderLibCoreAssert(segment.endIndex == (output.points.size() - 1));
 
     // Length might be slightly different after resampling the trajectory, so make sure it's accurate.
     segment.length = output.points[segment.endIndex].distance - output.points[segment.startIndex].distance;
@@ -399,14 +399,14 @@ static void ResamplePoints(const ThunderAutoTrajectorySkeletonSettings& settings
 
 // Same as above ResamplePoints(), but for ThunderAutoPartialOutputTrajectory
 static void ResamplePoints(size_t samplesPerMeter, ThunderAutoPartialOutputTrajectory& output) {
-  ThunderLibAssert(!output.segments.empty());
+  ThunderLibCoreAssert(!output.segments.empty());
 
   for (auto segmentIt = output.segments.begin(); segmentIt != output.segments.end(); segmentIt++) {
     ThunderAutoOutputTrajectorySegment& segment = *segmentIt;
 
     size_t samples = static_cast<size_t>(segment.length.value() * static_cast<double>(samplesPerMeter));
-    ThunderLibAssert(samples > 0);
-    ThunderLibAssert(segment.length == segment.sampledPoints.back().distance);
+    ThunderLibCoreAssert(samples > 0);
+    ThunderLibCoreAssert(segment.length == segment.sampledPoints.back().distance);
 
     units::meter_t deltaDistance = segment.length / static_cast<double>(samples);
 
@@ -434,7 +434,7 @@ static void ResamplePoints(size_t samplesPerMeter, ThunderAutoPartialOutputTraje
       for (; upperPointIndex < segment.sampledPoints.size() - 1 &&
              segment.sampledPoints[upperPointIndex].distance < d;
            upperPointIndex++) {
-        ThunderLibAssert(upperPointIndex != segment.sampledPoints.size());
+        ThunderLibCoreAssert(upperPointIndex != segment.sampledPoints.size());
       }
       lowerPointIndex = upperPointIndex - 1;
 
@@ -464,7 +464,7 @@ static void ResamplePoints(size_t samplesPerMeter, ThunderAutoPartialOutputTraje
       output.points.push_back(point);
     }
 
-    ThunderLibAssert(segment.endIndex == (output.points.size() - 1));
+    ThunderLibCoreAssert(segment.endIndex == (output.points.size() - 1));
 
     // Length might be slightly different after resampling the trajectory, so make sure it's accurate.
     segment.length = output.points[segment.endIndex].distance - output.points[segment.startIndex].distance;
@@ -526,7 +526,7 @@ static void AddCentripetalAccelerationMaxVelocityConstraints(
     const ThunderAutoTrajectorySkeletonSettings& settings,
     const ThunderAutoOutputTrajectory& output,
     std::span<units::meters_per_second_t> maxVelocities) {
-  ThunderLibAssert(maxVelocities.size() == output.points.size());
+  ThunderLibCoreAssert(maxVelocities.size() == output.points.size());
 
   for (size_t i = 0; i < output.points.size(); i++) {
     const ThunderAutoOutputTrajectoryPoint& point = output.points[i];
@@ -564,13 +564,14 @@ static std::map<ThunderAutoTrajectoryPosition, CanonicalAngle> GetAllRotationTar
   for (auto rot : skeleton.rotations()) {
     ThunderAutoTrajectoryPosition position = rot.first;
     if (position >= maxPosition) {
-      ThunderLibLogger::Warn(
+      ThunderLibCoreLogger::Warn(
           "Trajectory build - Ignoring rotation target past the end of the trajectory ({})",
           (double)position);
       continue;
     }
     if (position <= 0.0) {
-      ThunderLibLogger::Warn("Trajectory build - Ignoring rotation target below zero ({})", (double)position);
+      ThunderLibCoreLogger::Warn("Trajectory build - Ignoring rotation target below zero ({})",
+                                 (double)position);
       continue;
     }
 
@@ -619,11 +620,11 @@ static void AddRotationMaxVelocityConstraints(
   for (; endRotationIt != rotations.cend(); ++startRotationIt, ++endRotationIt) {
     const auto& [startPosition, startRotation] = *startRotationIt;
     const auto& [endPosition, endRotation] = *endRotationIt;
-    ThunderLibAssert(startPosition < endPosition);
+    ThunderLibCoreAssert(startPosition < endPosition);
 
     size_t startOutputIndex;
     {
-      ThunderLibAssert(startPosition.segmentIndex() < output.segments.size());
+      ThunderLibCoreAssert(startPosition.segmentIndex() < output.segments.size());
 
       ThunderAutoOutputTrajectorySegment segment = output.segments[startPosition.segmentIndex()];
       size_t segmentNumPoints = (segment.endIndex - segment.startIndex) + 1;
@@ -648,7 +649,7 @@ static void AddRotationMaxVelocityConstraints(
      * low enough and/or the rotations are placed very close together. This is obviously not ideal, so the
      * user should avoid constructing trajectories like this.
      */
-    ThunderLibAssert(startOutputIndex <= endOutputIndex);
+    ThunderLibCoreAssert(startOutputIndex <= endOutputIndex);
 
     units::second_t timeTotal;
     {
@@ -699,7 +700,7 @@ static void AddRotationMaxVelocityConstraints(
 
       units::meter_t linearDistanceTotal =
           output.points[endOutputIndex].distance - output.points[startOutputIndex].distance;
-      ThunderLibAssert(linearDistanceTotal >= 0.0_m);
+      ThunderLibCoreAssert(linearDistanceTotal >= 0.0_m);
 
       units::meters_per_second_t maxLinearVelocity = linearDistanceTotal / timeTotal;
 
@@ -722,7 +723,7 @@ static void AddRotationMaxVelocityConstraints(
 static void CalculateLinearVelocities(const ThunderAutoTrajectorySkeletonSettings& settings,
                                       std::span<const units::meters_per_second_t> maxVelocities,
                                       ThunderAutoOutputTrajectory& output) {
-  ThunderLibAssert(output.points.size() == maxVelocities.size());
+  ThunderLibCoreAssert(output.points.size() == maxVelocities.size());
 
   const size_t numPoints = output.points.size();
 
@@ -790,7 +791,7 @@ static void CalculateTimes(const ThunderAutoTrajectorySkeletonSettings& settings
       point.time = lastTime;
     } else {
       units::meter_t distanceChange = currentDistance - lastDistance;
-      ThunderLibAssert(distanceChange > 0.0_m);
+      ThunderLibCoreAssert(distanceChange > 0.0_m);
 
       units::second_t deltaTime;
       if (currentLinearVelocity != lastLinearVelocity) {
@@ -803,10 +804,10 @@ static void CalculateTimes(const ThunderAutoTrajectorySkeletonSettings& settings
         deltaTime = distanceChange / lastLinearVelocity;
       }
 
-      ThunderLibAssert(deltaTime > 0_s,
-                       "Delta time is {} s, currentVelocity: {}, lastVelocity: {}, distanceChange: {}",
-                       deltaTime.value(), currentLinearVelocity.value(), lastLinearVelocity.value(),
-                       distanceChange.value());
+      ThunderLibCoreAssert(deltaTime > 0_s,
+                           "Delta time is {} s, currentVelocity: {}, lastVelocity: {}, distanceChange: {}",
+                           deltaTime.value(), currentLinearVelocity.value(), lastLinearVelocity.value(),
+                           distanceChange.value());
 
       point.time = lastTime + deltaTime;
     }
@@ -834,7 +835,7 @@ static void CalculateAngularVelocitiesAndRotations(
     const ThunderAutoTrajectorySkeletonSettings& settings,
     const std::map<ThunderAutoTrajectoryPosition, CanonicalAngle>& rotations,
     ThunderAutoOutputTrajectory& output) {
-  ThunderLibAssert(rotations.size() >= 2);
+  ThunderLibCoreAssert(rotations.size() >= 2);
 
   auto startRotationIt = rotations.cbegin();
   auto endRotationIt = std::next(startRotationIt);
@@ -842,11 +843,11 @@ static void CalculateAngularVelocitiesAndRotations(
   for (; endRotationIt != rotations.cend(); ++startRotationIt, ++endRotationIt) {
     const auto& [startPosition, startRotation] = *startRotationIt;
     const auto& [endPosition, endRotation] = *endRotationIt;
-    ThunderLibAssert(startPosition < endPosition);
+    ThunderLibCoreAssert(startPosition < endPosition);
 
     size_t startOutputIndex;
     {
-      ThunderLibAssert(startPosition.segmentIndex() < output.segments.size());
+      ThunderLibCoreAssert(startPosition.segmentIndex() < output.segments.size());
 
       ThunderAutoOutputTrajectorySegment segment = output.segments[startPosition.segmentIndex()];
       size_t segmentNumPoints = (segment.endIndex - segment.startIndex) + 1;
@@ -871,11 +872,11 @@ static void CalculateAngularVelocitiesAndRotations(
      * low enough and/or the rotations are placed very close together. This is obviously not ideal, so the
      * user should avoid constructing trajectories like this.
      */
-    ThunderLibAssert(startOutputIndex <= endOutputIndex);
+    ThunderLibCoreAssert(startOutputIndex <= endOutputIndex);
 
     units::second_t timeTotal = output.points[endOutputIndex].time - output.points[startOutputIndex].time;
-    ThunderLibAssert(timeTotal >= 0.0_s, "Time from point {} to point {} is {} s, which is less than 0",
-                     startOutputIndex, endOutputIndex, timeTotal.value());
+    ThunderLibCoreAssert(timeTotal >= 0.0_s, "Time from point {} to point {} is {} s, which is less than 0",
+                         startOutputIndex, endOutputIndex, timeTotal.value());
 
     units::radian_t distanceTotal = (endRotation - startRotation).radians();
     units::radian_t distanceTotalMagnitude = units::math::abs(distanceTotal);
@@ -929,7 +930,7 @@ static void CalculateAngularVelocitiesAndRotations(
        * and hope that nobody notices.
        */
       if (discriminant.value() < 0.0) {  // !isTriangularAccelGood
-        ThunderLibAssert(
+        ThunderLibCoreAssert(
             units::math::abs(triangularAccel - angularAccel).value() < 1e-9,
             "Angular velocity profile impossible: triangularAccel: {}, angularAccel: {}, diff: {}",
             triangularAccel.value(), angularAccel.value(), (triangularAccel - angularAccel).value());
@@ -1110,7 +1111,7 @@ std::unique_ptr<ThunderAutoOutputTrajectory> BuildThunderAutoOutputTrajectory(
   }
 
   /*
-  ThunderLibLogger::Info("Building trajectory (length samples: {}, samples per meter: {})",
+  ThunderLibCoreLogger::Info("Building trajectory (length samples: {}, samples per meter: {})",
                          settings.lengthSamples, settings.samplesPerMeter);
   */
 
@@ -1152,9 +1153,8 @@ std::unique_ptr<ThunderAutoOutputTrajectory> BuildThunderAutoOutputTrajectory(
   FillActions(actions, *output);
 
   /*
-  ThunderLibLogger::Info("Built trajectory with {} points, total distance: {:.2f} m, total time: {:.2f} s",
-                         output->points.size(), output->totalDistance.value(),
-                         output->totalTime.value());
+  ThunderLibCoreLogger::Info("Built trajectory with {} points, total distance: {:.2f} m, total time: {:.2f}
+  s", output->points.size(), output->totalDistance.value(), output->totalTime.value());
   */
 
   return output;
@@ -1174,7 +1174,7 @@ std::unique_ptr<ThunderAutoPartialOutputTrajectory> BuildThunderAutoPartialOutpu
   }
 
   /*
-  ThunderLibLogger::Info("Building partial trajectory (length samples: {}, samples per meter: {})",
+  ThunderLibCoreLogger::Info("Building partial trajectory (length samples: {}, samples per meter: {})",
                          settings.lengthSamples, settings.samplesPerMeter);
   */
 
@@ -1194,7 +1194,7 @@ std::unique_ptr<ThunderAutoPartialOutputTrajectory> BuildThunderAutoPartialOutpu
   ResamplePoints(settings.samplesPerMeter, *output);
 
   /*
-  ThunderLibLogger::Info("Built partial trajectory with {} points, total distance: {:.2f} m",
+  ThunderLibCoreLogger::Info("Built partial trajectory with {} points, total distance: {:.2f} m",
                          output->points.size(), output->totalDistance.value());
   */
 
@@ -1299,7 +1299,8 @@ static uint64_t ActionsToBitField(const std::vector<std::string>& actions,
   uint64_t bitField = 0;
   for (const std::string& action : actions) {
     auto it = actionBitLookup.find(action);
-    ThunderLibAssert(it != actionBitLookup.end(), "Action '{}' not found in action bit lookup map", action);
+    ThunderLibCoreAssert(it != actionBitLookup.end(), "Action '{}' not found in action bit lookup map",
+                         action);
     if (it != actionBitLookup.end()) {
       bitField |= it->second;
     }
@@ -1356,7 +1357,7 @@ void CSVExportThunderAutoOutputTrajectory(const ThunderAutoOutputTrajectory& out
                                           std::span<const std::string> orderedActions,
                                           const std::filesystem::path& exportPath,
                                           const ThunderAutoCSVExportProperties& properties) {
-  ThunderLibLogger::Info("Exporting trajectory to CSV: {}", exportPath.string());
+  ThunderLibCoreLogger::Info("Exporting trajectory to CSV: {}", exportPath.string());
 
   std::ofstream ofs;
   ofs.exceptions(std::ofstream::failbit | std::ofstream::badbit);
@@ -1379,7 +1380,7 @@ void CSVExportThunderAutoOutputTrajectory(const ThunderAutoOutputTrajectory& out
                                   e.what());
   }
 
-  ThunderLibLogger::Info("Export complete");
+  ThunderLibCoreLogger::Info("Export complete");
 }
 
 void BuildAndCSVExportThunderAutoOutputTrajectory(const ThunderAutoTrajectorySkeleton& trajectorySkeleton,
@@ -1389,7 +1390,8 @@ void BuildAndCSVExportThunderAutoOutputTrajectory(const ThunderAutoTrajectorySke
                                                   const ThunderAutoCSVExportProperties& exportProperties) {
   std::unique_ptr<ThunderAutoOutputTrajectory> output =
       BuildThunderAutoOutputTrajectory(trajectorySkeleton, buildSettings);
-  ThunderLibAssert(output);  // BuildThunderAutoOutputTrajectory should have thrown an exception if it failed.
+  ThunderLibCoreAssert(
+      output);  // BuildThunderAutoOutputTrajectory should have thrown an exception if it failed.
   CSVExportThunderAutoOutputTrajectory(*output, orderedActions, exportPath, exportProperties);
 }
 

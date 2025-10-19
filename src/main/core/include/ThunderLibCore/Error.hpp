@@ -28,9 +28,10 @@ namespace thunder::core {
     std::abort();                                                  \
   } while (false)
 
-#define ThunderLibAssert(condition, ...) TAssert(ThunderLibLogger, condition __VA_OPT__(, ) __VA_ARGS__)
+#define ThunderLibCoreAssert(condition, ...) \
+  TAssert(ThunderLibCoreLogger, condition __VA_OPT__(, ) __VA_ARGS__)
 
-#define ThunderLibUnreachable(...) TUnreachable(ThunderLibLogger __VA_OPT__(, ) __VA_ARGS__)
+#define ThunderLibCoreUnreachable(...) TUnreachable(ThunderLibCoreLogger __VA_OPT__(, ) __VA_ARGS__)
 
 class ThunderError : public std::exception {
   const char* m_file;

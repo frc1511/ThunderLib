@@ -24,7 +24,7 @@ bool operator==(const ThunderAutoModeStep& lhs, const ThunderAutoModeStep& rhs) 
       return static_cast<const ThunderAutoModeSwitchBranchStep&>(lhs) ==
              static_cast<const ThunderAutoModeSwitchBranchStep&>(rhs);
     default:
-      ThunderLibUnreachable("Unknown ThunderAutoModeStepType");
+      ThunderLibCoreUnreachable("Unknown ThunderAutoModeStepType");
   }
 }
 
@@ -54,7 +54,7 @@ static void to_json(wpi::json& json, const ThunderAutoModeStepType& stepType) {
       json = "branch_switch";
       break;
     default:
-      ThunderLibUnreachable("Unknown ThunderAutoModeStepType");
+      ThunderLibCoreUnreachable("Unknown ThunderAutoModeStepType");
   }
 }
 
@@ -98,6 +98,7 @@ static void to_json(wpi::json& json, const ThunderAutoModeStep& step) {
       if (!branchBoolStep.elseBranch.empty()) {
         json["else_branch"] = branchBoolStep.elseBranch;
       }
+      json["condition"] = branchBoolStep.conditionName;
 
       break;
     }
@@ -114,16 +115,17 @@ static void to_json(wpi::json& json, const ThunderAutoModeStep& step) {
       if (!branchSwitchStep.defaultBranch.empty()) {
         json["default_branch"] = branchSwitchStep.defaultBranch;
       }
+      json["condition"] = branchSwitchStep.conditionName;
 
       break;
     }
     default:
-      ThunderLibUnreachable("Unknown ThunderAutoModeStepType");
+      ThunderLibCoreUnreachable("Unknown ThunderAutoModeStepType");
   }
 }
 
 static void to_json(wpi::json& json, const std::shared_ptr<ThunderAutoModeStep>& step) {
-  ThunderLibAssert(step != nullptr, "Step is null?");
+  ThunderLibCoreAssert(step != nullptr, "Step is null?");
   json = *step;
 }
 
@@ -151,6 +153,7 @@ static void from_json(const wpi::json& json, std::shared_ptr<ThunderAutoModeStep
       if (json.contains("else_branch")) {
         json.at("else_branch").get_to(branchBoolStep->elseBranch);
       }
+      json.at("condition").get_to(branchBoolStep->conditionName);
 
       step = branchBoolStep;
       break;
@@ -168,12 +171,13 @@ static void from_json(const wpi::json& json, std::shared_ptr<ThunderAutoModeStep
       if (json.contains("default_branch")) {
         json.at("default_branch").get_to(branchSwitchStep->defaultBranch);
       }
+      json.at("condition").get_to(branchSwitchStep->conditionName);
 
       step = branchSwitchStep;
       break;
     }
     default:
-      ThunderLibUnreachable("Unknown ThunderAutoModeStepType");
+      ThunderLibCoreUnreachable("Unknown ThunderAutoModeStepType");
   }
 }
 

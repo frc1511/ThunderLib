@@ -17,7 +17,7 @@ const char* TrajectorySelectionToString(
     case ROTATION:
       return "Rotation";
     default:
-      ThunderLibUnreachable("Invalid trajectory selection");
+      ThunderLibCoreUnreachable("Invalid trajectory selection");
   }
 }
 

@@ -47,6 +47,8 @@ struct ThunderAutoProjectVersion {
   bool operator==(const ThunderAutoProjectVersion& other) const noexcept = default;
 };
 
+ThunderAutoProjectVersion CurrentThunderAutoProjectVersion() noexcept;
+
 /**
  * Represents the settings for a ThunderAuto project.
  *

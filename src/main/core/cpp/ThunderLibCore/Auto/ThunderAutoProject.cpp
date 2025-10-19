@@ -6,11 +6,9 @@
 #include <fmt/ranges.h>
 #include <fstream>
 #include <queue>
+#include <numeric>
 
 namespace thunder::core {
-
-static constexpr ThunderAutoProjectVersion kThunderAutoProjectVersionCurrent = {
-    THUNDERAUTO_PROJECT_VERSION_MAJOR, THUNDERAUTO_PROJECT_VERSION_MINOR};
 
 static void from_json(const wpi::json& json, ThunderAutoProjectVersion& version) {
   json.at("major").get_to(version.major);
@@ -55,7 +53,7 @@ static void to_json(wpi::json& json, const ThunderAutoActionType& type) noexcept
       json = "concurrent_action_group";
       break;
     default:
-      ThunderLibUnreachable("Invalid action type");
+      ThunderLibCoreUnreachable("Invalid action type");
   }
 }
 
@@ -75,7 +73,7 @@ static void from_json(const wpi::json& json, ThunderAutoAction& action) {
       action.setActionGroup(m_actionGroupVec);
     } break;
     default:
-      ThunderLibUnreachable("Invalid action type");
+      ThunderLibCoreUnreachable("Invalid action type");
   }
 }
 
@@ -91,8 +89,12 @@ static void to_json(wpi::json& json, const ThunderAutoAction& action) noexcept {
       json["action_group"] = action.actionGroup();
       break;
     default:
-      ThunderLibUnreachable("Invalid action type");
+      ThunderLibCoreUnreachable("Invalid action type");
   }
+}
+
+ThunderAutoProjectVersion CurrentThunderAutoProjectVersion() noexcept {
+  return {THUNDERAUTO_PROJECT_VERSION_MAJOR, THUNDERAUTO_PROJECT_VERSION_MINOR};
 }
 
 const char* ThunderAutoActionTypeToString(ThunderAutoActionType type) noexcept {
@@ -107,7 +109,7 @@ const char* ThunderAutoActionTypeToString(ThunderAutoActionType type) noexcept {
     case CONCURRENT_ACTION_GROUP:
       return "Concurrent Action Group";
     default:
-      ThunderLibUnreachable("Invalid action type");
+      ThunderLibCoreUnreachable("Invalid action type");
   }
 }
 
@@ -150,7 +152,7 @@ bool ThunderAutoAction::hasGroupAction(const std::string& actionName) noexcept {
 
 bool ThunderAutoAction::addGroupAction(const std::string& actionName) noexcept {
   if (hasGroupAction(actionName)) {
-    ThunderLibLogger::Warn("Cannot add group action '{}' because action is already in group", actionName);
+    ThunderLibCoreLogger::Warn("Cannot add group action '{}' because action is already in group", actionName);
     return false;
   }
 
@@ -218,7 +220,7 @@ bool ThunderAutoAction::swapGroupActionWithNext(const std::string actionName) {
 
   size_t vecIndex = mapIt->second;
   if (vecIndex == m_actionGroupVec.size() - 1) {
-    ThunderLibLogger::Warn("Cannot swap last group action with next");
+    ThunderLibCoreLogger::Warn("Cannot swap last group action with next");
     return false;
   }
 
@@ -238,7 +240,7 @@ bool ThunderAutoAction::swapGroupActionWithPrevious(const std::string actionName
 
   size_t vecIndex = mapIt->second;
   if (vecIndex == 0) {
-    ThunderLibLogger::Warn("Cannot swap first group action '{}' with previous", actionName);
+    ThunderLibCoreLogger::Warn("Cannot swap first group action '{}' with previous", actionName);
     return false;
   }
 
@@ -279,7 +281,7 @@ void ThunderAutoProjectSettings::fromJson(const std::filesystem::path& path,
     return;
   }
 
-  ThunderLibAssert(version.major <= THUNDERAUTO_PROJECT_VERSION_MAJOR, "Version too new");
+  ThunderLibCoreAssert(version.major <= THUNDERAUTO_PROJECT_VERSION_MAJOR, "Version too new");
 
   fromJsonCurrentVersion(json);
 }
@@ -391,7 +393,7 @@ void ThunderAutoProjectState::fromJson(const wpi::json& json, const ThunderAutoP
     return;
   }
 
-  ThunderLibAssert(version.major <= THUNDERAUTO_PROJECT_VERSION_MAJOR, "Version too new");
+  ThunderLibCoreAssert(version.major <= THUNDERAUTO_PROJECT_VERSION_MAJOR, "Version too new");
 
   fromJsonCurrentVersion(json);
 }
@@ -561,7 +563,7 @@ void ThunderAutoProjectState::removeAction(const std::string& actionToRemoveName
   {
     m_actions.erase(actionToRemoveName);
     auto it = std::remove(m_actionsOrder.begin(), m_actionsOrder.end(), actionToRemoveName);
-    ThunderLibAssert(it != m_actionsOrder.end(), "Action to remove not found in actions order");
+    ThunderLibCoreAssert(it != m_actionsOrder.end(), "Action to remove not found in actions order");
     m_actionsOrder.erase(it, m_actionsOrder.end());
   }
 
@@ -623,7 +625,7 @@ void ThunderAutoProjectState::renameAction(const std::string& oldName, const std
     m_actions.erase(oldName);
     m_actions.emplace(newName, actionInfo);
     auto it = std::find(m_actionsOrder.begin(), m_actionsOrder.end(), oldName);
-    ThunderLibAssert(it != m_actionsOrder.end(), "Old action name not found in actions order");
+    ThunderLibCoreAssert(it != m_actionsOrder.end(), "Old action name not found in actions order");
     *it = newName;
   }
 
@@ -681,11 +683,11 @@ void ThunderAutoProjectState::moveActionBeforeOther(const std::string& actionNam
     return;
 
   auto it = std::find(m_actionsOrder.begin(), m_actionsOrder.end(), actionName);
-  ThunderLibAssert(it != m_actionsOrder.end(), "Action to move not found in actions order");
+  ThunderLibCoreAssert(it != m_actionsOrder.end(), "Action to move not found in actions order");
   m_actionsOrder.erase(it);
 
   it = std::find(m_actionsOrder.begin(), m_actionsOrder.end(), otherActionName);
-  ThunderLibAssert(it != m_actionsOrder.end(), "Other action not found in actions order");
+  ThunderLibCoreAssert(it != m_actionsOrder.end(), "Other action not found in actions order");
   m_actionsOrder.insert(it, actionName);
 }
 
@@ -702,11 +704,11 @@ void ThunderAutoProjectState::moveActionAfterOther(const std::string& actionName
     return;
 
   auto it = std::find(m_actionsOrder.begin(), m_actionsOrder.end(), actionName);
-  ThunderLibAssert(it != m_actionsOrder.end(), "Action to move not found in actions order");
+  ThunderLibCoreAssert(it != m_actionsOrder.end(), "Action to move not found in actions order");
   m_actionsOrder.erase(it);
 
   it = std::find(m_actionsOrder.begin(), m_actionsOrder.end(), otherActionName);
-  ThunderLibAssert(it != m_actionsOrder.end(), "Other action not found in actions order");
+  ThunderLibCoreAssert(it != m_actionsOrder.end(), "Other action not found in actions order");
   m_actionsOrder.insert(std::next(it), actionName);
 }
 
@@ -934,7 +936,7 @@ bool ThunderAutoProjectState::currentTrajectoryDeleteSelectedItem() {
       break;
     }
     default:
-      ThunderLibUnreachable("Invalid trajectory selection type");
+      ThunderLibCoreUnreachable("Invalid trajectory selection type");
   }
 
   if (numItems == 0) {
@@ -974,7 +976,7 @@ void ThunderAutoProjectState::currentTrajectoryToggleEditorLockedForSelectedItem
       break;
     }
     default:
-      ThunderLibUnreachable("Invalid trajectory selection type");
+      ThunderLibCoreUnreachable("Invalid trajectory selection type");
   }
 }
 
@@ -1009,7 +1011,7 @@ bool ThunderAutoProjectState::currentTrajectoryIncrementSelectedItemIndex(bool f
       break;
     }
     default:
-      ThunderLibUnreachable("Invalid trajectory selection type");
+      ThunderLibCoreUnreachable("Invalid trajectory selection type");
   }
 
   if (forwards && canIncrement) {
@@ -1204,15 +1206,16 @@ std::unique_ptr<ThunderAutoProject> LoadThunderAutoProject(const std::filesystem
     project = std::make_unique<ThunderAutoProject>(path, version, json);
 
   } catch (const wpi::json::exception& e) {
-    ThunderLibLogger::Error("LoadThunderAutoProject: JSON parsing error: {}", e.what());
+    ThunderLibCoreLogger::Error("LoadThunderAutoProject: JSON parsing error: {}", e.what());
     invalidContents = true;
 
   } catch (const std::exception& e) {
-    ThunderLibLogger::Error("LoadThunderAutoProject: Exception occurred while loading project: {}", e.what());
+    ThunderLibCoreLogger::Error("LoadThunderAutoProject: Exception occurred while loading project: {}",
+                                e.what());
     invalidContents = true;
 
   } catch (...) {
-    ThunderLibLogger::Error("LoadThunderAutoProject: Unknown exception occurred while loading project.");
+    ThunderLibCoreLogger::Error("LoadThunderAutoProject: Unknown exception occurred while loading project.");
     invalidContents = true;
   }
 
@@ -1232,7 +1235,7 @@ void SaveThunderAutoProject(const ThunderAutoProjectSettings& settings,
     ofs.open(settings.projectPath, std::ios::out | std::ios::trunc);
 
     wpi::json json = wpi::json{
-        {"version", kThunderAutoProjectVersionCurrent},
+        {"version", CurrentThunderAutoProjectVersion()},
         {"settings", settings},
         {"state", state},
     };

@@ -9,55 +9,55 @@
 
 namespace thunder::core {
 
-static const std::string kThunderLibLoggerName = "ThunderLib";
+static const std::string kThunderLibCoreLoggerName = "ThunderLib";
 
 static std::mutex s_loggerMutex;
 static std::shared_ptr<spdlog::logger> s_thunderLibLogger;
 
-spdlog::logger* ThunderLibLogger::get() {
+spdlog::logger* ThunderLibCoreLogger::get() {
   std::lock_guard<std::mutex> lock(s_loggerMutex);
   if (!s_thunderLibLogger) {
-    s_thunderLibLogger = spdlog::stdout_color_mt(kThunderLibLoggerName);
+    s_thunderLibLogger = spdlog::stdout_color_mt(kThunderLibCoreLoggerName);
   }
   return s_thunderLibLogger.get();
 }
 
-void ThunderLibLogger::destroy() {
+void ThunderLibCoreLogger::destroy() {
   std::lock_guard<std::mutex> lock(s_loggerMutex);
-  drop(kThunderLibLoggerName);
+  drop(kThunderLibCoreLoggerName);
   s_thunderLibLogger.reset();
 }
 
-void ThunderLibLogger::make(spdlog::sink_ptr sink) {
+void ThunderLibCoreLogger::make(spdlog::sink_ptr sink) {
   std::lock_guard<std::mutex> lock(s_loggerMutex);
-  drop(kThunderLibLoggerName);
+  drop(kThunderLibCoreLoggerName);
   s_thunderLibLogger.reset();
-  s_thunderLibLogger = std::make_shared<spdlog::logger>(kThunderLibLoggerName, std::move(sink));
+  s_thunderLibLogger = std::make_shared<spdlog::logger>(kThunderLibCoreLoggerName, std::move(sink));
 }
 
-void ThunderLibLogger::make(std::vector<spdlog::sink_ptr>::const_iterator begin,
+void ThunderLibCoreLogger::make(std::vector<spdlog::sink_ptr>::const_iterator begin,
                             std::vector<spdlog::sink_ptr>::const_iterator end) {
   std::lock_guard<std::mutex> lock(s_loggerMutex);
-  drop(kThunderLibLoggerName);
+  drop(kThunderLibCoreLoggerName);
   s_thunderLibLogger.reset();
-  s_thunderLibLogger = std::make_shared<spdlog::logger>(kThunderLibLoggerName, begin, end);
+  s_thunderLibLogger = std::make_shared<spdlog::logger>(kThunderLibCoreLoggerName, begin, end);
 }
 
-void ThunderLibLogger::makeFileLogger(const std::filesystem::path& path, bool truncate) {
+void ThunderLibCoreLogger::makeFileLogger(const std::filesystem::path& path, bool truncate) {
   std::lock_guard<std::mutex> lock(s_loggerMutex);
-  drop(kThunderLibLoggerName);
+  drop(kThunderLibCoreLoggerName);
   s_thunderLibLogger.reset();
   if (path.empty()) {
     throw InvalidArgumentError::Construct("Log file path cannot be empty");
   }
-  s_thunderLibLogger = spdlog::basic_logger_mt(kThunderLibLoggerName, path.string(), truncate);
+  s_thunderLibLogger = spdlog::basic_logger_mt(kThunderLibCoreLoggerName, path.string(), truncate);
 }
 
-void ThunderLibLogger::makeStdoutLogger() {
+void ThunderLibCoreLogger::makeStdoutLogger() {
   std::lock_guard<std::mutex> lock(s_loggerMutex);
-  drop(kThunderLibLoggerName);
+  drop(kThunderLibCoreLoggerName);
   s_thunderLibLogger.reset();
-  s_thunderLibLogger = spdlog::stdout_color_mt(kThunderLibLoggerName);
+  s_thunderLibLogger = spdlog::stdout_color_mt(kThunderLibCoreLoggerName);
 }
 
 std::filesystem::path MakeLogFilePath(const std::filesystem::path& logsDirectory, const std::string& name /*= ""*/) {
@@ -112,7 +112,7 @@ struct LogFile {
 
 void CleanupLogsDirectory(const std::filesystem::path& logsDir, size_t maxFiles) {
   if (!std::filesystem::exists(logsDir)) {
-    ThunderLibLogger::ErrorLoc("Logs dir `{}' does not exist", logsDir.string());
+    ThunderLibCoreLogger::ErrorLoc("Logs dir `{}' does not exist", logsDir.string());
     return;
   }
 

@@ -37,11 +37,10 @@ int main(int argc, char** argv) {
   std::filesystem::path testOutputPath = GetTestOutputPath();
 
   std::filesystem::path logFile = testOutputPath / "ThunderLibCoreTests.log";
-  ThunderLibLogger::makeFileLogger(logFile, true);
+  ThunderLibCoreLogger::makeFileLogger(logFile, true);
 
-  ThunderLibLogger::Info("Starting ThunderLibCoreTests...");
+  ThunderLibCoreLogger::Info("Starting ThunderLibCoreTests...");
 
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }
-

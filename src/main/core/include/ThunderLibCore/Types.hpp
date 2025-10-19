@@ -263,7 +263,7 @@ class CanonicalAngle {
 
   CanonicalAngle(double x, double y) {
     double magnitude = gcem::hypot(x, y);
-    ThunderLibAssert(magnitude > 1e-6, "Cannot create CanonicalAngle with zero magnitude");
+    ThunderLibCoreAssert(magnitude > 1e-6, "Cannot create CanonicalAngle with zero magnitude");
     m_cos = x / magnitude;
     m_sin = y / magnitude;
   }

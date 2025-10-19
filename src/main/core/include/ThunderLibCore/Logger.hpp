@@ -11,7 +11,7 @@ using namespace spdlog;
 // PLEASE don't have curly braces in file paths
 #define LocString() "\n\tFile: " __FILE__ " \n\tLine: " TOSTRING(__LINE__)
 
-class ThunderLibLogger {
+class ThunderLibCoreLogger {
  public:
   static spdlog::logger* get();
   static void destroy();

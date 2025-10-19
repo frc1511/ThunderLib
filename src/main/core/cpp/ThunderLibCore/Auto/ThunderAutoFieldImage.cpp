@@ -48,7 +48,7 @@ const char* ThunderAutoBuiltinFieldImageToString(ThunderAutoBuiltinFieldImage bu
     case FIELD_2025:
       return "2025";
     default:
-      ThunderLibUnreachable("Invalid Field Image Type");
+      ThunderLibCoreUnreachable("Invalid Field Image Type");
   }
 }
 
@@ -96,7 +96,7 @@ ThunderAutoFieldImageType ThunderAutoFieldImage::type() const {
   } else if (std::holds_alternative<std::filesystem::path>(m_image)) {
     return ThunderAutoFieldImageType::CUSTOM;
   }
-  ThunderLibUnreachable("Invalid ThunderAutoFieldImage type");
+  ThunderLibCoreUnreachable("Invalid ThunderAutoFieldImage type");
 }
 
 const std::filesystem::path& ThunderAutoFieldImage::customImagePath() const {
@@ -148,7 +148,7 @@ void ThunderAutoFieldImage::fromJson(const wpi::json& json, const std::filesyste
     *this = ThunderAutoFieldImage(imageString, imageRect, fieldSize);
 
   } else {
-    ThunderLibUnreachable("Invalid Field Image Type");
+    ThunderLibCoreUnreachable("Invalid Field Image Type");
   }
 }
 
@@ -171,7 +171,7 @@ void ThunderAutoFieldImage::toJson(const std::filesystem::path& projectDirectory
       }
     } break;
     default:
-      ThunderLibUnreachable("Invalid Field Image Type");
+      ThunderLibCoreUnreachable("Invalid Field Image Type");
   }
 
   json = wpi::json{

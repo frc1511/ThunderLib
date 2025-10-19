@@ -520,21 +520,21 @@ void ThunderAutoTrajectorySkeleton::reverseDirection() {
 
   std::unique_ptr<ThunderAutoPartialOutputTrajectory> builtTrajectory =
       BuildThunderAutoPartialOutputTrajectory(*this, kPreviewOutputTrajectorySettings);
-  ThunderLibAssert(builtTrajectory != nullptr);
-  ThunderLibAssert(!builtTrajectory->points.empty());
+  ThunderLibCoreAssert(builtTrajectory != nullptr);
+  ThunderLibCoreAssert(!builtTrajectory->points.empty());
 
   const units::meter_t originalTrajectoryDistance = builtTrajectory->totalDistance;
 
   for (const auto& [position, rotation] : m_rotations) {
     size_t pointIndex = builtTrajectory->trajectoryPositionToPointIndex(position);
-    ThunderLibAssert(pointIndex < builtTrajectory->points.size());
+    ThunderLibCoreAssert(pointIndex < builtTrajectory->points.size());
     units::meter_t distance = builtTrajectory->points[pointIndex].distance;
     rotations.emplace_back(originalTrajectoryDistance - distance, rotation.angle);
   }
 
   for (const auto& [position, action] : m_actions) {
     size_t pointIndex = builtTrajectory->trajectoryPositionToPointIndex(position);
-    ThunderLibAssert(pointIndex < builtTrajectory->points.size());
+    ThunderLibCoreAssert(pointIndex < builtTrajectory->points.size());
     units::meter_t distance = builtTrajectory->points[pointIndex].distance;
     actions.emplace_back(originalTrajectoryDistance - distance, action.action);
   }
@@ -576,7 +576,7 @@ void ThunderAutoTrajectorySkeleton::reverseDirection() {
 
   for (const auto& [distance, angle] : rotations) {
     auto closestPointIt = findClosestPoint(distance);
-    ThunderLibAssert(closestPointIt != builtTrajectory->points.end());
+    ThunderLibCoreAssert(closestPointIt != builtTrajectory->points.end());
 
     size_t closestPointIndex = closestPointIt - builtTrajectory->points.begin();
     ThunderAutoTrajectoryPosition rotationPosition =
@@ -589,7 +589,7 @@ void ThunderAutoTrajectorySkeleton::reverseDirection() {
 
   for (const auto& [distance, action] : actions) {
     auto closestPointIt = findClosestPoint(distance);
-    ThunderLibAssert(closestPointIt != builtTrajectory->points.end());
+    ThunderLibCoreAssert(closestPointIt != builtTrajectory->points.end());
 
     size_t closestPointIndex = closestPointIt - builtTrajectory->points.begin();
     ThunderAutoTrajectoryPosition actionPosition =
@@ -657,7 +657,7 @@ void ThunderAutoTrajectorySkeleton::separateRotations(
     const ThunderAutoPartialOutputTrajectoryPoint& segmentEndPoint =
         trajectoryPositionData->points.at(segmentEndPointIndex);
     units::meter_t segmentDistance = segmentEndPoint.distance - segmentStartPoint.distance;
-    ThunderLibAssert(segmentDistance > 0.0_m);
+    ThunderLibCoreAssert(segmentDistance > 0.0_m);
 
     const size_t numSegmentRotations = segment.rotationIts.size() + 1;
     if (numSegmentRotations == 1)
@@ -681,7 +681,7 @@ void ThunderAutoTrajectorySkeleton::separateRotations(
 
       units::meter_t deltaDistance = positionDistance - lastPositionDistance;
 
-      ThunderLibAssert(deltaDistance >= 0.0_m);
+      ThunderLibCoreAssert(deltaDistance >= 0.0_m);
 
       if (deltaDistance <= segmentMinSeparationDistance) {
         positionDistance = lastPositionDistance + segmentMinSeparationDistance;
@@ -721,7 +721,7 @@ void ThunderAutoTrajectorySkeleton::purgeOutOfBoundsRotationsAndActions() {
     auto& [position, angle] = *it;
 
     if (position <= 0.0 || position >= maxPosition) {
-      ThunderLibLogger::Info("Purging out-of-bounds rotation target at position {}", (double)it->first);
+      ThunderLibCoreLogger::Info("Purging out-of-bounds rotation target at position {}", (double)it->first);
       it = m_rotations.remove(it);
     } else {
       ++it;
@@ -732,7 +732,7 @@ void ThunderAutoTrajectorySkeleton::purgeOutOfBoundsRotationsAndActions() {
     auto& [position, action] = *it;
 
     if (position <= 0.0 || position >= maxPosition) {
-      ThunderLibLogger::Info("Purging out-of-bounds action at position {}", (double)it->first);
+      ThunderLibCoreLogger::Info("Purging out-of-bounds action at position {}", (double)it->first);
       it = m_actions.remove(it);
     } else {
       ++it;
@@ -1150,7 +1150,7 @@ void ThunderAutoTrajectorySkeleton::fromJsonPre2026(const wpi::json& json,
       pointIndex++;
     }
 
-    ThunderLibAssert(m_points.size() >= 2);
+    ThunderLibCoreAssert(m_points.size() >= 2);
     /**
      * Setting the start/end points to stopped was not an option in pre-2026 versions.
      * However, they might still might show up as stopped in the save file.
