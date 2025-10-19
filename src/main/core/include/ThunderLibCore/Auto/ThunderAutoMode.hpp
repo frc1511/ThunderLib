@@ -67,12 +67,14 @@ struct ThunderAutoModeBoolBranchStep final : public ThunderAutoModeStep {
 
   std::list<std::shared_ptr<ThunderAutoModeStep>> trueBranch;
   std::list<std::shared_ptr<ThunderAutoModeStep>> elseBranch;
+  std::string conditionName;
 
   bool operator==(const ThunderAutoModeBoolBranchStep& other) const noexcept {
     bool trueStepBranchesMatch = (trueBranch == other.trueBranch);
     bool elseStepBranchesMatch = (elseBranch == other.elseBranch);
+    bool conditionNamesMatch = (conditionName == other.conditionName);
 
-    return (trueStepBranchesMatch && elseStepBranchesMatch);
+    return trueStepBranchesMatch && elseStepBranchesMatch && conditionNamesMatch;
   }
 };
 
@@ -84,12 +86,14 @@ struct ThunderAutoModeSwitchBranchStep final : public ThunderAutoModeStep {
 
   std::map<int, std::list<std::shared_ptr<ThunderAutoModeStep>>> caseBranches;
   std::list<std::shared_ptr<ThunderAutoModeStep>> defaultBranch;
+  std::string conditionName;
 
   bool operator==(const ThunderAutoModeSwitchBranchStep& other) const noexcept {
     bool caseBranchesMatch = (caseBranches == other.caseBranches);
     bool defaultBranchesMatch = (defaultBranch == other.defaultBranch);
+    bool conditionNamesMatch = (conditionName == other.conditionName);
 
-    return (caseBranchesMatch && defaultBranchesMatch);
+    return caseBranchesMatch && defaultBranchesMatch && conditionNamesMatch;
   }
 };
 
