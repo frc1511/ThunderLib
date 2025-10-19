@@ -6,21 +6,8 @@ using namespace thunder::core;
 
 using ::testing::Contains;
 
-TEST(LoadProjectTests, SaveAndLoad) {
-  const std::filesystem::path kTestOutputPath = GetTestOutputPath() / "LoadProjectTests_SaveAndLoad";
-  std::filesystem::create_directory(kTestOutputPath);
-
-  const std::filesystem::path projectSavePath = kTestOutputPath / "test.thunderauto";
-
-  ThunderAutoProjectSettings settings;
-  {
-    settings.setProjectPath(projectSavePath);
-    settings.fieldImage = ThunderAutoFieldImage(ThunderAutoBuiltinFieldImage::FIELD_2025);
-    settings.driveController = DriveControllerType::HOLONOMIC;
-    settings.robotSize = Measurement2d(0.8_m, 0.8_m);
-  }
-
-  ThunderAutoProjectState state;
+static void CreateExampleProjectState(ThunderAutoProjectState& state) {
+  // State
 
   // Actions
   {
@@ -116,6 +103,7 @@ TEST(LoadProjectTests, SaveAndLoad) {
     step2->actionName = "action3";
 
     auto step4 = std::make_shared<ThunderAutoModeBoolBranchStep>();
+    step4->conditionName = "booleanCondition1";
     step4->trueBranch.push_back(step4True);
     step4->elseBranch.push_back(step4Else);
 
@@ -128,6 +116,7 @@ TEST(LoadProjectTests, SaveAndLoad) {
     auto step5Default = std::make_shared<ThunderAutoModeActionStep>();
     step5Default->actionName = "action3";
 
+    step5->conditionName = "switchCondition1";
     step5->caseBranches[1] = {step5Case1};
     step5->caseBranches[2] = {step5Case2};
     step5->defaultBranch = {step5Default};
@@ -137,6 +126,79 @@ TEST(LoadProjectTests, SaveAndLoad) {
 
     state.autoModes["AutoMode1"] = autoMode;
   }
+}
+
+TEST(ProjectTests, SerializeAndDeserialize) {
+  ThunderAutoProjectState state;
+  CreateExampleProjectState(state);
+
+  std::vector<uint8_t> data;
+
+  ASSERT_NO_THROW(data = SerializeThunderAutoProjectStateForTransmission(state));
+  ASSERT_FALSE(data.empty());
+
+  ThunderAutoProjectStateDataHashes stateHashes;
+  ThunderAutoProjectState deserializedState;
+
+  ASSERT_NO_THROW(stateHashes = DeserializeThunderAutoProjectStateFromTransmission(data, deserializedState));
+
+  // Compare states (they are not identical since only essential data is serialized)
+  {
+    EXPECT_EQ(deserializedState.autoModes, state.autoModes);
+    EXPECT_EQ(deserializedState.actions, state.actions);
+
+    ASSERT_EQ(deserializedState.trajectories.size(), state.trajectories.size());
+    for (const auto& [trajectoryName, trajectory] : state.trajectories) {
+      ASSERT_TRUE(deserializedState.trajectories.contains(trajectoryName));
+      const ThunderAutoTrajectorySkeleton& deserializedTrajectory =
+          deserializedState.trajectories.at(trajectoryName);
+
+      EXPECT_EQ(deserializedTrajectory.numPoints(), trajectory.numPoints());
+
+      auto originalPointIt = trajectory.cbegin();
+      auto deserializedPointIt = deserializedTrajectory.cbegin();
+      for (; originalPointIt != trajectory.cend() && deserializedPointIt != deserializedTrajectory.cend();
+           ++originalPointIt, ++deserializedPointIt) {
+        EXPECT_EQ(deserializedPointIt->position(), originalPointIt->position());
+        EXPECT_EQ(deserializedPointIt->headings(), originalPointIt->headings());
+        EXPECT_EQ(deserializedPointIt->headingWeights(), originalPointIt->headingWeights());
+        EXPECT_EQ(deserializedPointIt->maxVelocityOverride(), originalPointIt->maxVelocityOverride());
+        if (deserializedPointIt->isStopped()) {
+          EXPECT_EQ(deserializedPointIt->stopRotation(), originalPointIt->stopRotation());
+          EXPECT_EQ(deserializedPointIt->stopActions(), originalPointIt->stopActions());
+        }
+        // Links are not serialized, so do not compare them.
+      }
+    }
+  }
+
+  // Verify hashes
+
+  for (const auto& [trajectoryName, _] : state.trajectories) {
+    EXPECT_TRUE(stateHashes.trajectoryHashes.contains(trajectoryName));
+  }
+  for (const auto& [autoModeName, _] : state.autoModes) {
+    EXPECT_TRUE(stateHashes.autoModeHashes.contains(autoModeName));
+  }
+  EXPECT_NE(stateHashes.actionsHash, 0U);
+}
+
+TEST(ProjectTests, SaveAndLoad) {
+  const std::filesystem::path kTestOutputPath = GetTestOutputPath() / "ProjectTests_SaveAndLoad";
+  std::filesystem::create_directory(kTestOutputPath);
+
+  const std::filesystem::path projectSavePath = kTestOutputPath / "test.thunderauto";
+
+  ThunderAutoProjectSettings settings;
+  {
+    settings.setProjectPath(projectSavePath);
+    settings.fieldImage = ThunderAutoFieldImage(ThunderAutoBuiltinFieldImage::FIELD_2025);
+    settings.driveController = DriveControllerType::HOLONOMIC;
+    settings.robotSize = Measurement2d(0.8_m, 0.8_m);
+  }
+
+  ThunderAutoProjectState state;
+  CreateExampleProjectState(state);
 
   ASSERT_NO_THROW(SaveThunderAutoProject(settings, state));
 
@@ -156,7 +218,7 @@ TEST(LoadProjectTests, SaveAndLoad) {
  * Test loading a legacy ThunderAuto project file (2024+2025 format). Verify that ThunderLibCore reads and
  * converts all its data correctly.
  */
-TEST(LoadProjectTests, LoadPre2026Project) {
+TEST(ProjectTests, LoadPre2026Project) {
   std::filesystem::path projectPath = kTestDataPath / "ThunderAuto" / "Pre2026.thunderauto";
 
   std::unique_ptr<ThunderAutoProject> project;
@@ -466,4 +528,3 @@ TEST(LoadProjectTests, LoadPre2026Project) {
   //  ThunderAutoEditorState defaultEditorState;
   //  EXPECT_EQ(state.editorState, defaultEditorState);
 }
-

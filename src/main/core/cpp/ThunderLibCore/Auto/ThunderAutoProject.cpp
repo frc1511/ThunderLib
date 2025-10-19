@@ -1258,4 +1258,1188 @@ std::vector<std::filesystem::path> DiscoverThunderAutoProjects(const std::filesy
   return projects;
 }
 
+template <typename T>
+concept Serializable = std::integral<T> || std::floating_point<T>;
+
+/**
+ * A simple data output stream that writes to a byte buffer, used for serializing the project state.
+ */
+class DataOutputStream {
+  std::vector<uint8_t>& m_buffer;
+
+ public:
+  explicit DataOutputStream(std::vector<uint8_t>& buffer) : m_buffer(buffer) {}
+
+  /**
+   * Writes a value of type T to the buffer.
+   *
+   * @param value The value to write.
+   * @return Sum of bytes written.
+   */
+  template <Serializable T>
+  size_t write(const T& value) {
+    const uint8_t* rawData = reinterpret_cast<const uint8_t*>(&value);
+    size_t sum = 0;
+    for (size_t i = 0; i < sizeof(T); i++) {
+      uint8_t byte = rawData[i];
+      m_buffer.push_back(byte);
+      sum += static_cast<size_t>(byte);
+    }
+    return sum;
+  }
+
+  size_t write(const std::string& str) {
+    // Length (1 byte)
+    uint8_t length = static_cast<uint8_t>(std::min(str.size(), size_t(UINT8_MAX)));
+    *this << length;
+    // String data (0-255 bytes)
+    size_t sum = length;
+    for (size_t i = 0; i < length; i++) {
+      uint8_t byte = static_cast<uint8_t>(str[i]);
+      m_buffer.push_back(byte);
+      sum += static_cast<size_t>(byte);
+    }
+    return sum;
+  }
+
+  template <typename T>
+  size_t operator<<(const T& value) {
+    return write(value);
+  }
+};
+
+/**
+ * A simple data input stream that reads from a byte buffer, used for deserializing the project state.
+ */
+class DataInputStream {
+  std::span<const uint8_t> m_buffer;
+  size_t m_offset = 0;
+
+ public:
+  explicit DataInputStream(std::span<const uint8_t> buffer) : m_buffer(buffer) {}
+
+  template <Serializable T>
+  size_t read(T& value) {
+    if (m_offset + sizeof(T) > m_buffer.size()) {
+      throw RuntimeError::Construct(
+          "DeserializeThunderAutoProjectStateFromTransmission: Buffer too small to read value of size {}",
+          sizeof(T));
+    }
+    unsigned char* rawData = reinterpret_cast<unsigned char*>(&value);
+    size_t sum = 0;
+    for (size_t i = 0; i < sizeof(T); i++) {
+      uint8_t byte = m_buffer[m_offset++];
+      rawData[i] = byte;
+      sum += static_cast<size_t>(byte);
+    }
+    return sum;
+  }
+
+  size_t read(std::string& str) {
+    // Length (1 byte)
+    uint8_t length = 0;
+    *this >> length;
+    if (m_offset + length > m_buffer.size()) {
+      throw RuntimeError::Construct(
+          "DeserializeThunderAutoProjectStateFromTransmission: Buffer too small to read string of length {}",
+          length);
+    }
+    // String data (0-255 bytes)
+    str = std::string(reinterpret_cast<const char*>(m_buffer.data() + m_offset), length);
+    m_offset += length;
+
+    size_t sum = std::accumulate(str.begin(), str.end(), size_t(0));
+    return length + sum;
+  }
+
+  template <typename T>
+  size_t operator>>(T& value) {
+    return read(value);
+  }
+};
+
+enum : uint8_t {
+  kSectionHeader = 0x01,
+  kSectionTrajectories = 0x02,
+  kSectionAutoModes = 0x03,
+  kSectionActions = 0x04,
+};
+
+static size_t SerializeHeader(const ThunderAutoProjectState& state, DataOutputStream& stream) {
+  size_t sum = 0;
+
+  sum += stream << uint8_t(kSectionHeader);
+
+  sum += stream << uint16_t(THUNDERAUTO_PROJECT_VERSION_MAJOR);
+  sum += stream << uint16_t(THUNDERAUTO_PROJECT_VERSION_MINOR);
+
+  sum += stream << uint8_t(sum & 0xFF);
+
+  return sum;
+}
+
+static size_t DeserializeHeader(DataInputStream& stream, ThunderAutoProjectState& state) {
+  size_t sum = 0;
+
+  uint8_t sectionByte;
+  sum += stream >> sectionByte;
+  if (sectionByte != kSectionHeader) {
+    throw RuntimeError::Construct(
+        "DeserializeThunderAutoProjectStateFromTransmission: Expected header section (0x01), got 0x{:02X}",
+        sectionByte);
+  }
+
+  uint16_t major, minor;
+  sum += stream >> major;
+  sum += stream >> minor;
+
+  if (major > THUNDERAUTO_PROJECT_VERSION_MAJOR) {
+    throw RuntimeError::Construct(
+        "DeserializeThunderAutoProjectStateFromTransmission: Project version {}.{} is too new (current "
+        "version is {}.{})",
+        major, minor, THUNDERAUTO_PROJECT_VERSION_MAJOR, THUNDERAUTO_PROJECT_VERSION_MINOR);
+  }
+
+  uint8_t readSum;
+  stream >> readSum;
+
+  if (readSum != (sum & 0xFF)) {
+    throw RuntimeError::Construct(
+        "DeserializeThunderAutoProjectStateFromTransmission: Header checksum mismatch: expected 0x{:02X}, "
+        "got 0x{:02X}",
+        sum & 0xFF, readSum);
+  }
+
+  return sum + readSum;
+}
+
+static size_t SerializeTrajectoryPoint(const ThunderAutoTrajectorySkeletonWaypoint& point,
+                                       DataOutputStream& stream) {
+  size_t sum = 0;
+
+  const auto& [x, y] = point.position().data;
+  sum += stream << x.value();
+  sum += stream << y.value();
+
+  const ThunderAutoTrajectorySkeletonWaypoint::HeadingAngles& headings = point.headings();
+  const double incomingHeading = headings.incomingAngle().radians().value();
+  sum += stream << incomingHeading;
+  const double outgoingHeading = headings.outgoingAngle().radians().value();
+  sum += stream << outgoingHeading;
+
+  const ThunderAutoTrajectorySkeletonWaypoint::HeadingWeights& headingWeights = point.headingWeights();
+  const double incomingHeadingWeight = headingWeights.incomingWeight();
+  sum += stream << incomingHeadingWeight;
+  const double outgoingHeadingWeight = headingWeights.outgoingWeight();
+  sum += stream << outgoingHeadingWeight;
+
+  const uint8_t hasMaxVelocityOverride = point.hasMaxVelocityOverride() ? 1 : 0;
+  sum += stream << hasMaxVelocityOverride;
+
+  if (hasMaxVelocityOverride) {
+    const double maxVelocityOverride = point.maxVelocityOverride().value().value();
+    sum += stream << maxVelocityOverride;
+
+    if (maxVelocityOverride == 0.0) {
+      const double stopRotation = point.stopRotation().radians().value();
+      sum += stream << stopRotation;
+
+      const std::unordered_set<std::string>& stopActions = point.stopActions();
+      const uint8_t numStopActions = static_cast<uint8_t>(std::min(stopActions.size(), size_t(UINT8_MAX)));
+      sum += stream << numStopActions;
+
+      size_t stopActionIndex = 0;
+      for (auto actionIt = stopActions.begin();
+           actionIt != stopActions.end() && stopActionIndex < numStopActions; ++actionIt, ++stopActionIndex) {
+        sum += stream << *actionIt;
+      }
+    }
+  }
+
+  return sum;
+}
+
+static size_t DeserializeTrajectoryPoint(DataInputStream& stream,
+                                         ThunderAutoTrajectorySkeletonWaypoint& point) {
+  size_t sum = 0;
+
+  {
+    double xValue, yValue;
+    sum += stream >> xValue;
+    sum += stream >> yValue;
+
+    units::meter_t x{xValue};
+    units::meter_t y{yValue};
+    Point2d position{x, y};
+
+    point.setPosition(position);
+  }
+
+  {
+    double incomingHeadingValue, outgoingHeadingValue;
+    sum += stream >> incomingHeadingValue;
+    sum += stream >> outgoingHeadingValue;
+
+    CanonicalAngle incomingAngle(units::radian_t{incomingHeadingValue});
+    CanonicalAngle outgoingAngle(units::radian_t{outgoingHeadingValue});
+    ThunderAutoTrajectorySkeletonWaypoint::HeadingAngles headings(incomingAngle, outgoingAngle);
+
+    point.setHeadings(headings);
+  }
+
+  {
+    double incomingHeadingWeight, outgoingHeadingWeight;
+    sum += stream >> incomingHeadingWeight;
+    sum += stream >> outgoingHeadingWeight;
+
+    ThunderAutoTrajectorySkeletonWaypoint::HeadingWeights headingWeights(incomingHeadingWeight,
+                                                                         outgoingHeadingWeight);
+
+    point.setHeadingWeights(headingWeights);
+  }
+
+  uint8_t hasMaxVelocityOverride;
+  sum += stream >> hasMaxVelocityOverride;
+
+  if (hasMaxVelocityOverride) {
+    double maxVelocityOverrideValue;
+    sum += stream >> maxVelocityOverrideValue;
+
+    units::meters_per_second_t maxVelocityOverride{maxVelocityOverrideValue};
+    point.setMaxVelocityOverride(maxVelocityOverride);
+
+    if (maxVelocityOverrideValue == 0.0) {
+      double stopRotationValue;
+      sum += stream >> stopRotationValue;
+
+      units::radian_t stopRotation{stopRotationValue};
+      point.setStopRotation(CanonicalAngle(stopRotation));
+
+      uint8_t numStopActions;
+      sum += stream >> numStopActions;
+
+      for (size_t stopActionIndex = 0; stopActionIndex < static_cast<size_t>(numStopActions);
+           ++stopActionIndex) {
+        std::string actionName;
+        sum += stream >> actionName;
+        point.addStopAction(actionName);
+      }
+    }
+  }
+
+  return sum;
+}
+
+static size_t SerializeTrajectoryAction(const ThunderAutoTrajectoryPosition& position,
+                                        const ThunderAutoTrajectoryAction& action,
+                                        DataOutputStream& stream) {
+  size_t sum = 0;
+
+  sum += stream << position.position;
+  sum += stream << action.action;
+
+  return sum;
+}
+
+static size_t DeserializeTrajectoryAction(DataInputStream& stream,
+                                          ThunderAutoTrajectoryPosition& position,
+                                          ThunderAutoTrajectoryAction& action) {
+  size_t sum = 0;
+
+  sum += stream >> position.position;
+  sum += stream >> action.action;
+
+  return sum;
+}
+
+static size_t SerializeTrajectoryRotation(const ThunderAutoTrajectoryPosition& position,
+                                          const ThunderAutoTrajectoryRotation& rotation,
+                                          DataOutputStream& stream) {
+  size_t sum = 0;
+
+  sum += stream << position.position;
+  sum += stream << rotation.angle.radians().value();
+
+  return sum;
+}
+
+static size_t DeserializeTrajectoryRotation(DataInputStream& stream,
+                                            ThunderAutoTrajectoryPosition& position,
+                                            ThunderAutoTrajectoryRotation& rotation) {
+  size_t sum = 0;
+
+  sum += stream >> position.position;
+
+  double angleValue;
+  sum += stream >> angleValue;
+  rotation.angle = CanonicalAngle(units::radian_t{angleValue});
+
+  return sum;
+}
+
+static size_t SerializeTrajectory(const std::string& name,
+                                  const ThunderAutoTrajectorySkeleton& skeleton,
+                                  DataOutputStream& stream) {
+  size_t sum = 0;
+
+  sum += stream << name;
+
+  {
+    const std::list<ThunderAutoTrajectorySkeletonWaypoint>& points = skeleton.points();
+
+    const uint8_t numPoints = static_cast<uint8_t>(std::min(points.size(), size_t(UINT8_MAX)));
+    sum += stream << numPoints;
+
+    size_t pointIndex = 0;
+    for (auto pointIt = points.begin(); pointIt != points.end() && pointIndex < numPoints;
+         ++pointIt, ++pointIndex) {
+      sum += SerializeTrajectoryPoint(*pointIt, stream);
+    }
+  }
+
+  {
+    const ThunderAutoPositionedTrajectoryItemList<ThunderAutoTrajectoryAction>& actions = skeleton.actions();
+
+    const uint8_t numActions = static_cast<uint8_t>(std::min(actions.size(), size_t(UINT8_MAX)));
+    sum += stream << numActions;
+
+    size_t actionIndex = 0;
+    for (auto actionIt = actions.begin(); actionIt != actions.end() && actionIndex < numActions;
+         ++actionIt, ++actionIndex) {
+      const auto& [position, action] = *actionIt;
+      sum += SerializeTrajectoryAction(position, action, stream);
+    }
+  }
+
+  {
+    const ThunderAutoPositionedTrajectoryItemList<ThunderAutoTrajectoryRotation>& rotations =
+        skeleton.rotations();
+
+    const uint8_t numRotations = static_cast<uint8_t>(std::min(rotations.size(), size_t(UINT8_MAX)));
+    sum += stream << numRotations;
+
+    size_t rotationIndex = 0;
+    for (auto rotationIt = rotations.begin(); rotationIt != rotations.end() && rotationIndex < numRotations;
+         ++rotationIt, ++rotationIndex) {
+      const auto& [position, rotation] = *rotationIt;
+      sum += SerializeTrajectoryRotation(position, rotation, stream);
+    }
+  }
+
+  {
+    const double startRotation = skeleton.startRotation().radians().value();
+    sum += stream << startRotation;
+
+    const double endRotation = skeleton.endRotation().radians().value();
+    sum += stream << endRotation;
+  }
+
+  {
+    const ThunderAutoTrajectorySkeletonSettings& settings = skeleton.settings();
+
+    const double maxLinearVelocity = settings.maxLinearVelocity.value();
+    sum += stream << maxLinearVelocity;
+
+    const double maxLinearAcceleration = settings.maxLinearAcceleration.value();
+    sum += stream << maxLinearAcceleration;
+
+    const double maxCentripetalAcceleration = settings.maxCentripetalAcceleration.value();
+    sum += stream << maxCentripetalAcceleration;
+
+    const double maxAngularVelocity = settings.maxAngularVelocity.value();
+    sum += stream << maxAngularVelocity;
+
+    const double maxAngularAcceleration = settings.maxAngularAcceleration.value();
+    sum += stream << maxAngularAcceleration;
+  }
+
+  {
+    const std::unordered_set<std::string>& startActions = skeleton.startActions();
+
+    const uint8_t numStartActions = static_cast<uint8_t>(std::min(startActions.size(), size_t(UINT8_MAX)));
+
+    sum += stream << numStartActions;
+
+    size_t actionIndex = 0;
+    for (auto actionIt = startActions.begin();
+         actionIt != startActions.end() && actionIndex < numStartActions; ++actionIt, ++actionIndex) {
+      sum += stream << *actionIt;
+    }
+  }
+
+  {
+    const std::unordered_set<std::string>& endActions = skeleton.endActions();
+
+    const uint8_t numEndActions = static_cast<uint8_t>(std::min(endActions.size(), size_t(UINT8_MAX)));
+
+    sum += stream << numEndActions;
+
+    size_t actionIndex = 0;
+    for (auto actionIt = endActions.begin(); actionIt != endActions.end() && actionIndex < numEndActions;
+         ++actionIt, ++actionIndex) {
+      sum += stream << *actionIt;
+    }
+  }
+
+  sum += stream << uint64_t(sum);  // Trajectory hash is simple checksum for now.
+
+  return sum;
+}
+
+static size_t DeserializeTrajectory(DataInputStream& stream,
+                                    ThunderAutoProjectState& state,
+                                    std::unordered_map<std::string, uint64_t>& hashes) {
+  size_t sum = 0;
+
+  std::string name;
+  sum += stream >> name;
+
+  ThunderAutoTrajectorySkeleton skeleton;
+
+  {
+    uint8_t numPoints;
+    sum += stream >> numPoints;
+
+    for (size_t pointIndex = 0; pointIndex < static_cast<size_t>(numPoints); ++pointIndex) {
+      ThunderAutoTrajectorySkeletonWaypoint point;
+      sum += DeserializeTrajectoryPoint(stream, point);
+      skeleton.appendPoint(point);
+    }
+  }
+
+  {
+    uint8_t numActions;
+    sum += stream >> numActions;
+
+    for (size_t actionIndex = 0; actionIndex < static_cast<size_t>(numActions); ++actionIndex) {
+      ThunderAutoTrajectoryPosition position;
+      ThunderAutoTrajectoryAction action;
+      sum += DeserializeTrajectoryAction(stream, position, action);
+      skeleton.actions().add(position, action);
+    }
+  }
+
+  {
+    uint8_t numRotations;
+    sum += stream >> numRotations;
+
+    for (size_t rotationIndex = 0; rotationIndex < static_cast<size_t>(numRotations); ++rotationIndex) {
+      ThunderAutoTrajectoryPosition position;
+      ThunderAutoTrajectoryRotation rotation;
+      sum += DeserializeTrajectoryRotation(stream, position, rotation);
+      skeleton.rotations().add(position, rotation);
+    }
+  }
+
+  {
+    double startRotationValue;
+    sum += stream >> startRotationValue;
+    skeleton.setStartRotation(CanonicalAngle(units::radian_t{startRotationValue}));
+
+    double endRotationValue;
+    sum += stream >> endRotationValue;
+    skeleton.setEndRotation(CanonicalAngle(units::radian_t{endRotationValue}));
+  }
+
+  {
+    ThunderAutoTrajectorySkeletonSettings settings;
+
+    double maxLinearVelocityValue;
+    sum += stream >> maxLinearVelocityValue;
+    settings.maxLinearVelocity = units::meters_per_second_t{maxLinearVelocityValue};
+
+    double maxLinearAccelerationValue;
+    sum += stream >> maxLinearAccelerationValue;
+    settings.maxLinearAcceleration = units::meters_per_second_squared_t{maxLinearAccelerationValue};
+
+    double maxCentripetalAccelerationValue;
+    sum += stream >> maxCentripetalAccelerationValue;
+    settings.maxCentripetalAcceleration = units::meters_per_second_squared_t{maxCentripetalAccelerationValue};
+
+    double maxAngularVelocityValue;
+    sum += stream >> maxAngularVelocityValue;
+    settings.maxAngularVelocity = units::radians_per_second_t{maxAngularVelocityValue};
+
+    double maxAngularAccelerationValue;
+    sum += stream >> maxAngularAccelerationValue;
+    settings.maxAngularAcceleration = units::radians_per_second_squared_t{maxAngularAccelerationValue};
+
+    skeleton.setSettings(settings);
+  }
+
+  {
+    uint8_t numStartActions;
+    sum += stream >> numStartActions;
+
+    for (size_t actionIndex = 0; actionIndex < static_cast<size_t>(numStartActions); ++actionIndex) {
+      std::string actionName;
+      sum += stream >> actionName;
+      skeleton.addStartAction(actionName);
+    }
+  }
+
+  {
+    uint8_t numEndActions;
+    sum += stream >> numEndActions;
+
+    for (size_t actionIndex = 0; actionIndex < static_cast<size_t>(numEndActions); ++actionIndex) {
+      std::string actionName;
+      sum += stream >> actionName;
+      skeleton.addEndAction(actionName);
+    }
+  }
+
+  uint64_t trajectoryHash;
+  sum += stream >> trajectoryHash;
+
+  state.trajectories.emplace(name, skeleton);
+  hashes.emplace(name, trajectoryHash);
+
+  return sum;
+}
+
+static size_t SerializeTrajectories(const ThunderAutoProjectState& state, DataOutputStream& stream) {
+  size_t sum = 0;
+
+  sum += stream << uint8_t(kSectionTrajectories);
+
+  const uint8_t numTrajectories =
+      static_cast<uint8_t>(std::min(state.trajectories.size(), size_t(UINT8_MAX)));
+  sum += stream << numTrajectories;
+
+  size_t trajectoryIndex = 0;
+  for (auto trajectoryIt = state.trajectories.begin();
+       trajectoryIt != state.trajectories.end() && trajectoryIndex < numTrajectories;
+       ++trajectoryIt, ++trajectoryIndex) {
+    const auto& [name, skeleton] = *trajectoryIt;
+    sum += SerializeTrajectory(name, skeleton, stream);
+  }
+
+  sum += stream << uint8_t(sum & 0xFF);
+
+  return sum;
+}
+
+static size_t DeserializeTrajectories(DataInputStream& stream,
+                                      ThunderAutoProjectState& state,
+                                      std::unordered_map<std::string, uint64_t>& hashes) {
+  size_t sum = 0;
+
+  uint8_t sectionByte;
+  sum += stream >> sectionByte;
+  if (sectionByte != kSectionTrajectories) {
+    throw RuntimeError::Construct(
+        "DeserializeThunderAutoProjectStateFromTransmission: Expected trajectories section (0x02), got "
+        "0x{:02X}",
+        sectionByte);
+  }
+
+  uint8_t numTrajectories;
+  sum += stream >> numTrajectories;
+
+  for (size_t trajectoryIndex = 0; trajectoryIndex < static_cast<size_t>(numTrajectories);
+       ++trajectoryIndex) {
+    sum += DeserializeTrajectory(stream, state, hashes);
+  }
+
+  uint8_t readSum;
+  stream >> readSum;
+
+  if (readSum != (sum & 0xFF)) {
+    throw RuntimeError::Construct(
+        "DeserializeThunderAutoProjectStateFromTransmission: Trajectories section checksum mismatch: "
+        "expected 0x{:02X}, got 0x{:02X}",
+        sum & 0xFF, readSum);
+  }
+
+  return sum + readSum;
+}
+
+static size_t SerializeAutoModeStep(const ThunderAutoModeStep* autoModeStep, DataOutputStream& stream);
+static size_t DeserializeAutoModeStep(DataInputStream& stream, std::shared_ptr<ThunderAutoModeStep>& step);
+
+static size_t SerializeAutoModeActionStep(const ThunderAutoModeActionStep* actionStep,
+                                          DataOutputStream& stream) {
+  size_t sum = 0;
+
+  const std::string& actionName = actionStep->actionName;
+  sum += stream << actionName;
+
+  return sum;
+}
+
+static size_t DeserializeAutoModeActionStep(DataInputStream& stream, ThunderAutoModeActionStep* actionStep) {
+  size_t sum = 0;
+
+  std::string actionName;
+  sum += stream >> actionName;
+  actionStep->actionName = actionName;
+
+  return sum;
+}
+
+static size_t SerializeAutoModeTrajectoryStep(const ThunderAutoModeTrajectoryStep* trajectoryStep,
+                                              DataOutputStream& stream) {
+  size_t sum = 0;
+
+  const std::string& trajectoryName = trajectoryStep->trajectoryName;
+  sum += stream << trajectoryName;
+
+  return sum;
+}
+
+static size_t DeserializeAutoModeTrajectoryStep(DataInputStream& stream,
+                                                ThunderAutoModeTrajectoryStep* trajectoryStep) {
+  size_t sum = 0;
+
+  std::string trajectoryName;
+  sum += stream >> trajectoryName;
+  trajectoryStep->trajectoryName = trajectoryName;
+
+  return sum;
+}
+
+static size_t SerializeAutoModeBoolBranchStep(const ThunderAutoModeBoolBranchStep* boolBranchStep,
+                                              DataOutputStream& stream) {
+  size_t sum = 0;
+
+  const std::string& conditionName = boolBranchStep->conditionName;
+  sum += stream << conditionName;
+
+  {
+    const uint8_t numTrueSteps =
+        static_cast<uint8_t>(std::min(boolBranchStep->trueBranch.size(), size_t(UINT8_MAX)));
+
+    sum += stream << numTrueSteps;
+
+    size_t stepIndex = 0;
+    for (auto stepIt = boolBranchStep->trueBranch.begin();
+         stepIt != boolBranchStep->trueBranch.end() && stepIndex < numTrueSteps; ++stepIt, ++stepIndex) {
+      sum += SerializeAutoModeStep(stepIt->get(), stream);
+    }
+  }
+
+  {
+    const uint8_t numElseSteps =
+        static_cast<uint8_t>(std::min(boolBranchStep->elseBranch.size(), size_t(UINT8_MAX)));
+
+    sum += stream << numElseSteps;
+
+    size_t stepIndex = 0;
+    for (auto stepIt = boolBranchStep->elseBranch.begin();
+         stepIt != boolBranchStep->elseBranch.end() && stepIndex < numElseSteps; ++stepIt, ++stepIndex) {
+      sum += SerializeAutoModeStep(stepIt->get(), stream);
+    }
+  }
+
+  return sum;
+}
+
+static size_t DeserializeAutoModeBoolBranchStep(DataInputStream& stream,
+                                                ThunderAutoModeBoolBranchStep* boolBranchStep) {
+  size_t sum = 0;
+
+  std::string conditionName;
+  sum += stream >> conditionName;
+  boolBranchStep->conditionName = conditionName;
+
+  {
+    uint8_t numTrueSteps;
+    sum += stream >> numTrueSteps;
+
+    for (size_t stepIndex = 0; stepIndex < static_cast<size_t>(numTrueSteps); ++stepIndex) {
+      std::shared_ptr<ThunderAutoModeStep> step;
+      sum += DeserializeAutoModeStep(stream, step);
+      boolBranchStep->trueBranch.push_back(step);
+    }
+  }
+
+  {
+    uint8_t numElseSteps;
+    sum += stream >> numElseSteps;
+
+    for (size_t stepIndex = 0; stepIndex < static_cast<size_t>(numElseSteps); ++stepIndex) {
+      std::shared_ptr<ThunderAutoModeStep> step;
+      sum += DeserializeAutoModeStep(stream, step);
+      boolBranchStep->elseBranch.push_back(step);
+    }
+  }
+
+  return sum;
+}
+
+static size_t SerializeAutoModeSwitchBranchStep(const ThunderAutoModeSwitchBranchStep* switchBranchStep,
+                                                DataOutputStream& stream) {
+  size_t sum = 0;
+
+  const std::string& conditionName = switchBranchStep->conditionName;
+  sum += stream << conditionName;
+
+  {
+    const uint8_t numCases =
+        static_cast<uint8_t>(std::min(switchBranchStep->caseBranches.size(), size_t(UINT8_MAX)));
+
+    sum += stream << numCases;
+
+    size_t caseIndex = 0;
+    for (auto caseIt = switchBranchStep->caseBranches.begin();
+         caseIt != switchBranchStep->caseBranches.end() && caseIndex < numCases; ++caseIt, ++caseIndex) {
+      const auto& [caseValue, caseSteps] = *caseIt;
+      sum += stream << caseValue;
+
+      const uint8_t numCaseSteps = static_cast<uint8_t>(std::min(caseSteps.size(), size_t(UINT8_MAX)));
+
+      sum += stream << numCaseSteps;
+
+      size_t stepIndex = 0;
+      for (auto stepIt = caseSteps.begin(); stepIt != caseSteps.end() && stepIndex < numCaseSteps;
+           ++stepIt, ++stepIndex) {
+        sum += SerializeAutoModeStep(stepIt->get(), stream);
+      }
+    }
+  }
+
+  {
+    const uint8_t numDefaultSteps =
+        static_cast<uint8_t>(std::min(switchBranchStep->defaultBranch.size(), size_t(UINT8_MAX)));
+
+    sum += stream << numDefaultSteps;
+
+    size_t stepIndex = 0;
+    for (auto stepIt = switchBranchStep->defaultBranch.begin();
+         stepIt != switchBranchStep->defaultBranch.end() && stepIndex < numDefaultSteps;
+         ++stepIt, ++stepIndex) {
+      sum += SerializeAutoModeStep(stepIt->get(), stream);
+    }
+  }
+
+  return sum;
+}
+
+static size_t DeserializeAutoModeSwitchBranchStep(DataInputStream& stream,
+                                                  ThunderAutoModeSwitchBranchStep* switchBranchStep) {
+  size_t sum = 0;
+
+  std::string conditionName;
+  sum += stream >> conditionName;
+  switchBranchStep->conditionName = conditionName;
+
+  {
+    uint8_t numCases;
+    sum += stream >> numCases;
+
+    for (size_t caseIndex = 0; caseIndex < static_cast<size_t>(numCases); ++caseIndex) {
+      int caseValue;
+      sum += stream >> caseValue;
+
+      uint8_t numCaseSteps;
+      sum += stream >> numCaseSteps;
+
+      std::list<std::shared_ptr<ThunderAutoModeStep>> caseSteps;
+      for (size_t stepIndex = 0; stepIndex < static_cast<size_t>(numCaseSteps); ++stepIndex) {
+        std::shared_ptr<ThunderAutoModeStep> step;
+        sum += DeserializeAutoModeStep(stream, step);
+        caseSteps.push_back(step);
+      }
+
+      switchBranchStep->caseBranches.emplace(caseValue, caseSteps);
+    }
+  }
+
+  {
+    uint8_t numDefaultSteps;
+    sum += stream >> numDefaultSteps;
+
+    for (size_t stepIndex = 0; stepIndex < static_cast<size_t>(numDefaultSteps); ++stepIndex) {
+      std::shared_ptr<ThunderAutoModeStep> step;
+      sum += DeserializeAutoModeStep(stream, step);
+      switchBranchStep->defaultBranch.push_back(step);
+    }
+  }
+
+  return sum;
+}
+
+static size_t SerializeAutoModeStep(const ThunderAutoModeStep* autoModeStep, DataOutputStream& stream) {
+  size_t sum = 0;
+
+  const ThunderAutoModeStepType stepType = autoModeStep->type();
+  sum += stream << static_cast<uint8_t>(stepType);
+
+  switch (stepType) {
+    using enum ThunderAutoModeStepType;
+    case ACTION:
+      sum += SerializeAutoModeActionStep(reinterpret_cast<const ThunderAutoModeActionStep*>(autoModeStep),
+                                         stream);
+      break;
+    case TRAJECTORY:
+      sum += SerializeAutoModeTrajectoryStep(
+          reinterpret_cast<const ThunderAutoModeTrajectoryStep*>(autoModeStep), stream);
+      break;
+    case BRANCH_BOOL:
+      sum += SerializeAutoModeBoolBranchStep(
+          reinterpret_cast<const ThunderAutoModeBoolBranchStep*>(autoModeStep), stream);
+      break;
+    case BRANCH_SWITCH:
+      sum += SerializeAutoModeSwitchBranchStep(
+          reinterpret_cast<const ThunderAutoModeSwitchBranchStep*>(autoModeStep), stream);
+      break;
+    default:
+      ThunderLibCoreUnreachable("Invalid auto mode step type");
+  }
+
+  return sum;
+}
+
+static size_t DeserializeAutoModeStep(DataInputStream& stream, std::shared_ptr<ThunderAutoModeStep>& step) {
+  size_t sum = 0;
+
+  uint8_t stepTypeByte;
+  sum += stream >> stepTypeByte;
+
+  using enum ThunderAutoModeStepType;
+  ThunderAutoModeStepType stepType = static_cast<ThunderAutoModeStepType>(stepTypeByte);
+
+  switch (stepType) {
+    case ACTION: {
+      auto actionStep = std::make_shared<ThunderAutoModeActionStep>();
+      sum += DeserializeAutoModeActionStep(stream, actionStep.get());
+      step = actionStep;
+      break;
+    }
+    case TRAJECTORY: {
+      auto trajectoryStep = std::make_shared<ThunderAutoModeTrajectoryStep>();
+      sum += DeserializeAutoModeTrajectoryStep(stream, trajectoryStep.get());
+      step = trajectoryStep;
+      break;
+    }
+    case BRANCH_BOOL: {
+      auto boolBranchStep = std::make_shared<ThunderAutoModeBoolBranchStep>();
+      sum += DeserializeAutoModeBoolBranchStep(stream, boolBranchStep.get());
+      step = boolBranchStep;
+      break;
+    }
+    case BRANCH_SWITCH: {
+      auto switchBranchStep = std::make_shared<ThunderAutoModeSwitchBranchStep>();
+      sum += DeserializeAutoModeSwitchBranchStep(stream, switchBranchStep.get());
+      step = switchBranchStep;
+      break;
+    }
+    default:
+      throw RuntimeError::Construct("DeserializeAutoModeStep: Invalid auto mode step type: 0x{:02X}",
+                                    stepTypeByte);
+  }
+
+  return sum;
+}
+
+static size_t SerializeAutoMode(const std::string& name,
+                                const ThunderAutoMode& autoMode,
+                                DataOutputStream& stream) {
+  size_t sum = 0;
+
+  sum += stream << name;
+
+  const uint8_t numSteps = static_cast<uint8_t>(std::min(autoMode.steps.size(), size_t(UINT8_MAX)));
+  sum += stream << numSteps;
+
+  size_t stepIndex = 0;
+  for (auto stepIt = autoMode.steps.begin(); stepIt != autoMode.steps.end() && stepIndex < numSteps;
+       ++stepIt, ++stepIndex) {
+    sum += SerializeAutoModeStep(stepIt->get(), stream);
+  }
+
+  sum += stream << sum;  // Auto mode hash is simple checksum for now.
+
+  return sum;
+}
+
+static size_t DeserializeAutoMode(DataInputStream& stream,
+                                  ThunderAutoProjectState& state,
+                                  std::unordered_map<std::string, uint64_t>& hashes) {
+  size_t sum = 0;
+
+  std::string name;
+  sum += stream >> name;
+
+  uint8_t numSteps;
+  sum += stream >> numSteps;
+
+  ThunderAutoMode autoMode;
+
+  for (size_t stepIndex = 0; stepIndex < static_cast<size_t>(numSteps); ++stepIndex) {
+    std::shared_ptr<ThunderAutoModeStep> step;
+    sum += DeserializeAutoModeStep(stream, step);
+    autoMode.steps.push_back(step);
+  }
+
+  uint64_t autoModeHash;
+  sum += stream >> autoModeHash;
+
+  state.autoModes.emplace(name, autoMode);
+  hashes.emplace(name, autoModeHash);
+
+  return sum;
+}
+
+static size_t SerializeAutoModes(const ThunderAutoProjectState& state, DataOutputStream& stream) {
+  size_t sum = 0;
+
+  sum += stream << uint8_t(kSectionAutoModes);
+
+  const uint8_t numAutoModes = static_cast<uint8_t>(std::min(state.autoModes.size(), size_t(UINT8_MAX)));
+  sum += stream << numAutoModes;
+
+  size_t autoModeIndex = 0;
+  for (auto autoModeIt = state.autoModes.begin();
+       autoModeIt != state.autoModes.end() && autoModeIndex < numAutoModes; ++autoModeIt, ++autoModeIndex) {
+    const auto& [name, autoMode] = *autoModeIt;
+    sum += SerializeAutoMode(name, autoMode, stream);
+  }
+
+  sum += stream << uint8_t(sum & 0xFF);
+
+  return sum;
+}
+
+static size_t DeserializeAutoModes(DataInputStream& stream,
+                                   ThunderAutoProjectState& state,
+                                   std::unordered_map<std::string, uint64_t>& hashes) {
+  size_t sum = 0;
+
+  uint8_t sectionByte;
+  sum += stream >> sectionByte;
+  if (sectionByte != kSectionAutoModes) {
+    throw RuntimeError::Construct(
+        "DeserializeThunderAutoProjectStateFromTransmission: Expected auto modes section (0x03), got "
+        "0x{:02X}",
+        sectionByte);
+  }
+
+  uint8_t numAutoModes;
+  sum += stream >> numAutoModes;
+
+  for (size_t autoModeIndex = 0; autoModeIndex < static_cast<size_t>(numAutoModes); ++autoModeIndex) {
+    sum += DeserializeAutoMode(stream, state, hashes);
+  }
+
+  uint8_t readSum;
+  stream >> readSum;
+
+  if (readSum != (sum & 0xFF)) {
+    throw RuntimeError::Construct(
+        "DeserializeThunderAutoProjectStateFromTransmission: Auto modes section checksum mismatch: expected "
+        "0x{:02X}, got 0x{:02X}",
+        sum & 0xFF, readSum);
+  }
+
+  return sum + readSum;
+}
+
+static size_t SerializeAction(const ThunderAutoAction& action, DataOutputStream& stream) {
+  size_t sum = 0;
+
+  const ThunderAutoActionType type = action.type();
+  sum += stream << static_cast<uint8_t>(type);
+
+  using enum ThunderAutoActionType;
+  if (type == SEQUENTIAL_ACTION_GROUP || type == CONCURRENT_ACTION_GROUP) {
+    std::span<const std::string> actionGroup = action.actionGroup();
+
+    const uint8_t numActions = static_cast<uint8_t>(std::min(actionGroup.size(), size_t(UINT8_MAX)));
+    sum += stream << numActions;
+
+    for (size_t actionIndex = 0; actionIndex < numActions; actionIndex++) {
+      sum += stream << actionGroup[actionIndex];
+    }
+  } else if (type != COMMAND) {
+    ThunderLibCoreUnreachable("Invalid action type");
+  }
+
+  return sum;
+}
+
+static size_t DeserializeAction(DataInputStream& stream, ThunderAutoAction& action) {
+  size_t sum = 0;
+
+  uint8_t typeByte;
+  sum += stream >> typeByte;
+
+  using enum ThunderAutoActionType;
+  ThunderAutoActionType type = static_cast<ThunderAutoActionType>(typeByte);
+  action.setType(type);
+
+  if (type == SEQUENTIAL_ACTION_GROUP || type == CONCURRENT_ACTION_GROUP) {
+    uint8_t numActions;
+    sum += stream >> numActions;
+
+    for (size_t actionIndex = 0; actionIndex < static_cast<size_t>(numActions); ++actionIndex) {
+      std::string actionName;
+      sum += stream >> actionName;
+      action.addGroupAction(actionName);
+    }
+  } else if (type != COMMAND) {
+    throw RuntimeError::Construct("DeserializeAction: Invalid action type: 0x{:02X}", typeByte);
+  }
+
+  return sum;
+}
+
+static size_t SerializeActions(const ThunderAutoProjectState& state, DataOutputStream& stream) {
+  size_t sum = 0;
+
+  sum += stream << uint8_t(kSectionActions);
+
+  uint8_t numActions = static_cast<uint8_t>(std::min(state.actionsOrder.size(), size_t(UINT8_MAX)));
+  sum += stream << numActions;
+
+  for (size_t actionIndex = 0; actionIndex < numActions; actionIndex++) {
+    const std::string& actionName = state.actionsOrder[actionIndex];
+    sum += stream << actionName;
+
+    const ThunderAutoAction& action = state.actions.at(actionName);
+    sum += SerializeAction(action, stream);
+  }
+
+  sum += stream << sum;  // Actions hash is simple checksum for now.
+
+  return sum;
+}
+
+static size_t DeserializeActions(DataInputStream& stream, ThunderAutoProjectState& state, uint64_t& hash) {
+  size_t sum = 0;
+
+  uint8_t sectionByte;
+  sum += stream >> sectionByte;
+  if (sectionByte != kSectionActions) {
+    throw RuntimeError::Construct(
+        "DeserializeThunderAutoProjectStateFromTransmission: Expected actions section (0x04), got 0x{:02X}",
+        sectionByte);
+  }
+
+  uint8_t numActions;
+  sum += stream >> numActions;
+
+  for (size_t actionIndex = 0; actionIndex < static_cast<size_t>(numActions); ++actionIndex) {
+    std::string actionName;
+    sum += stream >> actionName;
+
+    ThunderAutoAction action;
+    sum += DeserializeAction(stream, action);
+
+    state.addAction(actionName, action);
+  }
+
+  sum += stream >> hash;
+
+  return sum;
+}
+
+std::vector<uint8_t> SerializeThunderAutoProjectStateForTransmission(
+    const ThunderAutoProjectState& state) noexcept {
+  std::vector<uint8_t> message;
+  message.reserve(256);
+  DataOutputStream stream(message);
+
+  size_t sum = 0;
+
+  sum += SerializeHeader(state, stream);
+  sum += SerializeTrajectories(state, stream);
+  sum += SerializeAutoModes(state, stream);
+  sum += SerializeActions(state, stream);
+
+  stream << uint8_t(sum & 0xFF);
+
+  return message;
+}
+
+ThunderAutoProjectStateDataHashes DeserializeThunderAutoProjectStateFromTransmission(
+    std::span<const uint8_t> data,
+    ThunderAutoProjectState& state) {
+  DataInputStream stream(data);
+
+  ThunderAutoProjectStateDataHashes hashes;
+
+  size_t sum = 0;
+
+  sum += DeserializeHeader(stream, state);
+  sum += DeserializeTrajectories(stream, state, hashes.trajectoryHashes);
+  sum += DeserializeAutoModes(stream, state, hashes.autoModeHashes);
+  sum += DeserializeActions(stream, state, hashes.actionsHash);
+
+  uint8_t readSum;
+  stream >> readSum;
+  if (readSum != (sum & 0xFF)) {
+    throw RuntimeError::Construct(
+        "DeserializeThunderAutoProjectStateFromTransmission: Final checksum mismatch: expected 0x{:02X}, got "
+        "0x{:02X}",
+        sum & 0xFF, readSum);
+  }
+
+  return hashes;
+}
+
+ThunderAutoProjectStateDataHashes::Diff ThunderAutoProjectStateDataHashes::diff(
+    const ThunderAutoProjectStateDataHashes& oldState) {
+  Diff d;
+
+  // Compare trajectories.
+  {
+    for (const auto& [name, oldHash] : oldState.trajectoryHashes) {
+      auto newIt = trajectoryHashes.find(name);
+
+      if (newIt == trajectoryHashes.end()) {
+        d.removedTrajectories.insert(name);
+        d.stateWasChanged = true;
+        continue;
+      }
+
+      uint64_t newHash = newIt->second;
+      if (newHash != oldHash) {
+        d.updatedTrajectories.insert(name);
+        d.stateWasChanged = true;
+      }
+    }
+
+    for (const auto& [name, _] : trajectoryHashes) {
+      if (!oldState.trajectoryHashes.contains(name)) {
+        d.updatedTrajectories.insert(name);
+        d.stateWasChanged = true;
+      }
+    }
+  }
+
+  // Compare auto modes.
+  {
+    for (const auto& [name, oldHash] : oldState.autoModeHashes) {
+      auto newIt = autoModeHashes.find(name);
+
+      if (newIt == autoModeHashes.end()) {
+        d.removedAutoModes.insert(name);
+        d.stateWasChanged = true;
+        continue;
+      }
+
+      uint64_t newHash = newIt->second;
+      if (newHash != oldHash) {
+        d.updatedAutoModes.insert(name);
+        d.stateWasChanged = true;
+      }
+    }
+
+    for (const auto& [name, _] : autoModeHashes) {
+      if (!oldState.autoModeHashes.contains(name)) {
+        d.updatedAutoModes.insert(name);
+        d.stateWasChanged = true;
+      }
+    }
+  }
+
+  // Compare actions.
+  d.actionsWereUpdated = actionsHash != oldState.actionsHash;
+  d.stateWasChanged |= d.actionsWereUpdated;
+
+  return d;
+}
+
 }  // namespace thunder::core
