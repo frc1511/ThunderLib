@@ -50,6 +50,7 @@ ext.addTaskToCopyAllOutputs = { task ->
 
 def artifactGroupId = 'com.thunder.lib'
 def baseArtifactId = 'ThunderLib'
+def driverZipBaseName = "_GROUP_com_thunder_lib_ID_${baseArtifactId}-driver_CLS"
 def coreZipBaseName = "_GROUP_com_thunder_lib_ID_${baseArtifactId}-core_CLS"
 def zipBaseName = "_GROUP_com_thunder_lib_ID_${baseArtifactId}-cpp_CLS"
 def javaBaseName = "_GROUP_com_thunder_lib_ID_${baseArtifactId}-java_CLS"
@@ -82,6 +83,23 @@ task cppSourceZip(type: Zip) {
     }
 }
 
+task cppDriverHeadersZip(type: Zip) {
+    destinationDirectory = outputsFolder
+    archiveBaseName = driverZipBaseName
+    archiveClassifier = "headers"
+
+    from(licenseFile) {
+        into '/'
+    }
+
+    // Currently, the user should not need to use ThunderLibDriver directly.
+    /*
+    from('src/main/driver/include') {
+        into '/'
+    }
+    */
+}
+
 task cppCoreHeadersZip(type: Zip) {
     destinationDirectory = outputsFolder
     archiveBaseName = coreZipBaseName
@@ -103,6 +121,8 @@ build.dependsOn cppHeadersZip
 addTaskToCopyAllOutputs(cppHeadersZip)
 build.dependsOn cppSourceZip
 addTaskToCopyAllOutputs(cppSourceZip)
+build.dependsOn cppDriverHeadersZip
+addTaskToCopyAllOutputs(cppDriverHeadersZip)
 build.dependsOn cppCoreHeadersZip
 addTaskToCopyAllOutputs(cppCoreHeadersZip)
 
@@ -202,6 +222,7 @@ model {
     publishing {
         def taskList = createComponentZipTasks($.components, ['ThunderLib'], zipBaseName, Zip, project, includeStandardZipFormat)
 
+        def driverTaskList = createComponentZipTasks($.components, ['ThunderLibDriver'], driverZipBaseName, Zip, project, includeStandardZipFormat)
         def coreTaskList = createComponentZipTasks($.components, ['ThunderLibCore'], coreZipBaseName, Zip, project, includeStandardZipFormat)
 
         publications {
@@ -213,6 +234,16 @@ model {
                 artifact cppSourceZip
 
                 artifactId = "${baseArtifactId}-cpp"
+                groupId artifactGroupId
+                version pubVersion
+            }
+            driver(MavenPublication) {
+                driverTaskList.each {
+                    artifact it
+                }
+                artifact cppDriverHeadersZip
+
+                artifactId = "${baseArtifactId}-driver"
                 groupId artifactGroupId
                 version pubVersion
             }

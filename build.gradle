@@ -86,12 +86,14 @@ nativeUtils {
         // Main library is just default empty. This will export everything
         ThunderLib {
         }
+        ThunderLibDriver {
+        }
         ThunderLibCore {
         }
     }
     privateExportsConfigs {
-        // Only export explicit symbols from core library
-        // exportsFile = project.file("src/main/core/symbols.txt")
+        // Only export explicit symbols from driver library
+        // exportsFile = project.file("src/main/driver/symbols.txt")
     }
 }
 
@@ -161,17 +163,34 @@ model {
                 }
             }
             binaries.all {
+                lib library: 'ThunderLibDriver', linkage: 'shared'
                 lib library: 'ThunderLibCore', linkage: 'shared'
             }
             nativeUtils.useRequiredLibrary(it, 'wpilib_shared')
         }
-        ThunderLibCore(JniNativeLibrarySpec) {
+        ThunderLibDriver(JniNativeLibrarySpec) {
             enableCheckTask true
             javaCompileTasks << compileJava
             jniCrossCompileOptions << JniCrossCompileOptions(nativeUtils.wpi.platforms.roborio)
             // Leave these for future proofing
             jniCrossCompileOptions << JniCrossCompileOptions(nativeUtils.wpi.platforms.linuxarm32)
             jniCrossCompileOptions << JniCrossCompileOptions(nativeUtils.wpi.platforms.linuxarm64)
+            sources.cpp {
+                source {
+                    srcDirs 'src/main/driver/cpp'
+                    include '**/*.cpp'
+                }
+                exportedHeaders {
+                    srcDirs 'src/main/driver/include'
+                }
+            }
+            binaries.all {
+                lib library: 'ThunderLibCore', linkage: 'shared'
+            }
+            nativeUtils.useRequiredLibrary(it, "driver_shared")
+            nativeUtils.useRequiredLibrary(it, 'wpilib_shared')
+        }
+        ThunderLibCore(NativeLibrarySpec) {
             sources.cpp {
                 source {
                     srcDirs 'src/main/core/cpp'
@@ -181,7 +200,6 @@ model {
                     srcDirs 'src/main/core/include'
                 }
             }
-
             nativeUtils.useRequiredLibrary(it, "driver_shared")
         }
     }
@@ -198,6 +216,7 @@ model {
             }
 
             binaries.all {
+                lib library: 'ThunderLibDriver', linkage: 'shared'
                 lib library: 'ThunderLibCore', linkage: 'shared'
 
                 def arch = it.targetPlatform.name
@@ -208,6 +227,24 @@ model {
                     test.environment 'LD_LIBRARY_PATH', filePath
                     test.workingDir filePath
                 }
+            }
+
+            nativeUtils.useRequiredLibrary(it, "wpilib_executable_shared", "googletest_static")
+        }
+
+        ThunderLibDriverTest {
+            sources.cpp {
+                source {
+                    srcDir 'src/test/driver/cpp'
+                    include '**/*.cpp'
+                }
+                exportedHeaders {
+                    srcDirs 'src/test/driver/include'
+                }
+            }
+
+            binaries.all {
+                lib library: 'ThunderLibCore', linkage: 'shared'
             }
 
             nativeUtils.useRequiredLibrary(it, "wpilib_executable_shared", "googletest_static")
