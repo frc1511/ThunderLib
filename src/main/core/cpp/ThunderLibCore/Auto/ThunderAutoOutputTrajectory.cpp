@@ -358,7 +358,7 @@ static void ResamplePoints(const ThunderAutoTrajectorySkeletonSettings& settings
 
       double t = (d - lowerPointDistance) / (upperPointDistance - lowerPointDistance);
 
-      ThunderAutoOutputTrajectoryPoint point;
+      ThunderAutoOutputTrajectoryPoint point {};
 
       const Point2d& lowerPointPosition = segment.sampledPoints[lowerPointIndex].position;
       const Point2d& upperPointPosition = segment.sampledPoints[upperPointIndex].position;

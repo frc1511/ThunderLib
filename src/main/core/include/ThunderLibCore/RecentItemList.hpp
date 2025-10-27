@@ -30,9 +30,12 @@ struct RecentItemList {
       return false;
 
     if (itemIndex > 0) {
-      typename ListType::iterator shiftBegin(&m_files, 0);
-      typename ListType::iterator shiftEnd(&m_files, itemIndex + 1);
-      std::shift_right(shiftBegin, shiftEnd, 1);
+      // Same as std::shift_right one position, but gcc won't let it be
+      for (size_t index = itemIndex; index > 0; index--) {
+        typename ListType::iterator it(&m_files, index);
+        typename ListType::iterator prevIt(&m_files, index-1);
+        *it = *prevIt;
+      }
     }
 
     m_files.pop_front();
