@@ -9,7 +9,7 @@
 
 cmake_minimum_required(VERSION 3.22)
 
-list(APPEND CMAKE_MESSAGE_CONTEXT "ThunderLib")
+list(APPEND CMAKE_MESSAGE_CONTEXT "ThunderLibCore")
 
 if("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_BINARY_DIR}")
   message(FATAL_ERROR "In-source builds are not allowed.")
@@ -216,6 +216,10 @@ target_compile_definitions(spdlog PUBLIC SPDLOG_FMT_EXTERNAL)
 target_compile_definitions(spdlog PUBLIC SPDLOG_CLOCK_COARSE)
 target_compile_definitions(spdlog PUBLIC SPDLOG_NO_THREAD_ID)
 target_compile_definitions(spdlog PUBLIC SPDLOG_NO_ATOMIC_LEVELS)
+
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+  target_compile_options(spdlog PRIVATE -fPIC)
+endif()
 
 target_link_libraries(spdlog PUBLIC wpiutil) # has fmtlib
 
