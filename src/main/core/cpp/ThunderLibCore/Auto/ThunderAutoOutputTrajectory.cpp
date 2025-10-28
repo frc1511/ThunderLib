@@ -226,7 +226,7 @@ static void SampleSegmentPoints(const EquationFunc& f, size_t samples, ThunderAu
   ThunderLibCoreAssert(samples > 0);
   double delta = 1.0 / static_cast<double>(samples);
 
-  ThunderAutoOutputTrajectorySegment segment;
+  ThunderAutoOutputTrajectorySegment segment {};
 
   Point2d previousPoint = f(0.0);
   segment.sampledPoints.emplace_back(0.0_m, previousPoint);
@@ -252,7 +252,7 @@ static void SampleSegmentPoints(const EquationFunc& f,
   ThunderLibCoreAssert(samples > 0);
   double delta = 1.0 / static_cast<double>(samples);
 
-  ThunderAutoOutputTrajectorySegment segment;
+  ThunderAutoOutputTrajectorySegment segment {};
 
   Point2d previousPoint = f(0.0);
   segment.sampledPoints.emplace_back(0.0_m, previousPoint);
@@ -443,7 +443,7 @@ static void ResamplePoints(size_t samplesPerMeter, ThunderAutoPartialOutputTraje
 
       double t = (d - lowerPointDistance) / (upperPointDistance - lowerPointDistance);
 
-      ThunderAutoPartialOutputTrajectoryPoint point;
+      ThunderAutoPartialOutputTrajectoryPoint point {};
 
       const Point2d& lowerPointPosition = segment.sampledPoints[lowerPointIndex].position;
       const Point2d& upperPointPosition = segment.sampledPoints[upperPointIndex].position;
