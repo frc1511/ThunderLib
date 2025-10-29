@@ -261,8 +261,8 @@ struct ThunderAutoTrajectorySkeletonSettings {
   units::meters_per_second_t maxLinearVelocity = 2.0_mps;
   units::meters_per_second_squared_t maxLinearAcceleration = 2_mps_sq;
   units::meters_per_second_squared_t maxCentripetalAcceleration = 2 * 9.81_mps_sq;
-  units::radians_per_second_t maxAngularVelocity = 3.14_rad_per_s;
-  units::radians_per_second_squared_t maxAngularAcceleration = 3.14_rad_per_s_sq;
+  units::radians_per_second_t maxAngularVelocity = 270_deg_per_s;
+  units::radians_per_second_squared_t maxAngularAcceleration = 270_deg_per_s_sq;
 
   bool operator==(const ThunderAutoTrajectorySkeletonSettings& other) const = default;
 };
