@@ -210,3 +210,9 @@ gradle-app.setting
 .project
 .settings/
 bin/
+
+# Generated CSV files
+*.csv
+
+# Test output
+TestOutput/
