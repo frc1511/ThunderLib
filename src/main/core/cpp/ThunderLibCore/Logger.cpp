@@ -9,7 +9,7 @@
 
 namespace thunder::core {
 
-static const std::string kThunderLibCoreLoggerName = "ThunderLib";
+static const std::string kThunderLibCoreLoggerName = "ThunderLibCore";
 
 static std::mutex s_loggerMutex;
 static std::shared_ptr<spdlog::logger> s_thunderLibLogger;

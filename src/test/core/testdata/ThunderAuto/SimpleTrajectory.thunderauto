@@ -1,0 +1,148 @@
+{
+  "settings": {
+    "auto_export": false,
+    "auto_save": false,
+    "csv_export_props": {
+      "actions_bit_field": true,
+      "angular_velocity": true,
+      "centripetal_acceleration": false,
+      "component_velocities": false,
+      "curvature": false,
+      "distance": false,
+      "heading": false,
+      "linear_velocity": true,
+      "position": true,
+      "rotation": true,
+      "time": true
+    },
+    "drive_controller": 0,
+    "field": {
+      "img": "2025",
+      "img_type": 1
+    },
+    "robot_corner_radius": 0.2,
+    "robot_length": 0.8,
+    "robot_width": 0.8,
+    "version_major": 2026
+  },
+  "state": {
+    "actions": {
+      "EndAction": {
+        "type": "command"
+      },
+      "PositionedAction": {
+        "type": "command"
+      },
+      "StartAction": {
+        "type": "command"
+      },
+      "StopAction": {
+        "type": "command"
+      }
+    },
+    "actions_order": [
+      "StartAction",
+      "EndAction",
+      "StopAction",
+      "PositionedAction"
+    ],
+    "auto_modes": {},
+    "editor_state": {
+      "mode_editor_state": {
+        "current_auto_mode_name": ""
+      },
+      "trajectory_editor_state": {
+        "current_trajectory_name": "MySimpleTrajectory"
+      },
+      "view": 1
+    },
+    "trajectories": {
+      "MySimpleTrajectory": {
+        "actions": [
+          {
+            "item": {
+              "action": "PositionedAction",
+              "editor_locked": false
+            },
+            "position": 0.5
+          }
+        ],
+        "end_actions": [
+          "EndAction"
+        ],
+        "end_rotation": 3.141592653589793,
+        "points": [
+          {
+            "editor_locked": false,
+            "heading_weights": {
+              "incoming_weight": 1.0,
+              "outgoing_weight": 1.0
+            },
+            "headings": {
+              "incoming_angle": 0.0,
+              "outgoing_angle": 3.141592653589793
+            },
+            "link": "",
+            "position": {
+              "x": 7.8,
+              "y": 6.7
+            }
+          },
+          {
+            "editor_locked": false,
+            "heading_weights": {
+              "incoming_weight": 1.0,
+              "outgoing_weight": 1.0
+            },
+            "headings": {
+              "incoming_angle": 0.0,
+              "outgoing_angle": -1.5707963267948966
+            },
+            "link": "",
+            "max_velocity_override": 0.0,
+            "position": {
+              "x": 2.8,
+              "y": 6.7
+            },
+            "stop_actions": [
+              "StopAction"
+            ],
+            "stop_rotation": 3.141592653589793
+          },
+          {
+            "editor_locked": false,
+            "heading_weights": {
+              "incoming_weight": 1.0,
+              "outgoing_weight": 1.0
+            },
+            "headings": {
+              "incoming_angle": 1.5707963267948968,
+              "outgoing_angle": -1.5707963267948966
+            },
+            "link": "",
+            "position": {
+              "x": 2.8,
+              "y": 4.7
+            }
+          }
+        ],
+        "settings": {
+          "max_angular_accel": 3.14,
+          "max_angular_velocity": 3.14,
+          "max_centripetal_accel": 19.62,
+          "max_linear_accel": 2.0,
+          "max_linear_velocity": 2.0
+        },
+        "start_actions": [
+          "StartAction"
+        ],
+        "start_rotation": 0.0
+      }
+    },
+    "waypoint_links": []
+  },
+  "version": {
+    "major": 2026,
+    "minor": 0
+  }
+}

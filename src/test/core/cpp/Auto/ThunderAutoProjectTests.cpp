@@ -128,7 +128,7 @@ static void CreateExampleProjectState(ThunderAutoProjectState& state) {
   }
 }
 
-TEST(ProjectTests, SerializeAndDeserialize) {
+TEST(ThunderAutoProjectTests, SerializeAndDeserialize) {
   ThunderAutoProjectState state;
   CreateExampleProjectState(state);
 
@@ -183,7 +183,7 @@ TEST(ProjectTests, SerializeAndDeserialize) {
   EXPECT_NE(stateHashes.actionsHash, 0U);
 }
 
-TEST(ProjectTests, SaveAndLoad) {
+TEST(ThunderAutoProjectTests, SaveAndLoad) {
   const std::filesystem::path kTestOutputPath = GetTestOutputPath() / "ProjectTests_SaveAndLoad";
   std::filesystem::create_directory(kTestOutputPath);
 
@@ -218,7 +218,7 @@ TEST(ProjectTests, SaveAndLoad) {
  * Test loading a legacy ThunderAuto project file (2024+2025 format). Verify that ThunderLibCore reads and
  * converts all its data correctly.
  */
-TEST(ProjectTests, LoadPre2026Project) {
+TEST(ThunderAutoProjectTests, LoadPre2026Project) {
   std::filesystem::path projectPath = kTestDataPath / "ThunderAuto" / "Pre2026.thunderauto";
 
   std::unique_ptr<ThunderAutoProject> project;

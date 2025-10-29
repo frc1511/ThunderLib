@@ -1,6 +1,6 @@
 #include <ThunderLibDriver/Auto/ThunderAutoProject.hpp>
-#include "../Logger.hpp"
-#include "../Error.hpp"
+#include <ThunderLibDriver/Logger.hpp>
+#include <ThunderLibDriver/Error.hpp>
 #include <networktables/NetworkTableInstance.h>
 #include <frc/Filesystem.h>
 
