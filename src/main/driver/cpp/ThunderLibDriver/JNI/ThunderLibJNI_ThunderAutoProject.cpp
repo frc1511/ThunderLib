@@ -127,6 +127,138 @@ jboolean Java_com_thunder_lib_jni_ThunderLibJNI_00024ThunderAutoProject_hasActio
 
 /*
  * Class:     com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject
+ * Method:    isActionCommand
+ * Signature: (JLjava/lang/String;)Z
+ */
+jboolean Java_com_thunder_lib_jni_ThunderLibJNI_00024ThunderAutoProject_isActionCommand(
+    JNIEnv* env,
+    jclass,
+    jlong projectHandle,
+    jstring actionNameJStr) {
+  if (!projectHandle)
+    return false;
+
+  driver::ThunderAutoProject* project = reinterpret_cast<driver::ThunderAutoProject*>(projectHandle);
+  std::string actionName = JStringToStdString(env, actionNameJStr);
+
+  std::optional<core::ThunderAutoAction> actionOptional = project->getAction(actionName);
+  if (!actionOptional) {
+    return false;
+  }
+
+  return actionOptional->type() == core::ThunderAutoActionType::COMMAND;
+}
+
+/*
+ * Class:     com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject
+ * Method:    isActionGroup
+ * Signature: (JLjava/lang/String;)Z
+ */
+jboolean Java_com_thunder_lib_jni_ThunderLibJNI_00024ThunderAutoProject_isActionGroup(
+    JNIEnv* env,
+    jclass,
+    jlong projectHandle,
+    jstring actionNameJStr) {
+  if (!projectHandle)
+    return false;
+
+  driver::ThunderAutoProject* project = reinterpret_cast<driver::ThunderAutoProject*>(projectHandle);
+  std::string actionName = JStringToStdString(env, actionNameJStr);
+
+  std::optional<core::ThunderAutoAction> actionOptional = project->getAction(actionName);
+  if (!actionOptional) {
+    return false;
+  }
+
+  core::ThunderAutoActionType actionType = actionOptional->type();
+  return actionType == core::ThunderAutoActionType::SEQUENTIAL_ACTION_GROUP ||
+         actionType == core::ThunderAutoActionType::CONCURRENT_ACTION_GROUP;
+}
+
+/*
+ * Class:     com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject
+ * Method:    getActionGroup
+ * Signature: (JLjava/lang/String;)Ljava/util/ArrayList;
+ */
+jobject Java_com_thunder_lib_jni_ThunderLibJNI_00024ThunderAutoProject_getActionGroup(
+    JNIEnv* env,
+    jclass,
+    jlong projectHandle,
+    jstring actionNameJStr) {
+  jobject arrayList = ArrayListConstruct(env);
+  if (!projectHandle)
+    return arrayList;
+
+  driver::ThunderAutoProject* project = reinterpret_cast<driver::ThunderAutoProject*>(projectHandle);
+  std::string actionName = JStringToStdString(env, actionNameJStr);
+
+  std::optional<core::ThunderAutoAction> actionOptional = project->getAction(actionName);
+  if (!actionOptional) {
+    return arrayList;
+  }
+
+  std::span<const std::string> groupActionNames = actionOptional->actionGroup();
+  for (const std::string& name : groupActionNames) {
+    jstring nameJStr = env->NewStringUTF(name.c_str());
+    ArrayListAdd(env, arrayList, nameJStr);
+    env->DeleteLocalRef(nameJStr);
+  }
+
+  return arrayList;
+}
+
+/*
+ * Class:     com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject
+ * Method:    isSequentialActionGroup
+ * Signature: (JLjava/lang/String;)Z
+ */
+jboolean Java_com_thunder_lib_jni_ThunderLibJNI_00024ThunderAutoProject_isSequentialActionGroup(
+    JNIEnv* env,
+    jclass,
+    jlong projectHandle,
+    jstring actionNameJStr) {
+  if (!projectHandle)
+    return false;
+
+  driver::ThunderAutoProject* project = reinterpret_cast<driver::ThunderAutoProject*>(projectHandle);
+  std::string actionName = JStringToStdString(env, actionNameJStr);
+
+  std::optional<core::ThunderAutoAction> actionOptional = project->getAction(actionName);
+  if (!actionOptional) {
+    return false;
+  }
+
+  core::ThunderAutoActionType actionType = actionOptional->type();
+  return actionType == core::ThunderAutoActionType::SEQUENTIAL_ACTION_GROUP;
+}
+
+/*
+ * Class:     com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject
+ * Method:    isConcurrentActionGroup
+ * Signature: (JLjava/lang/String;)Z
+ */
+jboolean Java_com_thunder_lib_jni_ThunderLibJNI_00024ThunderAutoProject_isConcurrentActionGroup(
+    JNIEnv* env,
+    jclass,
+    jlong projectHandle,
+    jstring actionNameJStr) {
+  if (!projectHandle)
+    return false;
+
+  driver::ThunderAutoProject* project = reinterpret_cast<driver::ThunderAutoProject*>(projectHandle);
+  std::string actionName = JStringToStdString(env, actionNameJStr);
+
+  std::optional<core::ThunderAutoAction> actionOptional = project->getAction(actionName);
+  if (!actionOptional) {
+    return false;
+  }
+
+  core::ThunderAutoActionType actionType = actionOptional->type();
+  return actionType == core::ThunderAutoActionType::CONCURRENT_ACTION_GROUP;
+}
+
+/*
+ * Class:     com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject
  * Method:    getTrajectory
  * Signature: (JLjava/lang/String;)J
  */

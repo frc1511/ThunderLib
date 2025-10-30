@@ -1,6 +1,7 @@
 package com.thunder.lib.jni;
 
 import java.lang.Runnable;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -41,9 +42,10 @@ public class ThunderLibJNI {
     libraryLoaded = true;
   }
 
-  // Native Functions
-
-  class ThunderAutoProject {
+  /**
+   * ThunderAutoProject JNI methods
+   */
+  public class ThunderAutoProject {
     public static native long construct();
 
     public static native long constructWithPath(String projectPath);
@@ -59,6 +61,16 @@ public class ThunderLibJNI {
     public static native String getName(long handle);
 
     public static native boolean hasAction(long handle, String actionName);
+
+    public static native boolean isActionCommand(long handle, String actionName);
+
+    public static native boolean isActionGroup(long handle, String actionName);
+
+    public static native ArrayList<String> getActionGroup(long handle, String actionName);
+
+    public static native boolean isSequentialActionGroup(long handle, String actionName);
+
+    public static native boolean isConcurrentActionGroup(long handle, String actionName);
 
     public static native long getTrajectory(long handle, String trajectoryName);
 
