@@ -86,8 +86,8 @@ class ThunderAutoProject final {
    * with the same name, it will be replaced. If an action referenced during the execution of a trajectory
    * or auto mode is not found, nothing will be executed.
    *
-   * @param actionNameame The name of the action.
-   * @param command       The command to be executed when the action is called.
+   * @param actionName The name of the action.
+   * @param command    The command to be executed when the action is called.
    */
   void registerActionCommand(const std::string& actionName, frc2::CommandPtr command);
 
@@ -182,7 +182,7 @@ class ThunderAutoProject final {
    * @param conditionName The name of the condition.
    * @param condition     The function that returns an integer indicating the next step to run.
    */
-  void registerSwitchCondition(const std::string& name, SwitchConditionFunc condition);
+  void registerSwitchCondition(const std::string& conditionName, SwitchConditionFunc condition);
 
   /**
    * Check if a switch condition with the given name is registered.
