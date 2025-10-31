@@ -46,7 +46,7 @@ bool LoadPose2dClass(JNIEnv* env) {
   s_pose2dClass = static_cast<jclass>(env->NewGlobalRef(pose2dClass));
 
   // new Pose2d(double xMeters, double yMeters, Rotation2d rotation)
-  s_pose2dConstructor = env->GetMethodID(s_pose2dClass, "<init>", "(DD" WPIMATH_ROTATION2D_SIGNATURE ";)");
+  s_pose2dConstructor = env->GetMethodID(s_pose2dClass, "<init>", "(DDL" WPIMATH_ROTATION2D_SIGNATURE ";)V");
   if (!s_pose2dConstructor)
     return false;
 
@@ -74,11 +74,12 @@ bool LoadPairClass(JNIEnv* env) {
   s_pairClass = static_cast<jclass>(env->NewGlobalRef(pairClass));
 
   // new Pair(Object first, Object second)
-  s_pairConstructor = env->GetMethodID(s_pairClass, "<init>", "(L" JAVA_LANG_OBJECT_SIGNATURE ";L" JAVA_LANG_OBJECT_SIGNATURE ";)");
+  s_pairConstructor = env->GetMethodID(s_pairClass, "<init>",
+                                       "(L" JAVA_LANG_OBJECT_SIGNATURE ";L" JAVA_LANG_OBJECT_SIGNATURE ";)V");
   if (!s_pairConstructor)
     return false;
 
-  return true; 
+  return true;
 }
 
 void UnloadPairClass(JNIEnv* env) {
