@@ -1,4 +1,4 @@
-package com.thunder.lib.tests;
+package com.thunder.lib.tests.types;
 
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
@@ -8,6 +8,7 @@ import edu.wpi.first.units.measure.Angle;
 import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.Radians;
 
+import com.thunder.lib.tests.BaseTestSuite;
 import com.thunder.lib.types.CanonicalAngle;
 
 public class CanonicalAngleTestSuite extends BaseTestSuite {
