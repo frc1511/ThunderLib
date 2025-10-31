@@ -219,6 +219,7 @@ model {
                 lib library: 'ThunderLibDriver', linkage: 'shared'
                 lib library: 'ThunderLibCore', linkage: 'shared'
 
+                def resourcesDir = file('src/test/resources')
                 def arch = it.targetPlatform.name
                 if (systemArch == arch && it.buildType.name == 'debug') {
                     def filePath = it.tasks.install.installDirectory.get().toString() + File.separatorChar + 'lib'
@@ -226,6 +227,14 @@ model {
                     test.systemProperty 'java.library.path', filePath
                     test.environment 'LD_LIBRARY_PATH', filePath
                     test.workingDir filePath
+
+                    def targetResourcesDir = filePath + File.separatorChar + 'src' + File.separatorChar + 'test' + File.separatorChar + 'resources'
+                    test.doFirst {
+                        copy {
+                            from resourcesDir
+                            into targetResourcesDir
+                        }
+                    }
                 }
             }
 
