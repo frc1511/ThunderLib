@@ -1,26 +1,25 @@
 #include "ThunderLibJNI.hpp"
-#include "com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject.h"
 
 #include <ThunderLibDriver/Auto/ThunderAutoProject.hpp>
 
 using namespace thunder;
 
 /*
- * Class:     com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject
- * Method:    construct
+ * Class:     com_thunder_lib_jni_ThunderLibJNI
+ * Method:    ThunderAutoProject_construct
  * Signature: ()J
  */
-jlong Java_com_thunder_lib_jni_ThunderLibJNI_00024ThunderAutoProject_construct(JNIEnv* env, jclass) {
+jlong Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject_1construct(JNIEnv* env, jclass) {
   driver::ThunderAutoProject* project = new driver::ThunderAutoProject();
   return reinterpret_cast<jlong>(project);
 }
 
 /*
- * Class:     com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject
- * Method:    constructWithPath
+ * Class:     com_thunder_lib_jni_ThunderLibJNI
+ * Method:    ThunderAutoProject_constructWithPath
  * Signature: (Ljava/lang/String;)J
  */
-jlong Java_com_thunder_lib_jni_ThunderLibJNI_00024ThunderAutoProject_constructWithPath(
+jlong Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject_1constructWithPath(
     JNIEnv* env,
     jclass,
     jstring projectPathJStr) {
@@ -30,11 +29,11 @@ jlong Java_com_thunder_lib_jni_ThunderLibJNI_00024ThunderAutoProject_constructWi
 }
 
 /*
- * Class:     com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject
- * Method:    delete
+ * Class:     com_thunder_lib_jni_ThunderLibJNI
+ * Method:    ThunderAutoProject_delete
  * Signature: (J)V
  */
-void Java_com_thunder_lib_jni_ThunderLibJNI_00024ThunderAutoProject_delete(JNIEnv* env,
+void Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject_1delete(JNIEnv* env,
                                                                            jclass,
                                                                            jlong projectHandle) {
   if (!projectHandle)
@@ -45,11 +44,11 @@ void Java_com_thunder_lib_jni_ThunderLibJNI_00024ThunderAutoProject_delete(JNIEn
 }
 
 /*
- * Class:     com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject
- * Method:    load
+ * Class:     com_thunder_lib_jni_ThunderLibJNI
+ * Method:    ThunderAutoProject_load
  * Signature: (JLjava/lang/String;)Z
  */
-jboolean Java_com_thunder_lib_jni_ThunderLibJNI_00024ThunderAutoProject_load(JNIEnv* env,
+jboolean Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject_1load(JNIEnv* env,
                                                                              jclass,
                                                                              jlong projectHandle,
                                                                              jstring projectPathJStr) {
@@ -62,11 +61,11 @@ jboolean Java_com_thunder_lib_jni_ThunderLibJNI_00024ThunderAutoProject_load(JNI
 }
 
 /*
- * Class:     com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject
- * Method:    discoverAndLoadFromDeployDirectory
+ * Class:     com_thunder_lib_jni_ThunderLibJNI
+ * Method:    ThunderAutoProject_discoverAndLoadFromDeployDirectory
  * Signature: (J)Z
  */
-jboolean Java_com_thunder_lib_jni_ThunderLibJNI_00024ThunderAutoProject_discoverAndLoadFromDeployDirectory(
+jboolean Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject_1discoverAndLoadFromDeployDirectory(
     JNIEnv* env,
     jclass,
     jlong projectHandle) {
@@ -78,11 +77,11 @@ jboolean Java_com_thunder_lib_jni_ThunderLibJNI_00024ThunderAutoProject_discover
 }
 
 /*
- * Class:     com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject
- * Method:    isLoaded
+ * Class:     com_thunder_lib_jni_ThunderLibJNI
+ * Method:    ThunderAutoProject_isLoaded
  * Signature: (J)Z
  */
-jboolean Java_com_thunder_lib_jni_ThunderLibJNI_00024ThunderAutoProject_isLoaded(JNIEnv* env,
+jboolean Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject_1isLoaded(JNIEnv* env,
                                                                                  jclass,
                                                                                  jlong projectHandle) {
   if (!projectHandle)
@@ -93,11 +92,11 @@ jboolean Java_com_thunder_lib_jni_ThunderLibJNI_00024ThunderAutoProject_isLoaded
 }
 
 /*
- * Class:     com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject
- * Method:    getName
+ * Class:     com_thunder_lib_jni_ThunderLibJNI
+ * Method:    ThunderAutoProject_getName
  * Signature: (J)Ljava/lang/String;
  */
-jstring Java_com_thunder_lib_jni_ThunderLibJNI_00024ThunderAutoProject_getName(JNIEnv* env,
+jstring Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject_1getName(JNIEnv* env,
                                                                                jclass,
                                                                                jlong projectHandle) {
   if (!projectHandle)
@@ -109,11 +108,11 @@ jstring Java_com_thunder_lib_jni_ThunderLibJNI_00024ThunderAutoProject_getName(J
 }
 
 /*
- * Class:     com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject
- * Method:    hasAction
+ * Class:     com_thunder_lib_jni_ThunderLibJNI
+ * Method:    ThunderAutoProject_hasAction
  * Signature: (JLjava/lang/String;)Z
  */
-jboolean Java_com_thunder_lib_jni_ThunderLibJNI_00024ThunderAutoProject_hasAction(JNIEnv* env,
+jboolean Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject_1hasAction(JNIEnv* env,
                                                                                   jclass,
                                                                                   jlong projectHandle,
                                                                                   jstring actionNameJStr) {
@@ -126,11 +125,11 @@ jboolean Java_com_thunder_lib_jni_ThunderLibJNI_00024ThunderAutoProject_hasActio
 }
 
 /*
- * Class:     com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject
- * Method:    isActionCommand
+ * Class:     com_thunder_lib_jni_ThunderLibJNI
+ * Method:    ThunderAutoProject_isActionCommand
  * Signature: (JLjava/lang/String;)Z
  */
-jboolean Java_com_thunder_lib_jni_ThunderLibJNI_00024ThunderAutoProject_isActionCommand(
+jboolean Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject_1isActionCommand(
     JNIEnv* env,
     jclass,
     jlong projectHandle,
@@ -150,11 +149,11 @@ jboolean Java_com_thunder_lib_jni_ThunderLibJNI_00024ThunderAutoProject_isAction
 }
 
 /*
- * Class:     com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject
- * Method:    isActionGroup
+ * Class:     com_thunder_lib_jni_ThunderLibJNI
+ * Method:    ThunderAutoProject_isActionGroup
  * Signature: (JLjava/lang/String;)Z
  */
-jboolean Java_com_thunder_lib_jni_ThunderLibJNI_00024ThunderAutoProject_isActionGroup(
+jboolean Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject_1isActionGroup(
     JNIEnv* env,
     jclass,
     jlong projectHandle,
@@ -176,11 +175,11 @@ jboolean Java_com_thunder_lib_jni_ThunderLibJNI_00024ThunderAutoProject_isAction
 }
 
 /*
- * Class:     com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject
- * Method:    getActionGroup
+ * Class:     com_thunder_lib_jni_ThunderLibJNI
+ * Method:    ThunderAutoProject_getActionGroup
  * Signature: (JLjava/lang/String;)Ljava/util/ArrayList;
  */
-jobject Java_com_thunder_lib_jni_ThunderLibJNI_00024ThunderAutoProject_getActionGroup(
+jobject Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject_1getActionGroup(
     JNIEnv* env,
     jclass,
     jlong projectHandle,
@@ -208,11 +207,11 @@ jobject Java_com_thunder_lib_jni_ThunderLibJNI_00024ThunderAutoProject_getAction
 }
 
 /*
- * Class:     com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject
- * Method:    isSequentialActionGroup
+ * Class:     com_thunder_lib_jni_ThunderLibJNI
+ * Method:    ThunderAutoProject_isSequentialActionGroup
  * Signature: (JLjava/lang/String;)Z
  */
-jboolean Java_com_thunder_lib_jni_ThunderLibJNI_00024ThunderAutoProject_isSequentialActionGroup(
+jboolean Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject_1isSequentialActionGroup(
     JNIEnv* env,
     jclass,
     jlong projectHandle,
@@ -233,11 +232,11 @@ jboolean Java_com_thunder_lib_jni_ThunderLibJNI_00024ThunderAutoProject_isSequen
 }
 
 /*
- * Class:     com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject
- * Method:    isConcurrentActionGroup
+ * Class:     com_thunder_lib_jni_ThunderLibJNI
+ * Method:    ThunderAutoProject_isConcurrentActionGroup
  * Signature: (JLjava/lang/String;)Z
  */
-jboolean Java_com_thunder_lib_jni_ThunderLibJNI_00024ThunderAutoProject_isConcurrentActionGroup(
+jboolean Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject_1isConcurrentActionGroup(
     JNIEnv* env,
     jclass,
     jlong projectHandle,
@@ -258,11 +257,11 @@ jboolean Java_com_thunder_lib_jni_ThunderLibJNI_00024ThunderAutoProject_isConcur
 }
 
 /*
- * Class:     com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject
- * Method:    getTrajectory
+ * Class:     com_thunder_lib_jni_ThunderLibJNI
+ * Method:    ThunderAutoProject_getTrajectory
  * Signature: (JLjava/lang/String;)J
  */
-jlong Java_com_thunder_lib_jni_ThunderLibJNI_00024ThunderAutoProject_getTrajectory(
+jlong Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject_1getTrajectory(
     JNIEnv* env,
     jclass,
     jlong projectHandle,
@@ -278,11 +277,11 @@ jlong Java_com_thunder_lib_jni_ThunderLibJNI_00024ThunderAutoProject_getTrajecto
 }
 
 /*
- * Class:     com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject
- * Method:    hasTrajectory
+ * Class:     com_thunder_lib_jni_ThunderLibJNI
+ * Method:    ThunderAutoProject_hasTrajectory
  * Signature: (JLjava/lang/String;)Z
  */
-jboolean Java_com_thunder_lib_jni_ThunderLibJNI_00024ThunderAutoProject_hasTrajectory(
+jboolean Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject_1hasTrajectory(
     JNIEnv* env,
     jclass,
     jlong projectHandle,
@@ -296,11 +295,11 @@ jboolean Java_com_thunder_lib_jni_ThunderLibJNI_00024ThunderAutoProject_hasTraje
 }
 
 /*
- * Class:     com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject
- * Method:    getTrajectoryNames
+ * Class:     com_thunder_lib_jni_ThunderLibJNI
+ * Method:    ThunderAutoProject_getTrajectoryNames
  * Signature: (J)Ljava/util/HashSet;
  */
-jobject Java_com_thunder_lib_jni_ThunderLibJNI_00024ThunderAutoProject_getTrajectoryNames(
+jobject Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject_1getTrajectoryNames(
     JNIEnv* env,
     jclass,
     jlong projectHandle) {
@@ -320,11 +319,11 @@ jobject Java_com_thunder_lib_jni_ThunderLibJNI_00024ThunderAutoProject_getTrajec
 }
 
 /*
- * Class:     com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject
- * Method:    getAutoMode
+ * Class:     com_thunder_lib_jni_ThunderLibJNI
+ * Method:    ThunderAutoProject_getAutoMode
  * Signature: (JLjava/lang/String;)J
  */
-jlong Java_com_thunder_lib_jni_ThunderLibJNI_00024ThunderAutoProject_getAutoMode(JNIEnv* env,
+jlong Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject_1getAutoMode(JNIEnv* env,
                                                                                  jclass,
                                                                                  jlong projectHandle,
                                                                                  jstring autoModeNameJStr) {
@@ -338,11 +337,11 @@ jlong Java_com_thunder_lib_jni_ThunderLibJNI_00024ThunderAutoProject_getAutoMode
 }
 
 /*
- * Class:     com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject
- * Method:    hasAutoMode
+ * Class:     com_thunder_lib_jni_ThunderLibJNI
+ * Method:    ThunderAutoProject_hasAutoMode
  * Signature: (JLjava/lang/String;)Z
  */
-jboolean Java_com_thunder_lib_jni_ThunderLibJNI_00024ThunderAutoProject_hasAutoMode(
+jboolean Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject_1hasAutoMode(
     JNIEnv* env,
     jclass,
     jlong projectHandle,
@@ -356,11 +355,11 @@ jboolean Java_com_thunder_lib_jni_ThunderLibJNI_00024ThunderAutoProject_hasAutoM
 }
 
 /*
- * Class:     com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject
- * Method:    getAutoModeNames
+ * Class:     com_thunder_lib_jni_ThunderLibJNI
+ * Method:    ThunderAutoProject_getAutoModeNames
  * Signature: (J)Ljava/util/HashSet;
  */
-jobject Java_com_thunder_lib_jni_ThunderLibJNI_00024ThunderAutoProject_getAutoModeNames(JNIEnv* env,
+jobject Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject_1getAutoModeNames(JNIEnv* env,
                                                                                         jclass,
                                                                                         jlong projectHandle) {
   jobject hashSet = HashSetConstruct(env);
@@ -378,11 +377,11 @@ jobject Java_com_thunder_lib_jni_ThunderLibJNI_00024ThunderAutoProject_getAutoMo
 }
 
 /*
- * Class:     com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject
- * Method:    getFieldSymmetry
+ * Class:     com_thunder_lib_jni_ThunderLibJNI
+ * Method:    ThunderAutoProject_getFieldSymmetry
  * Signature: (J)I
  */
-jint Java_com_thunder_lib_jni_ThunderLibJNI_00024ThunderAutoProject_getFieldSymmetry(JNIEnv* env,
+jint Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject_1getFieldSymmetry(JNIEnv* env,
                                                                                      jclass,
                                                                                      jlong projectHandle) {
   if (!projectHandle)
@@ -393,11 +392,11 @@ jint Java_com_thunder_lib_jni_ThunderLibJNI_00024ThunderAutoProject_getFieldSymm
 }
 
 /*
- * Class:     com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject
- * Method:    getFieldDimensions
+ * Class:     com_thunder_lib_jni_ThunderLibJNI
+ * Method:    ThunderAutoProject_getFieldDimensions
  * Signature: (J)Ledu/wpi/first/math/Pair;
  */
-jobject Java_com_thunder_lib_jni_ThunderLibJNI_00024ThunderAutoProject_getFieldDimensions(
+jobject Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject_1getFieldDimensions(
     JNIEnv* env,
     jclass,
     jlong projectHandle) {
@@ -422,11 +421,11 @@ jobject Java_com_thunder_lib_jni_ThunderLibJNI_00024ThunderAutoProject_getFieldD
 }
 
 /*
- * Class:     com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject
- * Method:    setRemoteUpdatesEnabled
+ * Class:     com_thunder_lib_jni_ThunderLibJNI
+ * Method:    ThunderAutoProject_setRemoteUpdatesEnabled
  * Signature: (JZ)V
  */
-void Java_com_thunder_lib_jni_ThunderLibJNI_00024ThunderAutoProject_setRemoteUpdatesEnabled(
+void Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject_1setRemoteUpdatesEnabled(
     JNIEnv* env,
     jclass,
     jlong projectHandle,
@@ -439,11 +438,11 @@ void Java_com_thunder_lib_jni_ThunderLibJNI_00024ThunderAutoProject_setRemoteUpd
 }
 
 /*
- * Class:     com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject
- * Method:    enableRemoteUpdates
+ * Class:     com_thunder_lib_jni_ThunderLibJNI
+ * Method:    ThunderAutoProject_enableRemoteUpdates
  * Signature: (J)V
  */
-void Java_com_thunder_lib_jni_ThunderLibJNI_00024ThunderAutoProject_enableRemoteUpdates(JNIEnv* env,
+void Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject_1enableRemoteUpdates(JNIEnv* env,
                                                                                         jclass,
                                                                                         jlong projectHandle) {
   if (!projectHandle)
@@ -454,11 +453,11 @@ void Java_com_thunder_lib_jni_ThunderLibJNI_00024ThunderAutoProject_enableRemote
 }
 
 /*
- * Class:     com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject
- * Method:    disableRemoteUpdates
+ * Class:     com_thunder_lib_jni_ThunderLibJNI
+ * Method:    ThunderAutoProject_disableRemoteUpdates
  * Signature: (J)V
  */
-void Java_com_thunder_lib_jni_ThunderLibJNI_00024ThunderAutoProject_disableRemoteUpdates(
+void Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject_1disableRemoteUpdates(
     JNIEnv* env,
     jclass,
     jlong projectHandle) {
@@ -470,11 +469,11 @@ void Java_com_thunder_lib_jni_ThunderLibJNI_00024ThunderAutoProject_disableRemot
 }
 
 /*
- * Class:     com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject
- * Method:    areRemoteUpdatesEnabled
+ * Class:     com_thunder_lib_jni_ThunderLibJNI
+ * Method:    ThunderAutoProject_areRemoteUpdatesEnabled
  * Signature: (J)Z
  */
-jboolean Java_com_thunder_lib_jni_ThunderLibJNI_00024ThunderAutoProject_areRemoteUpdatesEnabled(
+jboolean Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject_1areRemoteUpdatesEnabled(
     JNIEnv* env,
     jclass,
     jlong projectHandle) {
@@ -486,11 +485,11 @@ jboolean Java_com_thunder_lib_jni_ThunderLibJNI_00024ThunderAutoProject_areRemot
 }
 
 /*
- * Class:     com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject
- * Method:    registerRemoteUpdateSubscriber
+ * Class:     com_thunder_lib_jni_ThunderLibJNI
+ * Method:    ThunderAutoProject_registerRemoteUpdateSubscriber
  * Signature: (JLjava/lang/Runnable;)J
  */
-jlong Java_com_thunder_lib_jni_ThunderLibJNI_00024ThunderAutoProject_registerRemoteUpdateSubscriber(
+jlong Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject_1registerRemoteUpdateSubscriber(
     JNIEnv* env,
     jclass,
     jlong projectHandle,
@@ -505,11 +504,11 @@ jlong Java_com_thunder_lib_jni_ThunderLibJNI_00024ThunderAutoProject_registerRem
 }
 
 /*
- * Class:     com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject
- * Method:    unregisterRemoteUpdateSubscriber
+ * Class:     com_thunder_lib_jni_ThunderLibJNI
+ * Method:    ThunderAutoProject_unregisterRemoteUpdateSubscriber
  * Signature: (JJ)Z
  */
-jboolean Java_com_thunder_lib_jni_ThunderLibJNI_00024ThunderAutoProject_unregisterRemoteUpdateSubscriber(
+jboolean Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject_1unregisterRemoteUpdateSubscriber(
     JNIEnv* env,
     jclass,
     jlong projectHandle,

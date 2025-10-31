@@ -23,7 +23,7 @@ public class ThunderAutoProject {
    * Default constructor. Creates an empty ThunderAuto project that is not loaded.
    */
   public ThunderAutoProject() {
-    m_handle = ThunderLibJNI.ThunderAutoProject.construct();
+    m_handle = ThunderLibJNI.ThunderAutoProject_construct();
     m_cleaner.register(this, new ThunderAutoProjectCleanup(m_handle));
   }
 
@@ -36,7 +36,7 @@ public class ThunderAutoProject {
    *                    directory.
    */
   public ThunderAutoProject(String projectPath) {
-    m_handle = ThunderLibJNI.ThunderAutoProject.constructWithPath(projectPath);
+    m_handle = ThunderLibJNI.ThunderAutoProject_constructWithPath(projectPath);
     m_cleaner.register(this, new ThunderAutoProjectCleanup(m_handle));
   }
 
@@ -51,7 +51,7 @@ public class ThunderAutoProject {
    * @return True if the project was successfully loaded, false otherwise.
    */
   public boolean load(String projectPath) {
-    return ThunderLibJNI.ThunderAutoProject.load(m_handle, projectPath);
+    return ThunderLibJNI.ThunderAutoProject_load(m_handle, projectPath);
   }
 
   /**
@@ -61,7 +61,7 @@ public class ThunderAutoProject {
    * @return True if a project was found and loaded, false otherwise.
    */
   public boolean discoverAndLoadFromDeployDirectory() {
-    return ThunderLibJNI.ThunderAutoProject.discoverAndLoadFromDeployDirectory(m_handle);
+    return ThunderLibJNI.ThunderAutoProject_discoverAndLoadFromDeployDirectory(m_handle);
   }
 
   /**
@@ -70,7 +70,7 @@ public class ThunderAutoProject {
    * @return True if a project is loaded, false otherwise.
    */
   public boolean isLoaded() {
-    return ThunderLibJNI.ThunderAutoProject.isLoaded(m_handle);
+    return ThunderLibJNI.ThunderAutoProject_isLoaded(m_handle);
   }
 
   /**
@@ -80,7 +80,7 @@ public class ThunderAutoProject {
    *         loaded.
    */
   public String getName() {
-    return ThunderLibJNI.ThunderAutoProject.getName(m_handle);
+    return ThunderLibJNI.ThunderAutoProject_getName(m_handle);
   }
 
   /**
@@ -118,7 +118,7 @@ public class ThunderAutoProject {
    * @return True if the action exists, false otherwise.
    */
   public boolean hasAction(String actionName) {
-    return ThunderLibJNI.ThunderAutoProject.hasAction(m_handle, actionName);
+    return ThunderLibJNI.ThunderAutoProject_hasAction(m_handle, actionName);
   }
 
   /**
@@ -143,20 +143,20 @@ public class ThunderAutoProject {
       return Commands.none();
     }
 
-    if (ThunderLibJNI.ThunderAutoProject.isActionCommand(m_handle, actionName)) {
+    if (ThunderLibJNI.ThunderAutoProject_isActionCommand(m_handle, actionName)) {
       if (isActionCommandRegistered(actionName)) {
         return m_actionCommands.get(actionName);
       }
-    } else if (ThunderLibJNI.ThunderAutoProject.isActionGroup(m_handle, actionName)) {
-      ArrayList<String> groupActionNames = ThunderLibJNI.ThunderAutoProject.getActionGroup(m_handle, actionName);
+    } else if (ThunderLibJNI.ThunderAutoProject_isActionGroup(m_handle, actionName)) {
+      ArrayList<String> groupActionNames = ThunderLibJNI.ThunderAutoProject_getActionGroup(m_handle, actionName);
 
       Command[] commands = new Command[groupActionNames.size()];
       for (int i = 0; i < groupActionNames.size(); i++) {
         commands[i] = getActionCommand(groupActionNames.get(i));
       }
 
-      boolean isSequential = ThunderLibJNI.ThunderAutoProject.isSequentialActionGroup(m_handle, actionName);
-      boolean isConcurrent = ThunderLibJNI.ThunderAutoProject.isConcurrentActionGroup(m_handle, actionName);
+      boolean isSequential = ThunderLibJNI.ThunderAutoProject_isSequentialActionGroup(m_handle, actionName);
+      boolean isConcurrent = ThunderLibJNI.ThunderAutoProject_isConcurrentActionGroup(m_handle, actionName);
       if (isSequential) {
         return Commands.sequence(commands);
       } else if (isConcurrent) {
@@ -257,7 +257,7 @@ public class ThunderAutoProject {
    * @return The trajectory if it exists, or an empty optional if it does not.
    */
   public Optional<ThunderAutoTrajectory> getTrajectory(String trajectoryName) {
-    long trajectoryHandle = ThunderLibJNI.ThunderAutoProject.getTrajectory(m_handle, trajectoryName);
+    long trajectoryHandle = ThunderLibJNI.ThunderAutoProject_getTrajectory(m_handle, trajectoryName);
     if (trajectoryHandle == 0) {
       return Optional.empty();
     } else {
@@ -273,7 +273,7 @@ public class ThunderAutoProject {
    * @return True if the trajectory exists, false otherwise.
    */
   public boolean hasTrajectory(String trajectoryName) {
-    return ThunderLibJNI.ThunderAutoProject.hasTrajectory(m_handle, trajectoryName);
+    return ThunderLibJNI.ThunderAutoProject_hasTrajectory(m_handle, trajectoryName);
   }
 
   /**
@@ -282,7 +282,7 @@ public class ThunderAutoProject {
    * @return A set of trajectory names.
    */
   public HashSet<String> getTrajectoryNames() {
-    return ThunderLibJNI.ThunderAutoProject.getTrajectoryNames(m_handle);
+    return ThunderLibJNI.ThunderAutoProject_getTrajectoryNames(m_handle);
   }
 
   /**
@@ -293,7 +293,7 @@ public class ThunderAutoProject {
    * @return A ThunderAutoMode if it exists, or an empty optional if it does not.
    */
   public Optional<ThunderAutoMode> getAutoMode(String autoModeName) {
-    long autoModeHandle = ThunderLibJNI.ThunderAutoProject.getAutoMode(m_handle, autoModeName);
+    long autoModeHandle = ThunderLibJNI.ThunderAutoProject_getAutoMode(m_handle, autoModeName);
     if (autoModeHandle == 0) {
       return Optional.empty();
     } else {
@@ -309,7 +309,7 @@ public class ThunderAutoProject {
    * @return True if the autonomous mode exists, false otherwise.
    */
   public boolean hasAutoMode(String autoModeName) {
-    return ThunderLibJNI.ThunderAutoProject.hasAutoMode(m_handle, autoModeName);
+    return ThunderLibJNI.ThunderAutoProject_hasAutoMode(m_handle, autoModeName);
   }
 
   /**
@@ -318,7 +318,7 @@ public class ThunderAutoProject {
    * @return A set of autonomous mode names.
    */
   public HashSet<String> getAutoModeNames() {
-    return ThunderLibJNI.ThunderAutoProject.getAutoModeNames(m_handle);
+    return ThunderLibJNI.ThunderAutoProject_getAutoModeNames(m_handle);
   }
 
   /**
@@ -327,7 +327,7 @@ public class ThunderAutoProject {
    * @return The field symmetry.
    */
   public FieldSymmetry getFieldSymmetry() {
-    int symmetryInt = ThunderLibJNI.ThunderAutoProject.getFieldSymmetry(m_handle);
+    int symmetryInt = ThunderLibJNI.ThunderAutoProject_getFieldSymmetry(m_handle);
     return FieldSymmetry.values()[symmetryInt];
   }
 
@@ -337,7 +337,7 @@ public class ThunderAutoProject {
    * @return The field size.
    */
   public Pair<Double, Double> getFieldDimensions() {
-    return ThunderLibJNI.ThunderAutoProject.getFieldDimensions(m_handle);
+    return ThunderLibJNI.ThunderAutoProject_getFieldDimensions(m_handle);
   }
 
   /**
@@ -350,21 +350,21 @@ public class ThunderAutoProject {
    * @param enabled True to enable remote updates, false to disable them.
    */
   public void setRemoteUpdatesEnabled(boolean enabled) {
-    ThunderLibJNI.ThunderAutoProject.setRemoteUpdatesEnabled(m_handle, enabled);
+    ThunderLibJNI.ThunderAutoProject_setRemoteUpdatesEnabled(m_handle, enabled);
   }
 
   /**
    * Enable remote project updates from ThunderAuto (enabled by default).
    */
   public void enableRemoteUpdates() {
-    ThunderLibJNI.ThunderAutoProject.enableRemoteUpdates(m_handle);
+    ThunderLibJNI.ThunderAutoProject_enableRemoteUpdates(m_handle);
   }
 
   /**
    * Disable remote project updates from ThunderAuto.
    */
   public void disableRemoteUpdates() {
-    ThunderLibJNI.ThunderAutoProject.disableRemoteUpdates(m_handle);
+    ThunderLibJNI.ThunderAutoProject_disableRemoteUpdates(m_handle);
   }
 
   /**
@@ -374,7 +374,7 @@ public class ThunderAutoProject {
    * @return True if remote updates are enabled, false otherwise.
    */
   public boolean areRemoteUpdatesEnabled() {
-    return ThunderLibJNI.ThunderAutoProject.areRemoteUpdatesEnabled(m_handle);
+    return ThunderLibJNI.ThunderAutoProject_areRemoteUpdatesEnabled(m_handle);
   }
 
   /**
@@ -387,7 +387,7 @@ public class ThunderAutoProject {
    *         failure.
    */
   public long registerRemoteUpdateSubscriber(Runnable callback) {
-    return ThunderLibJNI.ThunderAutoProject.registerRemoteUpdateSubscriber(m_handle, callback);
+    return ThunderLibJNI.ThunderAutoProject_registerRemoteUpdateSubscriber(m_handle, callback);
   }
 
   /**
@@ -399,7 +399,7 @@ public class ThunderAutoProject {
    *         otherwise.
    */
   public boolean unregisterRemoteUpdateSubscriber(long id) {
-    return ThunderLibJNI.ThunderAutoProject.unregisterRemoteUpdateSubscriber(m_handle, id);
+    return ThunderLibJNI.ThunderAutoProject_unregisterRemoteUpdateSubscriber(m_handle, id);
   }
 
   /**
@@ -428,7 +428,7 @@ public class ThunderAutoProject {
 
     @Override
     public void run() {
-      ThunderLibJNI.ThunderAutoProject.delete(m_handle);
+      ThunderLibJNI.ThunderAutoProject_delete(m_handle);
     }
   }
 }

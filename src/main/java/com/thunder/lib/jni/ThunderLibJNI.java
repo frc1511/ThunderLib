@@ -15,13 +15,27 @@ import edu.wpi.first.math.Pair;
 public class ThunderLibJNI {
   static boolean libraryLoaded = false;
 
+  /**
+   * Helper class for determining whether or not to load the driver on static
+   * initialization.
+   */
   public static class Helper {
     private static AtomicBoolean extractOnStaticLoad = new AtomicBoolean(true);
 
+    /**
+     * Get whether to load the driver on static init.
+     * 
+     * @return true if the driver will load on static init
+     */
     public static boolean getExtractOnStaticLoad() {
       return extractOnStaticLoad.get();
     }
 
+    /**
+     * Set whether to load the driver on static init.
+     * 
+     * @param load the new value
+     */
     public static void setExtractOnStaticLoad(boolean load) {
       extractOnStaticLoad.set(load);
     }
@@ -34,6 +48,9 @@ public class ThunderLibJNI {
     }
   }
 
+  /**
+   * Force load the library.
+   */
   public static synchronized void forceLoad() {
     if (libraryLoaded) {
       return;
@@ -45,59 +62,58 @@ public class ThunderLibJNI {
   /**
    * ThunderAutoProject JNI methods
    */
-  public class ThunderAutoProject {
-    public static native long construct();
 
-    public static native long constructWithPath(String projectPath);
+  public static native long ThunderAutoProject_construct();
 
-    public static native void delete(long handle);
+  public static native long ThunderAutoProject_constructWithPath(String projectPath);
 
-    public static native boolean load(long handle, String projectPath);
+  public static native void ThunderAutoProject_delete(long handle);
 
-    public static native boolean discoverAndLoadFromDeployDirectory(long handle);
+  public static native boolean ThunderAutoProject_load(long handle, String projectPath);
 
-    public static native boolean isLoaded(long handle);
+  public static native boolean ThunderAutoProject_discoverAndLoadFromDeployDirectory(long handle);
 
-    public static native String getName(long handle);
+  public static native boolean ThunderAutoProject_isLoaded(long handle);
 
-    public static native boolean hasAction(long handle, String actionName);
+  public static native String ThunderAutoProject_getName(long handle);
 
-    public static native boolean isActionCommand(long handle, String actionName);
+  public static native boolean ThunderAutoProject_hasAction(long handle, String actionName);
 
-    public static native boolean isActionGroup(long handle, String actionName);
+  public static native boolean ThunderAutoProject_isActionCommand(long handle, String actionName);
 
-    public static native ArrayList<String> getActionGroup(long handle, String actionName);
+  public static native boolean ThunderAutoProject_isActionGroup(long handle, String actionName);
 
-    public static native boolean isSequentialActionGroup(long handle, String actionName);
+  public static native ArrayList<String> ThunderAutoProject_getActionGroup(long handle, String actionName);
 
-    public static native boolean isConcurrentActionGroup(long handle, String actionName);
+  public static native boolean ThunderAutoProject_isSequentialActionGroup(long handle, String actionName);
 
-    public static native long getTrajectory(long handle, String trajectoryName);
+  public static native boolean ThunderAutoProject_isConcurrentActionGroup(long handle, String actionName);
 
-    public static native boolean hasTrajectory(long handle, String trajectoryName);
+  public static native long ThunderAutoProject_getTrajectory(long handle, String trajectoryName);
 
-    public static native HashSet<String> getTrajectoryNames(long handle);
+  public static native boolean ThunderAutoProject_hasTrajectory(long handle, String trajectoryName);
 
-    public static native long getAutoMode(long handle, String autoModeName);
+  public static native HashSet<String> ThunderAutoProject_getTrajectoryNames(long handle);
 
-    public static native boolean hasAutoMode(long handle, String autoModeName);
+  public static native long ThunderAutoProject_getAutoMode(long handle, String autoModeName);
 
-    public static native HashSet<String> getAutoModeNames(long handle);
+  public static native boolean ThunderAutoProject_hasAutoMode(long handle, String autoModeName);
 
-    public static native int getFieldSymmetry(long handle);
+  public static native HashSet<String> ThunderAutoProject_getAutoModeNames(long handle);
 
-    public static native Pair<Double, Double> getFieldDimensions(long handle);
+  public static native int ThunderAutoProject_getFieldSymmetry(long handle);
 
-    public static native void setRemoteUpdatesEnabled(long handle, boolean enabled);
+  public static native Pair<Double, Double> ThunderAutoProject_getFieldDimensions(long handle);
 
-    public static native void enableRemoteUpdates(long handle);
+  public static native void ThunderAutoProject_setRemoteUpdatesEnabled(long handle, boolean enabled);
 
-    public static native void disableRemoteUpdates(long handle);
+  public static native void ThunderAutoProject_enableRemoteUpdates(long handle);
 
-    public static native boolean areRemoteUpdatesEnabled(long handle);
+  public static native void ThunderAutoProject_disableRemoteUpdates(long handle);
 
-    public static native long registerRemoteUpdateSubscriber(long handle, Runnable callback);
+  public static native boolean ThunderAutoProject_areRemoteUpdatesEnabled(long handle);
 
-    public static native boolean unregisterRemoteUpdateSubscriber(long handle, long subscriberID);
-  }
+  public static native long ThunderAutoProject_registerRemoteUpdateSubscriber(long handle, Runnable callback);
+
+  public static native boolean ThunderAutoProject_unregisterRemoteUpdateSubscriber(long handle, long subscriberID);
 }

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "jni.h"
+#include "com_thunder_lib_jni_ThunderLibJNI.h"
 
 #include "JavaTypes.hpp"
 #include "WPILibTypes.hpp"
