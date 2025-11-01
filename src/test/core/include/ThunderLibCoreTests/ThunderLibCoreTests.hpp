@@ -8,7 +8,7 @@
 #include <filesystem>
 
 // Path where resource files for tests are located
-extern const std::filesystem::path kTestDataPath;
+extern const std::filesystem::path kTestResourcesPath;
 
 /**
  * Path to store output files from tests (logs, CSV exports, etc.).

@@ -96,7 +96,7 @@ TEST(ThunderAutoBuildOutputTrajectoryTests, BuildTrajectory) {
 #define DOUBLE_TOLERANCE 1e-2
 
 TEST(ThunderAutoBuildOutputTrajectoryTests, BuildSimpleTrajectory) {
-  std::filesystem::path projectPath = kTestDataPath / "ThunderAuto" / "SimpleTrajectory.thunderauto";
+  std::filesystem::path projectPath = kTestResourcesPath / "ThunderAuto" / "SimpleTrajectory.thunderauto";
 
   std::unique_ptr<ThunderAutoProject> project;
   ASSERT_NO_THROW(project = LoadThunderAutoProject(projectPath));

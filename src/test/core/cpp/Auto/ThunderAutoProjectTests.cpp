@@ -219,7 +219,7 @@ TEST(ThunderAutoProjectTests, SaveAndLoad) {
  * converts all its data correctly.
  */
 TEST(ThunderAutoProjectTests, LoadPre2026Project) {
-  std::filesystem::path projectPath = kTestDataPath / "ThunderAuto" / "Pre2026.thunderauto";
+  std::filesystem::path projectPath = kTestResourcesPath / "ThunderAuto" / "Pre2026.thunderauto";
 
   std::unique_ptr<ThunderAutoProject> project;
   ASSERT_NO_THROW(project = LoadThunderAutoProject(projectPath));

@@ -15,5 +15,3 @@ extern const std::filesystem::path kTestResourcesPath;
  * This path is generated for the current test run.
  */
 std::filesystem::path GetTestOutputPath();
-
-

@@ -4,7 +4,7 @@
 
 using namespace thunder::core;
 
-const std::filesystem::path kTestDataPath =
+const std::filesystem::path kTestResourcesPath =
     std::filesystem::path(__FILE__).parent_path().parent_path().parent_path() / "resources";
 
 static const std::filesystem::path kTestOutputBasePath = std::filesystem::current_path() / "TestOutput";

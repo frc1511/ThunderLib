@@ -1,12 +1,12 @@
-#include <ThunderLibDriverTests/ThunderLibDriverTests.hpp>
+#include <ThunderLibTests/ThunderLibTests.hpp>
 
-#include <ThunderLibDriver/Auto/ThunderAutoProject.hpp>
+#include <ThunderLib/Auto/ThunderAutoProject.hpp>
 
-using namespace thunder::driver;
+using namespace thunder;
 
 #define DOUBLE_TOLERANCE 1e-2
 
-TEST(DriverThunderAutoProjectTests, SimpleTrajectoryTest) {
+TEST(ThunderAutoProjectTests, SimpleTrajectoryTest) {
   /**
    * Project with one trajectory, a simple L-shaped trajectory where the robot stops midway through, then
    * starts driving again. This trajectory has no constraints, so its straight lines should be ideal trapezoid
@@ -14,7 +14,7 @@ TEST(DriverThunderAutoProjectTests, SimpleTrajectoryTest) {
    * robot will rotate 180 degrees during the first straightaway. There is a start action "StartAction", end
    * action "EndAction", stop action "StopAction", and positioned action "PositionedAction" at position 0.5.
    */
-  std::filesystem::path projectPath = kTestDataPath / "ThunderAuto" / "SimpleTrajectory.thunderauto";
+  std::filesystem::path projectPath = kTestResourcesPath / "ThunderAuto" / "SimpleTrajectory.thunderauto";
 
   auto project = std::make_shared<ThunderAutoProject>(projectPath);
   ASSERT_NE(project, nullptr);
@@ -31,7 +31,7 @@ TEST(DriverThunderAutoProjectTests, SimpleTrajectoryTest) {
   EXPECT_NEAR(trajectory->getDuration().value(), 5.5, DOUBLE_TOLERANCE);
 
   {
-    const ThunderAutoTrajectoryState initialState = trajectory->getInitialState();
+    const TrajectoryState initialState = trajectory->getInitialState();
 
     EXPECT_NEAR(initialState.time.value(), 0.0, DOUBLE_TOLERANCE);
     EXPECT_NEAR(initialState.pose.X().value(), 7.8, DOUBLE_TOLERANCE);
@@ -45,7 +45,7 @@ TEST(DriverThunderAutoProjectTests, SimpleTrajectoryTest) {
   }
 
   {
-    const ThunderAutoTrajectoryState finalState = trajectory->getFinalState();
+    const TrajectoryState finalState = trajectory->getFinalState();
 
     EXPECT_NEAR(finalState.time.value(), 5.5, DOUBLE_TOLERANCE);
     EXPECT_NEAR(finalState.pose.X().value(), 2.8, DOUBLE_TOLERANCE);
@@ -60,7 +60,7 @@ TEST(DriverThunderAutoProjectTests, SimpleTrajectoryTest) {
 
   // Stop point
   {
-    const ThunderAutoTrajectoryState stopState = trajectory->sample(3.5_s);
+    const TrajectoryState stopState = trajectory->sample(3.5_s);
 
     EXPECT_NEAR(stopState.time.value(), 3.5, DOUBLE_TOLERANCE);
     EXPECT_NEAR(stopState.pose.X().value(), 2.8, DOUBLE_TOLERANCE);
@@ -109,7 +109,7 @@ TEST(DriverThunderAutoProjectTests, SimpleTrajectoryTest) {
    * ThunderLibCore's ThunderAutoBuildOutputTrajectoryTests suite.
    */
   {
-    const ThunderAutoTrajectoryState state = trajectory->sample(1.75_s);
+    const TrajectoryState state = trajectory->sample(1.75_s);
 
     EXPECT_NEAR(state.time.value(), 1.75, DOUBLE_TOLERANCE);
     EXPECT_NEAR(state.pose.X().value(), 7.8 - 2.5, DOUBLE_TOLERANCE);
