@@ -7,6 +7,9 @@ static jmethodID s_rotation2dConstructor = nullptr;
 static jclass s_pose2dClass = nullptr;
 static jmethodID s_pose2dConstructor = nullptr;
 
+static jclass s_chassisSpeedsClass = nullptr;
+static jmethodID s_chassisSpeedsConstructor = nullptr;
+
 static jclass s_pairClass = nullptr;
 static jmethodID s_pairConstructor = nullptr;
 
@@ -64,6 +67,38 @@ void UnloadPose2dClass(JNIEnv* env) {
 jobject Pose2dConstruct(JNIEnv* env, jdouble xMeters, jdouble yMeters, jobject rotation2d) {
   jobject pose2d = env->NewObject(s_pose2dClass, s_pose2dConstructor, xMeters, yMeters, rotation2d);
   return pose2d;
+}
+
+bool LoadChassisSpeedsClass(JNIEnv* env) {
+  jclass chassisSpeedsClass = env->FindClass(WPIMATH_CHASSISSPEEDS_SIGNATURE);
+  if (!chassisSpeedsClass)
+    return false;
+
+  s_chassisSpeedsClass = static_cast<jclass>(env->NewGlobalRef(chassisSpeedsClass));
+
+  // new ChassisSpeeds(double vxMetersPerSecond, double vyMetersPerSecond, double omegaRadiansPerSecond)
+  s_chassisSpeedsConstructor = env->GetMethodID(s_chassisSpeedsClass, "<init>", "(DDD)V");
+  if (!s_chassisSpeedsConstructor)
+    return false;
+
+  return true;
+}
+
+void UnloadChassisSpeedsClass(JNIEnv* env) {
+  if (s_chassisSpeedsClass) {
+    env->DeleteGlobalRef(s_chassisSpeedsClass);
+    s_chassisSpeedsClass = nullptr;
+    s_chassisSpeedsConstructor = nullptr;
+  }
+}
+
+jobject ChassisSpeedsConstruct(JNIEnv* env,
+                               jdouble vxMetersPerSecond,
+                               jdouble vyMetersPerSecond,
+                               jdouble omegaRadiansPerSecond) {
+  jobject chassisSpeeds = env->NewObject(s_chassisSpeedsClass, s_chassisSpeedsConstructor, vxMetersPerSecond,
+                                         vyMetersPerSecond, omegaRadiansPerSecond);
+  return chassisSpeeds;
 }
 
 bool LoadPairClass(JNIEnv* env) {

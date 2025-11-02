@@ -5,6 +5,7 @@
 
 #include "JavaTypes.hpp"
 #include "WPILibTypes.hpp"
+#include "ThunderLibTypes.hpp"
 
 #include <string>
 

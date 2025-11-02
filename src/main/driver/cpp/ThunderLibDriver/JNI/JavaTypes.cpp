@@ -15,6 +15,10 @@ static jclass s_hashSetClass = nullptr;
 static jmethodID s_hashSetConstructor = nullptr;
 static jmethodID s_hashSetAddMethod = nullptr;
 
+static jclass s_hashMapClass = nullptr;
+static jmethodID s_hashMapConstructor = nullptr;
+static jmethodID s_hashMapPutMethod = nullptr;
+
 bool LoadIntegerClass(JNIEnv* env) {
   jclass integerClass = env->FindClass(JAVA_LANG_INTEGER_SIGNATURE);
   if (!integerClass)
@@ -147,6 +151,47 @@ jobject HashSetConstruct(JNIEnv* env) {
 jboolean HashSetAdd(JNIEnv* env, jobject hashSet, jobject element) {
   jboolean result = env->CallBooleanMethod(hashSet, s_hashSetAddMethod, element);
   return result;
+}
+
+bool LoadHashMapClass(JNIEnv* env) {
+  jclass hashMapClass = env->FindClass(JAVA_UTIL_HASHMAP_SIGNATURE);
+  if (!hashMapClass)
+    return false;
+
+  s_hashMapClass = static_cast<jclass>(env->NewGlobalRef(hashMapClass));
+
+  // new HashMap<>()
+  s_hashMapConstructor = env->GetMethodID(s_hashMapClass, "<init>", "()V");
+  if (!s_hashMapConstructor)
+    return false;
+
+  // Object put(Object key, Object value)
+  s_hashMapPutMethod = env->GetMethodID(s_hashMapClass, "put",
+                                       "(L" JAVA_LANG_OBJECT_SIGNATURE ";L" JAVA_LANG_OBJECT_SIGNATURE ";)L"
+                                       JAVA_LANG_OBJECT_SIGNATURE ";");
+  if (!s_hashMapPutMethod)
+    return false;
+
+  return true;
+}
+
+void UnloadHashMapClass(JNIEnv* env) {
+  if (s_hashMapClass) {
+    env->DeleteGlobalRef(s_hashMapClass);
+    s_hashMapClass = nullptr;
+    s_hashMapConstructor = nullptr;
+    s_hashMapPutMethod = nullptr;
+  }
+}
+
+jobject HashMapConstruct(JNIEnv* env) {
+  jobject hashMap = env->NewObject(s_hashMapClass, s_hashMapConstructor);
+  return hashMap;
+}
+
+jobject HashMapPut(JNIEnv* env, jobject hashMap, jobject key, jobject value) {
+  jobject previousValue = env->CallObjectMethod(hashMap, s_hashMapPutMethod, key, value);
+  return previousValue;
 }
 
 RunnableWrapper::RunnableWrapper(JNIEnv* env, jobject runnable) {

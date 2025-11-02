@@ -28,12 +28,19 @@ jint JNI_OnLoad(JavaVM* vm, void* reserved) {
       break;
     if (!LoadHashSetClass(env))
       break;
+    if (!LoadHashMapClass(env))
+      break;
 
     if (!LoadRotation2dClass(env))
       break;
     if (!LoadPose2dClass(env))
       break;
+    if (!LoadChassisSpeedsClass(env))
+      break;
     if (!LoadPairClass(env))
+      break;
+
+    if (!LoadThunderTrajectoryStateClass(env))
       break;
 
     return JNI_VERSION_1_6;
@@ -51,8 +58,12 @@ void JNI_OnUnload(JavaVM* vm, void* reserved) {
   UnloadDoubleClass(env);
   UnloadArrayListClass(env);
   UnloadHashSetClass(env);
+  UnloadHashMapClass(env);
 
   UnloadRotation2dClass(env);
   UnloadPose2dClass(env);
+  UnloadChassisSpeedsClass(env);
   UnloadPairClass(env);
+
+  UnloadThunderTrajectoryStateClass(env);
 }

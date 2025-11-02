@@ -20,6 +20,19 @@ void UnloadPose2dClass(JNIEnv* env);
 
 jobject Pose2dConstruct(JNIEnv* env, jdouble xMeters, jdouble yMeters, jobject Rotation2d);
 
+// edu.wpi.first.math.kinematics.ChassisSpeeds
+
+#define WPIMATH_CHASSISSPEEDS_SIGNATURE "edu/wpi/first/math/kinematics/ChassisSpeeds"
+
+bool LoadChassisSpeedsClass(JNIEnv* env);
+void UnloadChassisSpeedsClass(JNIEnv* env);
+
+jobject ChassisSpeedsConstruct(
+    JNIEnv* env,
+    jdouble vxMetersPerSecond,
+    jdouble vyMetersPerSecond,
+    jdouble omegaRadiansPerSecond);
+
 // edu.wpi.first.math.Pair
 
 #define WPIMATH_PAIR_SIGNATURE "edu/wpi/first/math/Pair"

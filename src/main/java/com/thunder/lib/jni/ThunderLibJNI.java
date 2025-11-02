@@ -5,6 +5,8 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import com.thunder.lib.trajectory.ThunderTrajectoryState;
+
 import edu.wpi.first.math.Pair;
 
 /**
@@ -116,4 +118,30 @@ public class ThunderLibJNI {
   public static native long ThunderAutoProject_registerRemoteUpdateSubscriber(long handle, Runnable callback);
 
   public static native boolean ThunderAutoProject_unregisterRemoteUpdateSubscriber(long handle, long subscriberID);
+
+  /**
+   * ThunderAutoTrajectory JNI Methods
+   */
+
+  public static native void ThunderAutoTrajectory_delete(long handle);
+
+  public static native ThunderTrajectoryState ThunderAutoTrajectory_sample(long handle, double timeSeconds);
+
+  public static native double ThunderAutoTrajectory_getDurationSeconds(long handle);
+
+  public static native ThunderTrajectoryState ThunderAutoTrajectory_getInitialState(long handle);
+
+  public static native ThunderTrajectoryState ThunderAutoTrajectory_getFinalState(long handle);
+
+  public static native HashSet<String> ThunderAutoTrajectory_getStartActions(long handle);
+
+  public static native HashSet<String> ThunderAutoTrajectory_getEndActions(long handle);
+
+  public static native ArrayList<Double> ThunderAutoTrajectory_getStopTimes(long handle);
+
+  public static native HashSet<String> ThunderAutoTrajectory_getStopActions(long handle, double stopTimeSeconds);
+
+  public static native ArrayList<Double> ThunderAutoTrajectory_getActionTimes(long handle);
+
+  public static native HashSet<String> ThunderAutoTrajectory_getActionsAtTime(long handle, double timeSeconds);
 }

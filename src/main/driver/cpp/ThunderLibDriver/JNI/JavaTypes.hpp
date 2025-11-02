@@ -45,6 +45,16 @@ void UnloadHashSetClass(JNIEnv* env);
 jobject HashSetConstruct(JNIEnv* env);
 jboolean HashSetAdd(JNIEnv* env, jobject hashSet, jobject element);
 
+// java.util.HashMap
+
+#define JAVA_UTIL_HASHMAP_SIGNATURE "java/util/HashMap"
+
+bool LoadHashMapClass(JNIEnv* env);
+void UnloadHashMapClass(JNIEnv* env);
+
+jobject HashMapConstruct(JNIEnv* env);
+jobject HashMapPut(JNIEnv* env, jobject hashMap, jobject key, jobject value);
+
 // java.lang.Runnable
 
 #define JAVA_LANG_RUNNABLE_SIGNATURE "java/lang/Runnable"
