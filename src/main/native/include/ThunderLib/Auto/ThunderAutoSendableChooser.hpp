@@ -59,6 +59,8 @@ class ThunderAutoSendableChooser final {
 
   /**
    * Sets the trajectory runner properties to use for making trajectory commands.
+   * 
+   * @param runnerProps The trajectory runner properties to set.
    */
   void setTrajectoryRunnerProperties(const TrajectoryRunnerProperties& runnerProps) noexcept;
 
