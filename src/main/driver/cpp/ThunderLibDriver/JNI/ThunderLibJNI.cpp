@@ -42,6 +42,8 @@ jint JNI_OnLoad(JavaVM* vm, void* reserved) {
 
     if (!LoadThunderTrajectoryStateClass(env))
       break;
+    if (!LoadFieldSymmetryClass(env))
+      break;
 
     return JNI_VERSION_1_6;
   } while (0);
@@ -66,4 +68,5 @@ void JNI_OnUnload(JavaVM* vm, void* reserved) {
   UnloadPairClass(env);
 
   UnloadThunderTrajectoryStateClass(env);
+  UnloadFieldSymmetryClass(env);
 }

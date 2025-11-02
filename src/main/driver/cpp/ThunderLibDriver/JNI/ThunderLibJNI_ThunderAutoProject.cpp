@@ -379,16 +379,16 @@ jobject Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject_1getAutoModeNa
 /*
  * Class:     com_thunder_lib_jni_ThunderLibJNI
  * Method:    ThunderAutoProject_getFieldSymmetry
- * Signature: (J)I
+ * Signature: (J)Lcom/thunder/lib/trajectory/FieldSymmetry;
  */
-jint Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject_1getFieldSymmetry(JNIEnv* env,
-                                                                                     jclass,
-                                                                                     jlong projectHandle) {
+jobject Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject_1getFieldSymmetry
+  (JNIEnv * env, jclass, jlong projectHandle) {
   if (!projectHandle)
     return 0;
 
   driver::ThunderAutoProject* project = reinterpret_cast<driver::ThunderAutoProject*>(projectHandle);
-  return static_cast<jint>(project->getFieldSymmetry());
+  driver::FieldSymmetry symmetry = project->getFieldSymmetry();
+  return FieldSymmetryGet(env, symmetry);
 }
 
 /*

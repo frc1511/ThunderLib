@@ -8,19 +8,19 @@ public enum FieldSymmetry {
   /**
    * The trajectory remains the same regardless of alliance color.
    */
-  None,
+  NONE,
 
   /**
    * Rotated 180 degrees, like 2022 and 2025.
    * 
    * On red, both X and Y coordinates are inverted. Rotations are flipped by 180.
    */
-  Rotational,
+  ROTATIONAL,
 
   /**
    * Mirrored across the center line, like 2023 and 2024.
    * 
    * On red, only the Y coordinate is inverted. Rotations are flipped by 180
    */
-  Reflectional,
+  REFLECTIONAL,
 }

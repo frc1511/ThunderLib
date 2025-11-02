@@ -11,6 +11,7 @@ import java.util.Optional;
 import com.thunder.lib.auto.ThunderAutoProject;
 import com.thunder.lib.auto.ThunderAutoTrajectory;
 import com.thunder.lib.tests.BaseTestSuite;
+import com.thunder.lib.trajectory.FieldSymmetry;
 import com.thunder.lib.trajectory.ThunderTrajectoryState;
 
 import edu.wpi.first.math.geometry.Pose2d;
@@ -27,6 +28,8 @@ public class ThunderAutoProjectTestSuite extends BaseTestSuite {
 
     assertTrue(project.isLoaded());
     assertEquals("SimpleTrajectory", project.getName());
+
+    assertEquals(FieldSymmetry.ROTATIONAL, project.getFieldSymmetry());
 
     String trajectoryName = "MySimpleTrajectory";
     assertTrue(project.hasTrajectory(trajectoryName));

@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import com.thunder.lib.trajectory.FieldSymmetry;
 import com.thunder.lib.trajectory.ThunderTrajectoryState;
 
 import edu.wpi.first.math.Pair;
@@ -103,7 +104,7 @@ public class ThunderLibJNI {
 
   public static native HashSet<String> ThunderAutoProject_getAutoModeNames(long handle);
 
-  public static native int ThunderAutoProject_getFieldSymmetry(long handle);
+  public static native FieldSymmetry ThunderAutoProject_getFieldSymmetry(long handle);
 
   public static native Pair<Double, Double> ThunderAutoProject_getFieldDimensions(long handle);
 

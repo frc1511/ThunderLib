@@ -327,8 +327,7 @@ public class ThunderAutoProject {
    * @return The field symmetry.
    */
   public FieldSymmetry getFieldSymmetry() {
-    int symmetryInt = ThunderLibJNI.ThunderAutoProject_getFieldSymmetry(m_handle);
-    return FieldSymmetry.values()[symmetryInt];
+    return ThunderLibJNI.ThunderAutoProject_getFieldSymmetry(m_handle);
   }
 
   /**

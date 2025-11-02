@@ -21,6 +21,8 @@ TEST(ThunderAutoProjectTests, SimpleTrajectoryTest) {
   ASSERT_TRUE(project->isLoaded());
   ASSERT_EQ(project->getName(), "SimpleTrajectory");
 
+  EXPECT_EQ(project->getFieldSymmetry(), FieldSymmetry::ROTATIONAL);
+
   const std::string trajectoryName = "MySimpleTrajectory";
 
   ASSERT_TRUE(project->hasTrajectory(trajectoryName));

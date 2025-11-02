@@ -1,6 +1,7 @@
 #pragma once
 
 #include "jni.h"
+#include <ThunderLibDriver/Auto/ThunderAutoProject.hpp>
 
 // com.thunder.lib.trajectory.ThunderTrajectoryState
 
@@ -17,3 +18,12 @@ jobject ThunderTrajectoryStateConstruct(JNIEnv* env,
                                         jobject chassisSpeeds,
                                         jdouble linearVelocityMetersPerSecond,
                                         jobject headingRotation2d);
+
+// com.thunder.lib.trajectory.FieldSymmetry
+
+#define THUNDERLIB_FIELDSYMMETRY_SIGNATURE "com/thunder/lib/trajectory/FieldSymmetry"
+
+bool LoadFieldSymmetryClass(JNIEnv* env);
+void UnloadFieldSymmetryClass(JNIEnv* env);
+
+jobject FieldSymmetryGet(JNIEnv* env, thunder::driver::FieldSymmetry symmetry);
