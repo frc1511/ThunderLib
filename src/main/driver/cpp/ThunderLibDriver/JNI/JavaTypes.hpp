@@ -25,6 +25,10 @@ void UnloadDoubleClass(JNIEnv* env);
 
 jobject DoubleConstruct(JNIEnv* env, jdouble value);
 
+// java.lang.String
+
+#define JAVA_LANG_STRING_SIGNATURE "java/lang/String"
+
 // java.util.ArrayList
 
 #define JAVA_UTIL_ARRAYLIST_SIGNATURE "java/util/ArrayList"

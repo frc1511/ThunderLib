@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import com.thunder.lib.auto.ThunderAutoSendableChooser;
 import com.thunder.lib.trajectory.FieldSymmetry;
 import com.thunder.lib.trajectory.ThunderTrajectoryState;
 
@@ -119,6 +120,35 @@ public class ThunderLibJNI {
   public static native long ThunderAutoProject_registerRemoteUpdateSubscriber(long handle, Runnable callback);
 
   public static native boolean ThunderAutoProject_unregisterRemoteUpdateSubscriber(long handle, long subscriberID);
+
+  /**
+   * ThunderAutoSendableChooser JNI methods
+   */
+
+  public static native long ThunderAutoSendableChooser_construct();
+
+  public static native long ThunderAutoSendableChooser_constructWithSmartDashboardKey(String smartDashboardKey);
+
+  public static native void ThunderAutoSendableChooser_delete(long handle);
+
+  public static native void ThunderAutoSendableChooser_publish(long handle, String smartDashboardKey);
+
+  public static native void ThunderAutoSendableChooser_includeProjectSource(long handle, long projectHandle,
+      boolean addAllAutoModes, boolean addAllTrajectories);
+
+  public static native void ThunderAutoSendableChooser_addAllTrajectoriesFromProject(long handle, String projectName);
+
+  public static native void ThunderAutoSendableChooser_addAllAutoModesFromProject(long handle, String projectName);
+
+  public static native boolean ThunderAutoSendableChooser_addTrajectoryFromProject(long handle, String projectName,
+      String trajectoryName);
+
+  public static native boolean ThunderAutoSendableChooser_addCustomCommand(long handle, String commandName);
+
+  public static native boolean ThunderAutoSendableChooser_addAutoModeFromProject(long handle, String projectName,
+      String autoModeName);
+
+  public static native ThunderAutoSendableChooser.ChooserSelection ThunderAutoSendableChooser_getSelected(long handle);
 
   /**
    * ThunderAutoTrajectory JNI Methods
