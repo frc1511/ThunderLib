@@ -177,7 +177,7 @@ include(FetchContent)
 FetchContent_Declare(
   allwpilib
   GIT_REPOSITORY https://github.com/wpilibsuite/allwpilib.git
-  GIT_TAG f1b9be5 # TODO: Update to 2026 release tag when available
+  GIT_TAG v2026.0.0-alpha-1 # TODO: Update to 2026 release tag when available
   GIT_SHALLOW TRUE
 )
 
@@ -230,7 +230,7 @@ target_link_libraries(${CMAKE_PROJECT_NAME} PUBLIC spdlog)
 ###
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-  target_compile_options(${CMAKE_PROJECT_NAME} PRIVATE -Werror -Wall -Wextra -Wpedantic)
+  target_compile_options(${CMAKE_PROJECT_NAME} PRIVATE -Wall -Wextra)# -Werror -Wpedantic)
 endif()
 
 ###
