@@ -94,7 +94,7 @@ class ThunderAutoTrajectory final : public thunder::Trajectory {
   driver::ThunderAutoTrajectory* getHandle() noexcept;
 
  private:
-  friend class ThunderAutoProject;  // TODO: ThunderAutoTrajectoryBuilder
+  friend class ThunderAutoProject;
 
   // Ownership is transferred to the constructed object.
   explicit ThunderAutoTrajectory(driver::ThunderAutoTrajectory* trajectory) noexcept;

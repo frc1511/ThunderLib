@@ -14,7 +14,7 @@ namespace thunder {
  *
  * NONE: The trajectory remains the same regardless of alliance color.
  * ROTATIONAL: On red, both X and Y coordinates are inverted. Rotations are flipped by 180.
- * REFLECTIONAL: On red, only the Y coordinate is inverted. Rotations are flipped by 180
+ * REFLECTIONAL: On red, only the X coordinate is inverted. Rotations are flipped by 180
  */
 enum FieldSymmetry {
   NONE,
@@ -30,7 +30,7 @@ struct FieldDimensions {
 struct TrajectoryState {
   units::second_t time = 0_s;
   frc::Pose2d pose;
-  frc::ChassisSpeeds chassisSpeeds;
+  frc::ChassisSpeeds chassisSpeeds; // Field-centric
   units::meters_per_second_t linearVelocity = 0.0_mps;
   frc::Rotation2d heading;
 };
