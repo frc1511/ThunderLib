@@ -18,8 +18,7 @@ TEST(ThunderAutoBuildOutputTrajectoryTests, BuildTrajectory) {
 
   ThunderAutoTrajectorySkeleton trajectory;
   {
-    trajectory.addStartAction("action1");
-    trajectory.addStartAction("action2");
+    trajectory.setStartAction("action1");
     trajectory.setStartRotation(180.0_deg);
 
     ThunderAutoTrajectorySkeletonWaypoint waypoint1(
@@ -34,7 +33,7 @@ TEST(ThunderAutoBuildOutputTrajectoryTests, BuildTrajectory) {
         Point2d(3_m, 1.5_m), 0_mps, ThunderAutoTrajectorySkeletonWaypoint::HeadingAngles(180_deg, 45_deg),
         ThunderAutoTrajectorySkeletonWaypoint::HeadingWeights(1.0, 1.0));
     waypoint2.setStopRotation(90.0_deg);
-    waypoint2.addStopAction("action1");
+    waypoint2.setStopAction("action1");
 
     trajectory.appendPoint(waypoint2);
     trajectory.actions().add(1.25, {.action = "action3"});
@@ -45,7 +44,7 @@ TEST(ThunderAutoBuildOutputTrajectoryTests, BuildTrajectory) {
 
     trajectory.appendPoint(waypoint3);
 
-    trajectory.addEndAction("action4");
+    trajectory.setEndAction("action4");
     trajectory.setEndRotation(180.0_deg);
   }
 
@@ -121,17 +120,9 @@ TEST(ThunderAutoBuildOutputTrajectoryTests, BuildSimpleTrajectory) {
 
   EXPECT_NEAR(trajectory->totalTime.value(), 5.5, DOUBLE_TOLERANCE);
 
-  // Start action
-  {
-    ASSERT_EQ(trajectory->startActions.size(), 1UL);
-    EXPECT_EQ(*trajectory->startActions.begin(), "StartAction");
-  }
-
-  // End action
-  {
-    ASSERT_EQ(trajectory->endActions.size(), 1UL);
-    EXPECT_EQ(*trajectory->endActions.begin(), "EndAction");
-  }
+  // Start & end actions
+  ASSERT_EQ(trajectory->startAction, "StartAction");
+  ASSERT_EQ(trajectory->endAction, "EndAction");
 
   // Positioned action
   {

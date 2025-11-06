@@ -123,55 +123,40 @@ jobject Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoTrajectory_1getFinalSt
 
 /*
  * Class:     com_thunder_lib_jni_ThunderLibJNI
- * Method:    ThunderAutoTrajectory_getStartActions
- * Signature: (J)Ljava/util/HashSet;
+ * Method:    ThunderAutoTrajectory_getStartAction
+ * Signature: (J)Ljava/lang/String;
  */
-jobject Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoTrajectory_1getStartActions(
-    JNIEnv* env,
-    jclass,
-    jlong trajectoryHandle) {
-  jobject hashSet = HashSetConstruct(env);
-
+jstring Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoTrajectory_1getStartAction(JNIEnv* env,
+                                                                                     jclass,
+                                                                                     jlong trajectoryHandle) {
   if (!trajectoryHandle) {
-    return hashSet;
+    return env->NewStringUTF("");
   }
 
   ThunderAutoTrajectory* trajectory = reinterpret_cast<ThunderAutoTrajectory*>(trajectoryHandle);
-  const std::unordered_set<std::string>& actions = trajectory->getStartActions();
+  const std::string& startActionName = trajectory->getStartAction();
 
-  for (const std::string& action : actions) {
-    jobject actionString = env->NewStringUTF(action.c_str());
-    HashSetAdd(env, hashSet, actionString);
-    env->DeleteLocalRef(actionString);
-  }
-
-  return hashSet;
+  jstring startActionNameJStr = env->NewStringUTF(startActionName.c_str());
+  return startActionNameJStr;
 }
 
 /*
  * Class:     com_thunder_lib_jni_ThunderLibJNI
- * Method:    ThunderAutoTrajectory_getEndActions
- * Signature: (J)Ljava/util/HashSet;
+ * Method:    ThunderAutoTrajectory_getEndAction
+ * Signature: (J)Ljava/lang/String;
  */
-jobject Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoTrajectory_1getEndActions(JNIEnv* env,
-                                                                                    jclass,
-                                                                                    jlong trajectoryHandle) {
-  jobject hashSet = HashSetConstruct(env);
-
+jstring Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoTrajectory_1getEndAction(JNIEnv* env,
+                                                                                   jclass,
+                                                                                   jlong trajectoryHandle) {
   if (!trajectoryHandle) {
-    return hashSet;
+    return env->NewStringUTF("");
   }
 
   ThunderAutoTrajectory* trajectory = reinterpret_cast<ThunderAutoTrajectory*>(trajectoryHandle);
-  const std::unordered_set<std::string>& actions = trajectory->getEndActions();
+  const std::string& endActionName = trajectory->getEndAction();
 
-  for (const std::string& action : actions) {
-    jobject actionString = env->NewStringUTF(action.c_str());
-    HashSetAdd(env, hashSet, actionString);
-    env->DeleteLocalRef(actionString);
-  }
-
-  return hashSet;
+  jstring endActionNameJStr = env->NewStringUTF(endActionName.c_str());
+  return endActionNameJStr;
 }
 
 /*
@@ -189,7 +174,7 @@ jobject Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoTrajectory_1getStopTim
   }
 
   ThunderAutoTrajectory* trajectory = reinterpret_cast<ThunderAutoTrajectory*>(trajectoryHandle);
-  const std::map<units::second_t, std::unordered_set<std::string>> stopActions = trajectory->getStopActions();
+  const std::map<units::second_t, std::string> stopActions = trajectory->getStopActions();
 
   for (const auto& [stopTime, _] : stopActions) {
     jobject stopTimeDouble = DoubleConstruct(env, stopTime.value());
@@ -202,35 +187,27 @@ jobject Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoTrajectory_1getStopTim
 
 /*
  * Class:     com_thunder_lib_jni_ThunderLibJNI
- * Method:    ThunderAutoTrajectory_getStopActions
- * Signature: (JD)Ljava/util/HashSet;
+ * Method:    ThunderAutoTrajectory_getStopAction
+ * Signature: (JD)Ljava/lang/String;
  */
-jobject Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoTrajectory_1getStopActions(JNIEnv* env,
-                                                                                     jclass,
-                                                                                     jlong trajectoryHandle,
-                                                                                     jdouble timeSeconds) {
-  jobject hashSet = HashSetConstruct(env);
-
+jstring Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoTrajectory_1getStopAction(JNIEnv* env,
+                                                                                    jclass,
+                                                                                    jlong trajectoryHandle,
+                                                                                    jdouble timeSeconds) {
   if (!trajectoryHandle) {
-    return hashSet;
+    return env->NewStringUTF("");
   }
 
   ThunderAutoTrajectory* trajectory = reinterpret_cast<ThunderAutoTrajectory*>(trajectoryHandle);
-  const std::map<units::second_t, std::unordered_set<std::string>> stopActions = trajectory->getStopActions();
+  const std::map<units::second_t, std::string> stopActions = trajectory->getStopActions();
 
   auto it = stopActions.find(units::second_t(timeSeconds));
   if (it == stopActions.end()) {
-    return hashSet;
+    return env->NewStringUTF("");
   }
 
-  const std::unordered_set<std::string>& actionsAtTime = it->second;
-  for (const std::string& action : actionsAtTime) {
-    jobject actionString = env->NewStringUTF(action.c_str());
-    HashSetAdd(env, hashSet, actionString);
-    env->DeleteLocalRef(actionString);
-  }
-
-  return hashSet;
+  jstring stopActionNameJStr = env->NewStringUTF(it->second.c_str());
+  return stopActionNameJStr;
 }
 
 /*

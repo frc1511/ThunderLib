@@ -164,13 +164,13 @@ public class ThunderLibJNI {
 
   public static native ThunderTrajectoryState ThunderAutoTrajectory_getFinalState(long handle);
 
-  public static native HashSet<String> ThunderAutoTrajectory_getStartActions(long handle);
+  public static native String ThunderAutoTrajectory_getStartAction(long handle);
 
-  public static native HashSet<String> ThunderAutoTrajectory_getEndActions(long handle);
+  public static native String ThunderAutoTrajectory_getEndAction(long handle);
 
   public static native ArrayList<Double> ThunderAutoTrajectory_getStopTimes(long handle);
 
-  public static native HashSet<String> ThunderAutoTrajectory_getStopActions(long handle, double stopTimeSeconds);
+  public static native String ThunderAutoTrajectory_getStopAction(long handle, double stopTimeSeconds);
 
   public static native ArrayList<Double> ThunderAutoTrajectory_getActionTimes(long handle);
 

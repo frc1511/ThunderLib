@@ -260,29 +260,6 @@ void ThunderAutoTrajectorySkeletonWaypoint::setStopRotation(const CanonicalAngle
   m_stopRotation = rotation;
 }
 
-bool ThunderAutoTrajectorySkeletonWaypoint::hasStopAction(const std::string& action) const noexcept {
-  return m_stopActions.contains(action);
-}
-
-bool ThunderAutoTrajectorySkeletonWaypoint::addStopAction(const std::string& action) {
-  if (action.empty()) {
-    throw InvalidArgumentError::Construct("Action cannot be empty");
-  }
-  if (m_stopActions.contains(action))
-    return false;
-
-  m_stopActions.insert(action);
-  return true;
-}
-
-bool ThunderAutoTrajectorySkeletonWaypoint::removeStopAction(const std::string& action) noexcept {
-  if (!m_stopActions.contains(action))
-    return false;
-
-  m_stopActions.erase(action);
-  return true;
-}
-
 void ThunderAutoTrajectorySkeletonWaypoint::setMaxVelocityOverride(
     units::meters_per_second_t velocity) noexcept {
   velocity = std::clamp(velocity, 0_mps, 7_mps);
@@ -291,7 +268,7 @@ void ThunderAutoTrajectorySkeletonWaypoint::setMaxVelocityOverride(
   m_maxVelocityOverride = velocity;
 
   if (wasStopped && velocity > 0_mps) {
-    m_stopActions.clear();
+    m_stopAction.clear();
     // Lock incoming heading to outgoing because not stopped anymore.
     setOutgoingHeading(m_headings.outgoingAngle());
   }
@@ -299,7 +276,7 @@ void ThunderAutoTrajectorySkeletonWaypoint::setMaxVelocityOverride(
 
 void ThunderAutoTrajectorySkeletonWaypoint::resetMaxVelocityOverride() noexcept {
   m_maxVelocityOverride = std::nullopt;
-  m_stopActions.clear();
+  m_stopAction.clear();
   setOutgoingHeading(m_headings.outgoingAngle());  // Fix headings
 }
 
@@ -423,51 +400,6 @@ const ThunderAutoTrajectorySkeletonWaypoint& ThunderAutoTrajectorySkeleton::getP
   }
   const_iterator it = std::next(cbegin(), index);
   return *it;
-}
-
-bool ThunderAutoTrajectorySkeleton::hasStartAction(const std::string& action) const noexcept {
-  return m_startActions.contains(action);
-}
-
-bool ThunderAutoTrajectorySkeleton::addStartAction(const std::string& action) {
-  if (action.empty()) {
-    throw InvalidArgumentError::Construct("Action name cannot be empty");
-  }
-  if (m_startActions.contains(action))
-    return false;
-
-  m_startActions.insert(action);
-  return true;
-}
-
-bool ThunderAutoTrajectorySkeleton::removeStartAction(const std::string& action) {
-  if (!m_startActions.contains(action))
-    return false;
-
-  m_startActions.erase(action);
-  return true;
-}
-
-bool ThunderAutoTrajectorySkeleton::hasEndAction(const std::string& action) const noexcept {
-  return m_endActions.contains(action);
-}
-
-bool ThunderAutoTrajectorySkeleton::addEndAction(const std::string& action) {
-  if (action.empty()) {
-    throw InvalidArgumentError::Construct("Action name cannot be empty");
-  }
-  if (m_endActions.contains(action))
-    return false;
-  m_endActions.insert(action);
-  return true;
-}
-
-bool ThunderAutoTrajectorySkeleton::removeEndAction(const std::string& action) {
-  if (!m_endActions.contains(action))
-    return false;
-
-  m_endActions.erase(action);
-  return true;
 }
 
 ThunderAutoTrajectoryAction& ThunderAutoTrajectorySkeleton::getAction(size_t index) {
@@ -600,7 +532,7 @@ void ThunderAutoTrajectorySkeleton::reverseDirection() {
     m_actions.add(actionPosition, newAction);
   }
 
-  std::swap(m_startActions, m_endActions);
+  std::swap(m_startAction, m_endAction);
   std::swap(m_startRotation, m_endRotation);
 }
 
@@ -812,8 +744,8 @@ static void to_json(wpi::json& json, const ThunderAutoTrajectorySkeletonWaypoint
 
     if (point.isStopped()) {
       json["stop_rotation"] = point.stopRotation();
-      if (!point.stopActions().empty()) {
-        json["stop_actions"] = point.stopActions();
+      if (!point.stopAction().empty()) {
+        json["stop_action"] = point.stopAction();
       }
     }
   }
@@ -832,9 +764,10 @@ static void from_json(const wpi::json& json, ThunderAutoTrajectorySkeletonWaypoi
       json.at("stop_rotation").get_to(stopRotation);
       point.setStopRotation(stopRotation);
 
-      if (json.contains("stop_actions")) {
-        auto stopActions = json.at("stop_actions").get<std::unordered_set<std::string>>();
-        point.setAllStopActions(stopActions);
+      if (json.contains("stop_action")) {
+        std::string stopAction;
+        json.at("stop_action").get_to(stopAction);
+        point.setStopAction(stopAction);
       }
     }
   }
@@ -956,8 +889,7 @@ static void from_json(const wpi::json& json, ThunderAutoTrajectoryRotation& rota
 
 static void to_json(wpi::json& json, const ThunderAutoTrajectoryAction& action) {
   json = wpi::json{
-      {"action", action.action},
-      {"editor_locked", action.editorLocked},
+      {"action", action.action}, {"editor_locked", action.editorLocked},
       // TODO: zone end position
   };
 }
@@ -983,14 +915,14 @@ void to_json(wpi::json& json, const ThunderAutoTrajectorySkeleton& trajectory) {
     json["rotations"] = rotations;
   }
 
-  const auto& startActions = trajectory.startActions();
-  if (!startActions.empty()) {
-    json["start_actions"] = startActions;
+  const std::string& startAction = trajectory.startAction();
+  if (!startAction.empty()) {
+    json["start_action"] = startAction;
   }
 
-  const auto& endActions = trajectory.endActions();
-  if (!endActions.empty()) {
-    json["end_actions"] = endActions;
+  const std::string& endAction = trajectory.endAction();
+  if (!endAction.empty()) {
+    json["end_action"] = endAction;
   }
 
   const auto& actions = trajectory.actions();
@@ -1013,12 +945,12 @@ void ThunderAutoTrajectorySkeleton::fromJson(const wpi::json& json) {
     json.at("rotations").get_to(m_rotations);
   }
 
-  if (json.contains("start_actions")) {
-    json.at("start_actions").get_to(m_startActions);
+  if (json.contains("start_action")) {
+    json.at("start_action").get_to(m_startAction);
   }
 
-  if (json.contains("end_actions")) {
-    json.at("end_actions").get_to(m_endActions);
+  if (json.contains("end_action")) {
+    json.at("end_action").get_to(m_endAction);
   }
 
   if (json.contains("actions")) {
@@ -1170,10 +1102,11 @@ void ThunderAutoTrajectorySkeleton::fromJsonPre2026(const wpi::json& json,
     }
 
     for (const auto& [position, action] : positionedActions) {
-      if (position == 0.0) {
-        addStartAction(action);
-      } else if (DoubleEquals(position, static_cast<double>(m_points.size() - 1))) {
-        addEndAction(action);
+      if (position == 0.0 && !hasStartAction()) {  // Only one start action allowed, so additional ones are
+                                                   // added as normal actions.
+        setStartAction(action);
+      } else if (DoubleEquals(position, static_cast<double>(m_points.size() - 1)) && !hasEndAction()) {
+        setEndAction(action);
       } else {
         ThunderAutoTrajectoryAction newAction{.action = action};
         m_actions.add(position, newAction);

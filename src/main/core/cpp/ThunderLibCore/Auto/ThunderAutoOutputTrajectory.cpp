@@ -226,7 +226,7 @@ static void SampleSegmentPoints(const EquationFunc& f, size_t samples, ThunderAu
   ThunderLibCoreAssert(samples > 0);
   double delta = 1.0 / static_cast<double>(samples);
 
-  ThunderAutoOutputTrajectorySegment segment {};
+  ThunderAutoOutputTrajectorySegment segment{};
 
   Point2d previousPoint = f(0.0);
   segment.sampledPoints.emplace_back(0.0_m, previousPoint);
@@ -252,7 +252,7 @@ static void SampleSegmentPoints(const EquationFunc& f,
   ThunderLibCoreAssert(samples > 0);
   double delta = 1.0 / static_cast<double>(samples);
 
-  ThunderAutoOutputTrajectorySegment segment {};
+  ThunderAutoOutputTrajectorySegment segment{};
 
   Point2d previousPoint = f(0.0);
   segment.sampledPoints.emplace_back(0.0_m, previousPoint);
@@ -358,7 +358,7 @@ static void ResamplePoints(const ThunderAutoTrajectorySkeletonSettings& settings
 
       double t = (d - lowerPointDistance) / (upperPointDistance - lowerPointDistance);
 
-      ThunderAutoOutputTrajectoryPoint point {};
+      ThunderAutoOutputTrajectoryPoint point{};
 
       const Point2d& lowerPointPosition = segment.sampledPoints[lowerPointIndex].position;
       const Point2d& upperPointPosition = segment.sampledPoints[upperPointIndex].position;
@@ -443,7 +443,7 @@ static void ResamplePoints(size_t samplesPerMeter, ThunderAutoPartialOutputTraje
 
       double t = (d - lowerPointDistance) / (upperPointDistance - lowerPointDistance);
 
-      ThunderAutoPartialOutputTrajectoryPoint point {};
+      ThunderAutoPartialOutputTrajectoryPoint point{};
 
       const Point2d& lowerPointPosition = segment.sampledPoints[lowerPointIndex].position;
       const Point2d& upperPointPosition = segment.sampledPoints[upperPointIndex].position;
@@ -1042,8 +1042,8 @@ static std::multimap<ThunderAutoTrajectoryPosition, ThunderAutoTrajectoryAction>
     const ThunderAutoTrajectorySkeleton& skeleton) {
   std::multimap<ThunderAutoTrajectoryPosition, ThunderAutoTrajectoryAction> actions = skeleton.actions();
 
-  for (const auto& action : skeleton.startActions()) {
-    actions.emplace(0.0, action);
+  if (skeleton.hasStartAction()) {
+    actions.emplace(0.0, skeleton.startAction());
   }
 
   if (skeleton.points().size() > 2) {
@@ -1054,19 +1054,19 @@ static std::multimap<ThunderAutoTrajectoryPosition, ThunderAutoTrajectoryAction>
 
     for (auto waypointIt = startIt; waypointIt != endIt; ++waypointIt) {
       const ThunderAutoTrajectorySkeletonWaypoint& waypoint = *waypointIt;
-      if (waypoint.isStopped()) {
+      if (waypoint.isStopped() && waypoint.hasStopAction()) {
         double position = static_cast<double>(waypointIndex);
-        for (const auto& action : waypoint.stopActions()) {
-          actions.emplace(position, action);
-        }
+        const std::string& stopActionName = waypoint.stopAction();
+        actions.emplace(position, stopActionName);
       }
       waypointIndex++;
     }
   }
 
-  for (const auto& action : skeleton.endActions()) {
-    actions.emplace(static_cast<double>(skeleton.points().size() - 1), action);
+  if (skeleton.hasEndAction()) {
+    actions.emplace(static_cast<double>(skeleton.points().size() - 1), skeleton.endAction());
   }
+
   return actions;
 }
 
@@ -1099,8 +1099,8 @@ static void FillActions(
     point.actions.push_back(action.action);
   }
 
-  output.startActions = skeleton.startActions();
-  output.endActions = skeleton.endActions();
+  output.startAction = skeleton.startAction();
+  output.endAction = skeleton.endAction();
   output.stopActions.clear();
 
   size_t waypointIndex = 0;
@@ -1112,7 +1112,7 @@ static void FillActions(
     double position = static_cast<double>(waypointIndex);
 
     size_t outputPointIndex = output.trajectoryPositionToPointIndex(position);
-    output.stopActions.emplace(output.points[outputPointIndex].time, waypoint.stopActions());
+    output.stopActions.emplace(output.points[outputPointIndex].time, waypoint.stopAction());
   }
 
   for (const auto& [position, action] : skeleton.actions()) {

@@ -74,28 +74,16 @@ TEST(ThunderAutoProjectTests, SimpleTrajectoryTest) {
     EXPECT_NEAR(stopState.linearVelocity.value(), 0.0, DOUBLE_TOLERANCE);
     EXPECT_NEAR(stopState.heading.Degrees().value(), -90.0, DOUBLE_TOLERANCE);
 
-    const std::map<units::second_t, std::unordered_set<std::string>>& stopActions =
-        trajectory->getStopActions();
+    const std::map<units::second_t, std::string>& stopActions = trajectory->getStopActions();
     ASSERT_EQ(stopActions.size(), 1UL);
-    const auto& [stopTime, actions] = *stopActions.begin();
+    const auto& [stopTime, stopActionName] = *stopActions.begin();
     EXPECT_NEAR(stopTime.value(), 3.5, DOUBLE_TOLERANCE);
-    ASSERT_EQ(actions.size(), 1UL);
-    EXPECT_EQ(*actions.begin(), "StopAction");
+    EXPECT_EQ(stopActionName, "StopAction");
   }
 
-  // Start action
-  {
-    const std::unordered_set<std::string>& startActions = trajectory->getStartActions();
-    ASSERT_EQ(startActions.size(), 1UL);
-    EXPECT_EQ(*startActions.begin(), "StartAction");
-  }
-
-  // End action
-  {
-    const std::unordered_set<std::string>& endActions = trajectory->getEndActions();
-    ASSERT_EQ(endActions.size(), 1UL);
-    EXPECT_EQ(*endActions.begin(), "EndAction");
-  }
+  // Start & end actions
+  EXPECT_EQ(trajectory->getStartAction(), "StartAction");
+  EXPECT_EQ(trajectory->getEndAction(), "EndAction");
 
   // Positioned action
   {

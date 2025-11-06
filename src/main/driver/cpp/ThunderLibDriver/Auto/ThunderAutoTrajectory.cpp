@@ -92,26 +92,26 @@ ThunderAutoTrajectoryState ThunderAutoTrajectory::getFinalState() const noexcept
   return state;
 }
 
-const std::unordered_set<std::string>& ThunderAutoTrajectory::getStartActions() const noexcept {
+const std::string& ThunderAutoTrajectory::getStartAction() const noexcept {
   if (!isValid()) {
-    static const std::unordered_set<std::string> emptySet;
-    return emptySet;
+    static std::string emptyString;
+    return emptyString;
   }
-  return m_trajectory->startActions;
+  return m_trajectory->startAction;
 }
 
-const std::unordered_set<std::string>& ThunderAutoTrajectory::getEndActions() const noexcept {
+const std::string& ThunderAutoTrajectory::getEndAction() const noexcept {
   if (!isValid()) {
-    static const std::unordered_set<std::string> emptySet;
-    return emptySet;
+    static std::string emptyString;
+    return emptyString;
   }
-  return m_trajectory->endActions;
+  return m_trajectory->endAction;
 }
 
-const std::map<units::second_t, std::unordered_set<std::string>>& ThunderAutoTrajectory::getStopActions()
+const std::map<units::second_t, std::string>& ThunderAutoTrajectory::getStopActions()
     const noexcept {
   if (!isValid()) {
-    static const std::map<units::second_t, std::unordered_set<std::string>> emptyMap;
+    static const std::map<units::second_t, std::string> emptyMap;
     return emptyMap;
   }
   return m_trajectory->stopActions;

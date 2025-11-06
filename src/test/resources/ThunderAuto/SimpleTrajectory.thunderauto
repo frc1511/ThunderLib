@@ -67,9 +67,7 @@
             "position": 0.5
           }
         ],
-        "end_actions": [
-          "EndAction"
-        ],
+        "end_action": "EndAction",
         "end_rotation": 3.141592653589793,
         "points": [
           {
@@ -104,9 +102,7 @@
               "x": 2.8,
               "y": 6.7
             },
-            "stop_actions": [
-              "StopAction"
-            ],
+            "stop_action": "StopAction",
             "stop_rotation": 3.141592653589793
           },
           {
@@ -133,9 +129,7 @@
           "max_linear_accel": 2.0,
           "max_linear_velocity": 2.0
         },
-        "start_actions": [
-          "StartAction"
-        ],
+        "start_action": "StartAction",
         "start_rotation": 0.0
       }
     },

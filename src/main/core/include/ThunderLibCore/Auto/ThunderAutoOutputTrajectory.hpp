@@ -66,9 +66,9 @@ struct ThunderAutoOutputTrajectory {
   std::vector<ThunderAutoOutputTrajectoryPoint> points;  // Ordered by time.
   std::vector<ThunderAutoOutputTrajectorySegment> segments;
 
-  std::unordered_set<std::string> startActions;
-  std::unordered_set<std::string> endActions;
-  std::map<units::second_t, std::unordered_set<std::string>> stopActions;
+  std::string startAction;
+  std::string endAction;
+  std::map<units::second_t, std::string> stopActions;
   std::multimap<units::second_t, std::string> actions;
 
   /**

@@ -13,53 +13,30 @@ ThunderAutoTrajectoryCommand::ThunderAutoTrajectoryCommand(const std::string& tr
   if (!isValid())
     return;
 
-  // Get start action commands.
+  // Get start action command.
   {
-    const std::unordered_set<std::string>& startActions = m_trajectory->getStartActions();
-
-    std::vector<frc2::CommandPtr> actionCommands;
-    actionCommands.reserve(startActions.size());
-
-    for (const std::string& actionName : startActions) {
-      actionCommands.emplace_back(m_project->getActionCommand(actionName));
-    }
-
-    if (!actionCommands.empty()) {
-      m_startActionsCommand = frc2::cmd::Sequence(std::move(actionCommands));
+    const std::string& startActionName = m_trajectory->getStartAction();
+    if (!startActionName.empty()) {
+      m_startActionCommand = m_project->getActionCommand(startActionName);
     }
   }
 
-  // Get end action commands.
+  // Get end action command.
   {
-    const std::unordered_set<std::string>& endActions = m_trajectory->getEndActions();
-
-    std::vector<frc2::CommandPtr> actionCommands;
-    actionCommands.reserve(endActions.size());
-
-    for (const std::string& actionName : endActions) {
-      actionCommands.emplace_back(m_project->getActionCommand(actionName));
-    }
-
-    if (!actionCommands.empty()) {
-      m_endActionsCommand = frc2::cmd::Parallel(std::move(actionCommands));
+    const std::string& endActionName = m_trajectory->getEndAction();
+    if (!endActionName.empty()) {
+      m_endActionCommand = m_project->getActionCommand(endActionName);
     }
   }
 
   // Get stop action commands.
   {
-    const std::map<units::time::second_t, std::unordered_set<std::string>> stopActions =
+    const std::map<units::time::second_t, std::string> stopActions =
         m_trajectory->getStopActions();
 
-    for (const auto& [stopTime, actions] : stopActions) {
-      std::vector<frc2::CommandPtr> actionCommands;
-      actionCommands.reserve(actions.size());
-
-      for (const std::string& actionName : actions) {
-        actionCommands.emplace_back(m_project->getActionCommand(actionName));
-      }
-
-      if (!actionCommands.empty()) {
-        frc2::CommandPtr stopCommand = frc2::cmd::Parallel(std::move(actionCommands));
+    for (const auto& [stopTime, actionName] : stopActions) {
+      if (!actionName.empty()) {
+        frc2::CommandPtr stopCommand = m_project->getActionCommand(actionName);
         m_stopActionCommands.emplace_back(stopTime, std::move(stopCommand));
       }
     }
@@ -154,21 +131,21 @@ bool ThunderAutoTrajectoryCommand::IsFinished() {
 void ThunderAutoTrajectoryCommand::beginStartActions() {
   m_executionState = ExecutionState::START_ACTIONS;
 
-  m_startActionsCommand.get()->Initialize();
+  m_startActionCommand.get()->Initialize();
 }
 
 void ThunderAutoTrajectoryCommand::executeStartActions() {
-  if (m_startActionsCommand.get()->IsFinished()) {
-    m_startActionsCommand.get()->End(false);
+  if (m_startActionCommand.get()->IsFinished()) {
+    m_startActionCommand.get()->End(false);
     beginFollowTrajectory();
     return;
   }
 
-  m_startActionsCommand.get()->Execute();
+  m_startActionCommand.get()->Execute();
 }
 
 void ThunderAutoTrajectoryCommand::endStartActions(bool interrupted) {
-  m_startActionsCommand.get()->End(interrupted);
+  m_startActionCommand.get()->End(interrupted);
 }
 
 void ThunderAutoTrajectoryCommand::beginFollowTrajectory() {
@@ -294,21 +271,21 @@ void ThunderAutoTrajectoryCommand::endStopped(bool interrupted) {
 }
 
 void ThunderAutoTrajectoryCommand::beginEndActions() {
-  m_endActionsCommand.get()->Initialize();
+  m_endActionCommand.get()->Initialize();
 }
 
 void ThunderAutoTrajectoryCommand::executeEndActions() {
-  if (m_endActionsCommand.get()->IsFinished()) {
-    m_endActionsCommand.get()->End(false);
+  if (m_endActionCommand.get()->IsFinished()) {
+    m_endActionCommand.get()->End(false);
     m_executionState = ExecutionState::FINISHED;
     return;
   }
 
-  m_endActionsCommand.get()->Execute();
+  m_endActionCommand.get()->Execute();
 }
 
 void ThunderAutoTrajectoryCommand::endEndActions(bool interrupted) {
-  m_endActionsCommand.get()->End(interrupted);
+  m_endActionCommand.get()->End(interrupted);
 }
 
 CanonicalAngle ThunderAutoTrajectoryCommand::flipAngleForAlliance(

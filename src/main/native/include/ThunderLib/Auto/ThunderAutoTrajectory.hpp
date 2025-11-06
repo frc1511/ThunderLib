@@ -2,7 +2,6 @@
 
 #include <ThunderLib/Trajectory/Trajectory.hpp>
 #include <string>
-#include <unordered_set>
 #include <map>
 
 namespace thunder {
@@ -58,29 +57,28 @@ class ThunderAutoTrajectory final : public thunder::Trajectory {
   virtual TrajectoryState getFinalState() const noexcept override;
 
   /**
-   * Gets the set of actions to perform concurrently before starting the trajectory.
+   * Gets the start action to perform before starting the trajectory.
    *
-   * @return Set of actions.
+   * @return Action name
    */
-  const std::unordered_set<std::string>& getStartActions() const noexcept;
+  const std::string& getStartAction() const noexcept;
 
   /**
-   * Gets the set of actions to perform concurrently after finishing the trajectory.
+   * Gets the end action to perform after finishing the trajectory.
    *
-   * @return Set of actions.
+   * @return Action name
    */
-  const std::unordered_set<std::string>& getEndActions() const noexcept;
+  const std::string& getEndAction() const noexcept;
 
   /**
-   * Gets the map of actions to perform concurrently at times at which the robot is stopped during the
-   * trajectory.
+   * Gets the map of actions to perform at times at which the robot is stopped during the trajectory.
    *
-   * The robot should pause driving at these times to perform the actions and resume driving after the actions
-   * are complete.
+   * The robot should pause driving at these times to perform the action and resume driving after the action
+   * is complete.
    *
-   * @return Map of stop times to sets of actions.
+   * @return Map of stop times to action names.
    */
-  const std::map<units::second_t, std::unordered_set<std::string>>& getStopActions() const noexcept;
+  const std::map<units::second_t, std::string>& getStopActions() const noexcept;
 
   /**
    * Gets the map of actions to perform at specific times during the trajectory.

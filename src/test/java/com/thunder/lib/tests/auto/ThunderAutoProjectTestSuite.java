@@ -93,26 +93,23 @@ public class ThunderAutoProjectTestSuite extends BaseTestSuite {
       double stopTime = stopTimes.get(0);
       assertEquals(3.5, stopTime, TRAJ_DOUBLE_TOLERANCE);
 
-      HashSet<String> stopActions = trajectory.getStopActions(stopTime);
-      assertEquals(1, stopActions.size());
-      String actionName = stopActions.iterator().next();
-      assertEquals("StopAction", actionName);
+      Optional<String> stopActionName = trajectory.getStopAction(stopTime);
+      assertTrue(stopActionName.isPresent());
+      assertEquals("StopAction", stopActionName.get());
     }
 
     // Start action
     {
-      HashSet<String> startActions = trajectory.getStartActions();
-      assertEquals(1, startActions.size());
-      String actionName = startActions.iterator().next();
-      assertEquals("StartAction", actionName);
+      Optional<String> startActionName = trajectory.getStartAction();
+      assertTrue(startActionName.isPresent());
+      assertEquals("StartAction", startActionName.get());
     }
 
     // End action
     {
-      HashSet<String> endActions = trajectory.getEndActions();
-      assertEquals(1, endActions.size());
-      String actionName = endActions.iterator().next();
-      assertEquals("EndAction", actionName);
+      Optional<String> endActionName = trajectory.getEndAction();
+      assertTrue(endActionName.isPresent());
+      assertEquals("EndAction", endActionName.get());
     }
 
     // Positioned action

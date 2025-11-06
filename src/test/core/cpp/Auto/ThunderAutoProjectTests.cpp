@@ -70,7 +70,7 @@ static void CreateExampleProjectState(ThunderAutoProjectState& state) {
         ThunderAutoTrajectorySkeletonWaypoint::HeadingWeights(1.0, 1.0));
     waypoint2.setStopped(true);
     waypoint2.setStopRotation(90_deg);
-    waypoint2.addStopAction("action1");
+    waypoint2.setStopAction("action1");
 
     trajectory.appendPoint(waypoint2);
 
@@ -165,7 +165,7 @@ TEST(ThunderAutoProjectTests, SerializeAndDeserialize) {
         EXPECT_EQ(deserializedPointIt->maxVelocityOverride(), originalPointIt->maxVelocityOverride());
         if (deserializedPointIt->isStopped()) {
           EXPECT_EQ(deserializedPointIt->stopRotation(), originalPointIt->stopRotation());
-          EXPECT_EQ(deserializedPointIt->stopActions(), originalPointIt->stopActions());
+          EXPECT_EQ(deserializedPointIt->stopAction(), originalPointIt->stopAction());
         }
         // Links are not serialized, so do not compare them.
       }
@@ -358,8 +358,7 @@ TEST(ThunderAutoProjectTests, LoadPre2026Project) {
 
       // Actions
       {
-        const std::unordered_set<std::string>& startActions = trajectory.startActions();
-        EXPECT_TRUE(startActions.empty());
+        EXPECT_FALSE(trajectory.hasStartAction());
 
         const ThunderAutoPositionedTrajectoryItemList<ThunderAutoTrajectoryAction>& actions =
             trajectory.actions();
@@ -373,8 +372,7 @@ TEST(ThunderAutoProjectTests, LoadPre2026Project) {
           EXPECT_EQ(actionIt->second, action);  // action
         }
 
-        const std::unordered_set<std::string>& endActions = trajectory.endActions();
-        EXPECT_TRUE(endActions.empty());
+        EXPECT_FALSE(trajectory.hasEndAction());
       }
 
       // Rotations
@@ -472,8 +470,7 @@ TEST(ThunderAutoProjectTests, LoadPre2026Project) {
 
       // Actions
       {
-        const std::unordered_set<std::string>& startActions = trajectory.startActions();
-        EXPECT_TRUE(startActions.empty());
+        EXPECT_FALSE(trajectory.hasStartAction());
 
         const ThunderAutoPositionedTrajectoryItemList<ThunderAutoTrajectoryAction>& actions =
             trajectory.actions();
@@ -494,9 +491,8 @@ TEST(ThunderAutoProjectTests, LoadPre2026Project) {
           EXPECT_EQ(actionIt->second, action);  // action
         }
 
-        const std::unordered_set<std::string>& endActions = trajectory.endActions();
-        ASSERT_EQ(endActions.size(), 1U);
-        EXPECT_THAT(endActions, Contains("Action2"));
+        EXPECT_TRUE(trajectory.hasEndAction());
+        EXPECT_EQ(trajectory.endAction(), "Action2");
       }
 
       // Rotations

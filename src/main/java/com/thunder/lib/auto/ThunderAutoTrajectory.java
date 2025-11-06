@@ -3,6 +3,7 @@ package com.thunder.lib.auto;
 import java.lang.ref.Cleaner;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.Optional;
 
 import com.thunder.lib.jni.ThunderLibJNI;
 import com.thunder.lib.trajectory.ThunderTrajectory;
@@ -43,21 +44,31 @@ public class ThunderAutoTrajectory implements ThunderTrajectory {
   }
 
   /**
-   * Get actions to perform before starting the trajectory.
-   * 
-   * @return Set of action names
+   * Gets the start action to perform before starting the trajectory.
+   *
+   * @return Action name, or an empty optional if there is no start action to
+   *         perform.
    */
-  public HashSet<String> getStartActions() {
-    return ThunderLibJNI.ThunderAutoTrajectory_getStartActions(m_handle);
+  public Optional<String> getStartAction() {
+    String name = ThunderLibJNI.ThunderAutoTrajectory_getStartAction(m_handle);
+    if (name.isEmpty()) {
+      return Optional.empty();
+    }
+    return Optional.of(name);
   }
 
   /**
-   * Get actions to perform after completing the trajectory.
-   * 
-   * @return Set of action names
+   * Gets the end action to perform after finishing the trajectory.
+   *
+   * @return Action name, or an empty optional if there is no end action to
+   *         perform.
    */
-  public HashSet<String> getEndActions() {
-    return ThunderLibJNI.ThunderAutoTrajectory_getEndActions(m_handle);
+  public Optional<String> getEndAction() {
+    String name = ThunderLibJNI.ThunderAutoTrajectory_getEndAction(m_handle);
+    if (name.isEmpty()) {
+      return Optional.empty();
+    }
+    return Optional.of(name);
   }
 
   /**
@@ -70,17 +81,22 @@ public class ThunderAutoTrajectory implements ThunderTrajectory {
   }
 
   /**
-   * Get actions to perform when the robot is stopped at the specified time before
-   * it resumes driving.
+   * Gets the action to perform when the robot is stopped. This action must
+   * complete before the robot resumes driving.
    * 
-   * If the robot is not stopped at the specified time, an empty set is returned.
+   * If the robot is not stopped at the specified time or there is no stop action
+   * to perform at the stop time, an empty optional will be returned
    * 
    * @param stopTimeSeconds Stop time in seconds
    * 
-   * @return Set of action names
+   * @return Action name, or an empty optional.
    */
-  public HashSet<String> getStopActions(double stopTimeSeconds) {
-    return ThunderLibJNI.ThunderAutoTrajectory_getStopActions(m_handle, stopTimeSeconds);
+  public Optional<String> getStopAction(double stopTimeSeconds) {
+    String name = ThunderLibJNI.ThunderAutoTrajectory_getStopAction(m_handle, stopTimeSeconds);
+    if (name.isEmpty()) {
+      return Optional.empty();
+    }
+    return Optional.of(name);
   }
 
   /**

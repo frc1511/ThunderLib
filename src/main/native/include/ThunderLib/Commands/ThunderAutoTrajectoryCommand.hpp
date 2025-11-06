@@ -59,8 +59,8 @@ class ThunderAutoTrajectoryCommand : public frc2::CommandHelper<frc2::Command, T
 
   ExecutionState m_executionState = ExecutionState::START_ACTIONS;
 
-  frc2::CommandPtr m_startActionsCommand = frc2::cmd::None();
-  frc2::CommandPtr m_endActionsCommand = frc2::cmd::None();
+  frc2::CommandPtr m_startActionCommand = frc2::cmd::None();
+  frc2::CommandPtr m_endActionCommand = frc2::cmd::None();
 
   struct StopActionCommand {
     units::second_t stopTime;

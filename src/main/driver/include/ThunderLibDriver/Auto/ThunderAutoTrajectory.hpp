@@ -2,7 +2,6 @@
 
 #include <ThunderLibCore/Auto/ThunderAutoOutputTrajectory.hpp>
 #include <string>
-#include <unordered_set>
 #include <map>
 #include <memory>
 
@@ -30,10 +29,10 @@ class ThunderAutoTrajectory final {
   virtual ThunderAutoTrajectoryState getInitialState() const noexcept;
   virtual ThunderAutoTrajectoryState getFinalState() const noexcept;
 
-  const std::unordered_set<std::string>& getStartActions() const noexcept;
-  const std::unordered_set<std::string>& getEndActions() const noexcept;
+  const std::string& getStartAction() const noexcept;
+  const std::string& getEndAction() const noexcept;
 
-  const std::map<units::second_t, std::unordered_set<std::string>>& getStopActions() const noexcept;
+  const std::map<units::second_t, std::string>& getStopActions() const noexcept;
   const std::multimap<units::second_t, std::string>& getActions() const noexcept;
 
  private:

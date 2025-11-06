@@ -484,25 +484,27 @@ void ThunderAutoProjectState::validateActions() {
     }
 
     for (auto pointIt = skeleton.begin(); pointIt != skeleton.end(); pointIt++) {
-      if (pointIt->isStopped()) {
-        for (const std::string& stopAction : pointIt->stopActions()) {
-          if (!m_actions.contains(stopAction)) {
-            Point2d pos = pointIt->position();
-            throw RuntimeError::Construct(
-                "Trajectory '{}' contains reference to non-existent stop action '{}' at waypoint ({}, {})",
-                name, stopAction, pos.x(), pos.y());
-          }
+      if (pointIt->isStopped() && pointIt->hasStopAction()) {
+        const std::string& stopAction = pointIt->stopAction();
+        if (!m_actions.contains(stopAction)) {
+          Point2d pos = pointIt->position();
+          throw RuntimeError::Construct(
+              "Trajectory '{}' contains reference to non-existent stop action '{}' at waypoint ({}, {})",
+              name, stopAction, pos.x(), pos.y());
         }
       }
     }
 
-    for (const std::string& startActionName : skeleton.startActions()) {
+    if (skeleton.hasStartAction()) {
+      const std::string& startActionName = skeleton.startAction();
       if (!m_actions.contains(startActionName)) {
         throw RuntimeError::Construct("Trajectory '{}' contains reference to non-existent start action '{}'",
                                       name, startActionName);
       }
     }
-    for (const std::string& endActionName : skeleton.endActions()) {
+
+    if (skeleton.hasEndAction()) {
+      const std::string& endActionName = skeleton.endAction();
       if (!m_actions.contains(endActionName)) {
         throw RuntimeError::Construct("Trajectory '{}' contains reference to non-existent end action '{}'",
                                       name, endActionName);
@@ -593,18 +595,16 @@ void ThunderAutoProjectState::removeAction(const std::string& actionToRemoveName
     }
 
     for (auto pointIt = skeleton.begin(); pointIt != skeleton.end(); pointIt++) {
-      if (pointIt->isStopped()) {
-        if (pointIt->hasStopAction(actionToRemoveName)) {
-          pointIt->removeStopAction(actionToRemoveName);
-        }
+      if (pointIt->isStopped() && (pointIt->stopAction() == actionToRemoveName)) {
+        pointIt->clearStopAction();
       }
     }
 
-    if (skeleton.hasStartAction(actionToRemoveName)) {
-      skeleton.removeStartAction(actionToRemoveName);
+    if (skeleton.startAction() == actionToRemoveName) {
+      skeleton.clearStartAction();
     }
-    if (skeleton.hasEndAction(actionToRemoveName)) {
-      skeleton.removeEndAction(actionToRemoveName);
+    if (skeleton.endAction() == actionToRemoveName) {
+      skeleton.clearEndAction();
     }
   }
 
@@ -649,21 +649,16 @@ void ThunderAutoProjectState::renameAction(const std::string& oldName, const std
     }
 
     for (auto pointIt = skeleton.begin(); pointIt != skeleton.end(); pointIt++) {
-      if (pointIt->isStopped()) {
-        if (pointIt->hasStopAction(oldName)) {
-          pointIt->removeStopAction(oldName);
-          pointIt->addStopAction(newName);
-        }
+      if (pointIt->isStopped() && (pointIt->stopAction() == oldName)) {
+        pointIt->setStopAction(newName);
       }
     }
 
-    if (skeleton.hasStartAction(oldName)) {
-      skeleton.removeStartAction(oldName);
-      skeleton.addStartAction(newName);
+    if (skeleton.startAction() == oldName) {
+      skeleton.setStartAction(newName);
     }
-    if (skeleton.hasEndAction(oldName)) {
-      skeleton.removeEndAction(oldName);
-      skeleton.addEndAction(newName);
+    if (skeleton.endAction() == oldName) {
+      skeleton.setEndAction(newName);
     }
   }
 
@@ -1444,15 +1439,7 @@ static size_t SerializeTrajectoryPoint(const ThunderAutoTrajectorySkeletonWaypoi
       const double stopRotation = point.stopRotation().radians().value();
       sum += stream << stopRotation;
 
-      const std::unordered_set<std::string>& stopActions = point.stopActions();
-      const uint8_t numStopActions = static_cast<uint8_t>(std::min(stopActions.size(), size_t(UINT8_MAX)));
-      sum += stream << numStopActions;
-
-      size_t stopActionIndex = 0;
-      for (auto actionIt = stopActions.begin();
-           actionIt != stopActions.end() && stopActionIndex < numStopActions; ++actionIt, ++stopActionIndex) {
-        sum += stream << *actionIt;
-      }
+      sum += stream << point.stopAction();
     }
   }
 
@@ -1515,15 +1502,9 @@ static size_t DeserializeTrajectoryPoint(DataInputStream& stream,
       units::radian_t stopRotation{stopRotationValue};
       point.setStopRotation(CanonicalAngle(stopRotation));
 
-      uint8_t numStopActions;
-      sum += stream >> numStopActions;
-
-      for (size_t stopActionIndex = 0; stopActionIndex < static_cast<size_t>(numStopActions);
-           ++stopActionIndex) {
-        std::string actionName;
-        sum += stream >> actionName;
-        point.addStopAction(actionName);
-      }
+      std::string stopActionName;
+      sum += stream >> stopActionName;
+      point.setStopAction(stopActionName);
     }
   }
 
@@ -1653,33 +1634,8 @@ static size_t SerializeTrajectory(const std::string& name,
     sum += stream << maxAngularAcceleration;
   }
 
-  {
-    const std::unordered_set<std::string>& startActions = skeleton.startActions();
-
-    const uint8_t numStartActions = static_cast<uint8_t>(std::min(startActions.size(), size_t(UINT8_MAX)));
-
-    sum += stream << numStartActions;
-
-    size_t actionIndex = 0;
-    for (auto actionIt = startActions.begin();
-         actionIt != startActions.end() && actionIndex < numStartActions; ++actionIt, ++actionIndex) {
-      sum += stream << *actionIt;
-    }
-  }
-
-  {
-    const std::unordered_set<std::string>& endActions = skeleton.endActions();
-
-    const uint8_t numEndActions = static_cast<uint8_t>(std::min(endActions.size(), size_t(UINT8_MAX)));
-
-    sum += stream << numEndActions;
-
-    size_t actionIndex = 0;
-    for (auto actionIt = endActions.begin(); actionIt != endActions.end() && actionIndex < numEndActions;
-         ++actionIt, ++actionIndex) {
-      sum += stream << *actionIt;
-    }
-  }
+  sum += stream << skeleton.startAction();
+  sum += stream << skeleton.endAction();
 
   sum += stream << uint64_t(sum);  // Trajectory hash is simple checksum for now.
 
@@ -1768,25 +1724,15 @@ static size_t DeserializeTrajectory(DataInputStream& stream,
   }
 
   {
-    uint8_t numStartActions;
-    sum += stream >> numStartActions;
-
-    for (size_t actionIndex = 0; actionIndex < static_cast<size_t>(numStartActions); ++actionIndex) {
-      std::string actionName;
-      sum += stream >> actionName;
-      skeleton.addStartAction(actionName);
-    }
+    std::string startActionName;
+    sum += stream >> startActionName;
+    skeleton.setStartAction(startActionName);
   }
 
   {
-    uint8_t numEndActions;
-    sum += stream >> numEndActions;
-
-    for (size_t actionIndex = 0; actionIndex < static_cast<size_t>(numEndActions); ++actionIndex) {
-      std::string actionName;
-      sum += stream >> actionName;
-      skeleton.addEndAction(actionName);
-    }
+    std::string endActionName;
+    sum += stream >> endActionName;
+    skeleton.setEndAction(endActionName);
   }
 
   uint64_t trajectoryHash;

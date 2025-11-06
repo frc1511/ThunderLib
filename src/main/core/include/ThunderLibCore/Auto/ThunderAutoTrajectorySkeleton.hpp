@@ -153,7 +153,7 @@ class ThunderAutoTrajectorySkeletonWaypoint {
 
   std::optional<units::meters_per_second_t> m_maxVelocityOverride;
   CanonicalAngle m_stopRotation;
-  std::unordered_set<std::string> m_stopActions;
+  std::string m_stopAction;
 
   std::string m_link = "";
 
@@ -223,14 +223,10 @@ class ThunderAutoTrajectorySkeletonWaypoint {
 
   void setStopRotation(const CanonicalAngle& rotation);
 
-  const std::unordered_set<std::string>& stopActions() const noexcept { return m_stopActions; }
-  bool hasStopActions() const noexcept { return !m_stopActions.empty(); }
-  void setAllStopActions(const std::unordered_set<std::string>& actions) noexcept { m_stopActions = actions; }
-  void clearStopActions() noexcept { m_stopActions.clear(); }
-
-  bool hasStopAction(const std::string& action) const noexcept;
-  bool addStopAction(const std::string& action);
-  bool removeStopAction(const std::string& action) noexcept;
+  const std::string& stopAction() const noexcept { return m_stopAction; }
+  bool hasStopAction() const noexcept { return !m_stopAction.empty(); }
+  void setStopAction(const std::string& action) noexcept { m_stopAction = action; }
+  void clearStopAction() noexcept { m_stopAction.clear(); }
 
   std::optional<units::meters_per_second_t> maxVelocityOverride() const noexcept {
     return m_maxVelocityOverride;
@@ -380,8 +376,8 @@ class ThunderAutoTrajectorySkeleton {
   ThunderAutoTrajectorySkeletonSettings m_settings;
   std::list<ThunderAutoTrajectorySkeletonWaypoint> m_points;
 
-  std::unordered_set<std::string> m_startActions;
-  std::unordered_set<std::string> m_endActions;
+  std::string m_startAction;
+  std::string m_endAction;
   ThunderAutoPositionedTrajectoryItemList<ThunderAutoTrajectoryAction> m_actions;
 
   CanonicalAngle m_startRotation;
@@ -476,23 +472,15 @@ class ThunderAutoTrajectorySkeleton {
 
   // Actions
 
-  const std::unordered_set<std::string>& startActions() const noexcept { return m_startActions; }
-  bool hasStartActions() const noexcept { return !m_startActions.empty(); }
-  void setAllStartActions(const std::unordered_set<std::string>& actions) { m_startActions = actions; }
-  void clearStartActions() { m_startActions.clear(); }
+  const std::string& startAction() const noexcept { return m_startAction; }
+  bool hasStartAction() const noexcept { return !m_startAction.empty(); }
+  void setStartAction(const std::string& action) noexcept { m_startAction = action; }
+  void clearStartAction() noexcept { m_startAction.clear(); }
 
-  bool hasStartAction(const std::string& action) const noexcept;
-  bool addStartAction(const std::string& action);
-  bool removeStartAction(const std::string& action);
-
-  const std::unordered_set<std::string>& endActions() const noexcept { return m_endActions; }
-  bool hasEndActions() const noexcept { return !m_endActions.empty(); }
-  void setAllEndActions(const std::unordered_set<std::string>& actions) { m_endActions = actions; }
-  void clearEndActions() { m_endActions.clear(); }
-
-  bool hasEndAction(const std::string& action) const noexcept;
-  bool addEndAction(const std::string& action);
-  bool removeEndAction(const std::string& action);
+  const std::string& endAction() const noexcept { return m_endAction; }
+  bool hasEndAction() const noexcept { return !m_endAction.empty(); }
+  void setEndAction(const std::string& action) noexcept { m_endAction = action; }
+  void clearEndAction() noexcept { m_endAction.clear(); }
 
   ThunderAutoPositionedTrajectoryItemList<ThunderAutoTrajectoryAction>& actions() { return m_actions; }
   const ThunderAutoPositionedTrajectoryItemList<ThunderAutoTrajectoryAction>& actions() const {
