@@ -31,8 +31,7 @@ ThunderAutoTrajectoryCommand::ThunderAutoTrajectoryCommand(const std::string& tr
 
   // Get stop action commands.
   {
-    const std::map<units::time::second_t, std::string> stopActions =
-        m_trajectory->getStopActions();
+    const std::map<units::time::second_t, std::string> stopActions = m_trajectory->getStopActions();
 
     for (const auto& [stopTime, actionName] : stopActions) {
       if (!actionName.empty()) {
@@ -198,15 +197,22 @@ void ThunderAutoTrajectoryCommand::executeFollowTrajectory() {
     if (actionCommand.get()->IsFinished()) {
       actionCommand.get()->End(false);
       doneRunningActions.push_back(actionIt);
+    } else {
+      actionCommand.get()->Execute();
     }
   }
 
   std::for_each(doneRunningActions.begin(), doneRunningActions.end(),
                 [&](const PositionedActionIterator& it) { m_runningActions.remove(it); });
 
-  for (const PositionedActionIterator& actionIt : m_runningActions) {
-    const auto& [_, actionCommand] = *actionIt;
-    actionCommand.get()->Execute();
+  // Check if trajectory is complete.
+
+  if (trajectoryTime >= m_trajectory->getDuration()) {  // TODO: Wait for it to reach final position?
+    // Stop the robot.
+    m_runnerProperties.setSpeeds(frc::ChassisSpeeds{});
+    // Begin the end action.
+    beginEndAction();
+    return;
   }
 
   // Drive the robot.
@@ -241,9 +247,6 @@ void ThunderAutoTrajectoryCommand::endFollowTrajectory(bool interrupted) {
 }
 
 void ThunderAutoTrajectoryCommand::beginStopped() {
-  if (m_nextStop == m_stopActionCommands.end())
-    return;
-
   m_executionState = ExecutionState::STOPPED;
 
   m_timer.Stop();
@@ -268,6 +271,8 @@ void ThunderAutoTrajectoryCommand::endStopped(bool interrupted) {
 }
 
 void ThunderAutoTrajectoryCommand::beginEndAction() {
+  m_executionState = ExecutionState::END_ACTIONS;
+
   m_endActionCommand.get()->Initialize();
 }
 
