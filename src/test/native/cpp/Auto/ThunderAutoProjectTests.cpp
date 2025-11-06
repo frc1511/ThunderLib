@@ -22,6 +22,9 @@ TEST(ThunderAutoProjectTests, SimpleTrajectoryTest) {
   ASSERT_EQ(project->getName(), "SimpleTrajectory");
 
   EXPECT_EQ(project->getFieldSymmetry(), FieldSymmetry::ROTATIONAL);
+  FieldDimensions fieldDimensions = project->getFieldDimensions();
+  EXPECT_NEAR(fieldDimensions.length.value(), 8.08, DOUBLE_TOLERANCE);
+  EXPECT_NEAR(fieldDimensions.width.value(), 17.55, DOUBLE_TOLERANCE);
 
   const std::string trajectoryName = "MySimpleTrajectory";
 

@@ -324,11 +324,11 @@ frc::Pose2d ThunderAutoTrajectoryCommand::flipPoseForAlliance(
     case NONE:
       break;
     case ROTATIONAL:
-      x = fieldDimensions.length - x;
-      y = fieldDimensions.width - y;
+      x = fieldDimensions.width - x;
+      y = fieldDimensions.length - y;
       break;
     case REFLECTIONAL:
-      x = fieldDimensions.length - x;
+      x = fieldDimensions.width - x;
       break;
   }
 
