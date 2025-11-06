@@ -1,5 +1,6 @@
 #include <ThunderLib/Auto/ThunderAutoSendableChooser.hpp>
 #include <ThunderLibDriver/Auto/ThunderAutoSendableChooser.hpp>
+#include <ThunderLib/Commands/ThunderAutoTrajectoryCommand.hpp>
 #include <frc2/command/Commands.h>
 
 namespace thunder {
@@ -93,7 +94,7 @@ frc2::CommandPtr ThunderAutoSendableChooser::getSelectedCommand() const noexcept
 
       return std::move(functionalCommand).ToPtr();
     }
-  } else if (selection.type != NONE) {  // The rest require project lookup
+  } else if (selection.type != NONE && m_runnerProps.has_value()) {  // The rest require project lookup
     auto projectIt = m_includedProjects.find(selection.projectName);
     if (projectIt != m_includedProjects.end()) {
       std::shared_ptr<ThunderAutoProject> project = projectIt->second;
@@ -104,9 +105,8 @@ frc2::CommandPtr ThunderAutoSendableChooser::getSelectedCommand() const noexcept
         // TODO: Construct ThunderAutoModeCommand from autoMode, m_runnerProps, and project
 
       } else if (selection.type == TRAJECTORY) {
-        std::unique_ptr<ThunderAutoTrajectory> trajectory = project->getTrajectory(selection.itemName);
-        (void)trajectory;
-        // TODO: Construct ThunderAutoTrajectoryCommand from trajectory, m_runnerProps, and project
+        ThunderAutoTrajectoryCommand trajectoryCommand(selection.itemName, project, m_runnerProps.value());
+        return std::move(trajectoryCommand).ToPtr();
       }
     }
   }

@@ -83,9 +83,9 @@ class ThunderAutoTrajectoryCommand : public frc2::CommandHelper<frc2::Command, T
   std::list<PositionedActionIterator> m_runningActions;
 
  private:
-  void beginStartActions();
-  void executeStartActions();
-  void endStartActions(bool interrupted);
+  void beginStartAction();
+  void executeStartAction();
+  void endStartAction(bool interrupted);
 
   void beginFollowTrajectory();
   void resumeFollowTrajectory();
@@ -96,9 +96,9 @@ class ThunderAutoTrajectoryCommand : public frc2::CommandHelper<frc2::Command, T
   void executeStopped();
   void endStopped(bool interrupted);
 
-  void beginEndActions();
-  void executeEndActions();
-  void endEndActions(bool interrupted);
+  void beginEndAction();
+  void executeEndAction();
+  void endEndAction(bool interrupted);
 
   static CanonicalAngle flipAngleForAlliance(CanonicalAngle originalAngle,
                                              std::optional<frc::DriverStation::Alliance> alliance,

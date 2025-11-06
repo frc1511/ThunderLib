@@ -72,7 +72,7 @@ void ThunderAutoTrajectoryCommand::Initialize() {
     m_runnerProperties.resetPose(initialPose);
   }
 
-  beginStartActions();
+  beginStartAction();
 }
 
 void ThunderAutoTrajectoryCommand::Execute() {
@@ -82,7 +82,7 @@ void ThunderAutoTrajectoryCommand::Execute() {
   switch (m_executionState) {
     using enum ExecutionState;
     case START_ACTIONS:
-      executeStartActions();
+      executeStartAction();
       break;
     case FOLLOW_TRAJECTORY:
       executeFollowTrajectory();
@@ -91,7 +91,7 @@ void ThunderAutoTrajectoryCommand::Execute() {
       executeStopped();
       break;
     case END_ACTIONS:
-      executeEndActions();
+      executeEndAction();
       break;
     case FINISHED:
       break;
@@ -105,7 +105,7 @@ void ThunderAutoTrajectoryCommand::End(bool interrupted) {
   switch (m_executionState) {
     using enum ExecutionState;
     case START_ACTIONS:
-      endStartActions(interrupted);
+      endStartAction(interrupted);
       break;
     case FOLLOW_TRAJECTORY:
       endFollowTrajectory(interrupted);
@@ -114,11 +114,13 @@ void ThunderAutoTrajectoryCommand::End(bool interrupted) {
       endStopped(interrupted);
       break;
     case END_ACTIONS:
-      endEndActions(interrupted);
+      endEndAction(interrupted);
       break;
     case FINISHED:
       break;
   }
+
+  m_executionState = ExecutionState::FINISHED;
 }
 
 bool ThunderAutoTrajectoryCommand::IsFinished() {
@@ -128,13 +130,13 @@ bool ThunderAutoTrajectoryCommand::IsFinished() {
   return m_executionState == ExecutionState::FINISHED;
 }
 
-void ThunderAutoTrajectoryCommand::beginStartActions() {
+void ThunderAutoTrajectoryCommand::beginStartAction() {
   m_executionState = ExecutionState::START_ACTIONS;
 
   m_startActionCommand.get()->Initialize();
 }
 
-void ThunderAutoTrajectoryCommand::executeStartActions() {
+void ThunderAutoTrajectoryCommand::executeStartAction() {
   if (m_startActionCommand.get()->IsFinished()) {
     m_startActionCommand.get()->End(false);
     beginFollowTrajectory();
@@ -144,7 +146,7 @@ void ThunderAutoTrajectoryCommand::executeStartActions() {
   m_startActionCommand.get()->Execute();
 }
 
-void ThunderAutoTrajectoryCommand::endStartActions(bool interrupted) {
+void ThunderAutoTrajectoryCommand::endStartAction(bool interrupted) {
   m_startActionCommand.get()->End(interrupted);
 }
 
@@ -239,6 +241,9 @@ void ThunderAutoTrajectoryCommand::endFollowTrajectory(bool interrupted) {
 }
 
 void ThunderAutoTrajectoryCommand::beginStopped() {
+  if (m_nextStop == m_stopActionCommands.end())
+    return;
+
   m_executionState = ExecutionState::STOPPED;
 
   m_timer.Stop();
@@ -247,12 +252,6 @@ void ThunderAutoTrajectoryCommand::beginStopped() {
 }
 
 void ThunderAutoTrajectoryCommand::executeStopped() {
-  if (m_nextStop == m_stopActionCommands.end()) {
-    m_executionState = ExecutionState::FOLLOW_TRAJECTORY;
-    m_timer.Start();
-    return;
-  }
-
   const frc2::CommandPtr& stopActionCommand = m_nextStop->command;
   if (stopActionCommand.get()->IsFinished()) {
     stopActionCommand.get()->End(false);
@@ -265,16 +264,14 @@ void ThunderAutoTrajectoryCommand::executeStopped() {
 }
 
 void ThunderAutoTrajectoryCommand::endStopped(bool interrupted) {
-  if (m_nextStop != m_stopActionCommands.end()) {
-    m_nextStop->command.get()->End(interrupted);
-  }
+  m_nextStop->command.get()->End(interrupted);
 }
 
-void ThunderAutoTrajectoryCommand::beginEndActions() {
+void ThunderAutoTrajectoryCommand::beginEndAction() {
   m_endActionCommand.get()->Initialize();
 }
 
-void ThunderAutoTrajectoryCommand::executeEndActions() {
+void ThunderAutoTrajectoryCommand::executeEndAction() {
   if (m_endActionCommand.get()->IsFinished()) {
     m_endActionCommand.get()->End(false);
     m_executionState = ExecutionState::FINISHED;
@@ -284,7 +281,7 @@ void ThunderAutoTrajectoryCommand::executeEndActions() {
   m_endActionCommand.get()->Execute();
 }
 
-void ThunderAutoTrajectoryCommand::endEndActions(bool interrupted) {
+void ThunderAutoTrajectoryCommand::endEndAction(bool interrupted) {
   m_endActionCommand.get()->End(interrupted);
 }
 
