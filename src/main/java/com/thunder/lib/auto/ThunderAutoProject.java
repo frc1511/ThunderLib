@@ -9,9 +9,9 @@ import java.util.function.BooleanSupplier;
 import java.util.function.IntSupplier;
 
 import com.thunder.lib.jni.ThunderLibJNI;
+import com.thunder.lib.trajectory.FieldDimensions;
 import com.thunder.lib.trajectory.FieldSymmetry;
 
-import edu.wpi.first.math.Pair;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 
@@ -335,7 +335,7 @@ public class ThunderAutoProject {
    * 
    * @return The field size.
    */
-  public Pair<Double, Double> getFieldDimensions() {
+  public FieldDimensions getFieldDimensions() {
     return ThunderLibJNI.ThunderAutoProject_getFieldDimensions(m_handle);
   }
 

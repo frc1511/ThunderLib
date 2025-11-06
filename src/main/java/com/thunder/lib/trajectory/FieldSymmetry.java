@@ -20,7 +20,7 @@ public enum FieldSymmetry {
   /**
    * Mirrored across the center line, like 2023 and 2024.
    * 
-   * On red, only the Y coordinate is inverted. Rotations are flipped by 180
+   * On red, only the X coordinate is inverted. Rotations are flipped by 180
    */
   REFLECTIONAL,
 }

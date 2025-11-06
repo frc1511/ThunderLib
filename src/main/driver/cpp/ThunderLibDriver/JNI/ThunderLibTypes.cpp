@@ -11,6 +11,9 @@ static jfieldID s_thunderAutoFieldSymmetryNoneField = nullptr;
 static jfieldID s_thunderAutoFieldSymmetryRotationalField = nullptr;
 static jfieldID s_thunderAutoFieldSymmetryReflectionalField = nullptr;
 
+static jclass s_thudnerAutoFieldDimensionsClass = nullptr;
+static jmethodID s_thunderAutoFieldDimensionsConstructor = nullptr;
+
 static jclass s_thunderAutoSendableChooserSelectionTypeClass = nullptr;
 static jfieldID s_thunderAutoSendableChooserSelectionTypeNoneField = nullptr;
 static jfieldID s_thunderAutoSendableChooserSelectionTypeAutoModeField = nullptr;
@@ -127,6 +130,38 @@ jobject FieldSymmetryGet(JNIEnv* env, thunder::driver::FieldSymmetry symmetry) {
     default:
       return env->GetStaticObjectField(s_thunderAutoFieldSymmetryClass, s_thunderAutoFieldSymmetryNoneField);
   }
+}
+
+bool LoadFieldDimensionsClass(JNIEnv* env) {
+  jclass thunderAutoFieldDimensionsClass = env->FindClass(THUNDERLIB_FIELDDIMENSIONS_SIGNATURE);
+  if (!thunderAutoFieldDimensionsClass)
+    return false;
+
+  s_thudnerAutoFieldDimensionsClass =
+      static_cast<jclass>(env->NewGlobalRef(thunderAutoFieldDimensionsClass));
+
+  // new FieldDimensions(double lengthMeters, double widthMeters)
+  s_thunderAutoFieldDimensionsConstructor =
+      env->GetMethodID(s_thudnerAutoFieldDimensionsClass, "<init>", "(DD)V");
+  if (!s_thunderAutoFieldDimensionsConstructor)
+    return false;
+
+  return true;
+}
+
+void UnloadFieldDimensionsClass(JNIEnv* env) {
+  if (s_thudnerAutoFieldDimensionsClass) {
+    env->DeleteGlobalRef(s_thudnerAutoFieldDimensionsClass);
+    s_thudnerAutoFieldDimensionsClass = nullptr;
+    s_thunderAutoFieldDimensionsConstructor = nullptr;
+  }
+}
+
+jobject FieldDimensionsConstruct(JNIEnv* env, jdouble lengthMeters, jdouble widthMeters) {
+  jobject dimensions =
+      env->NewObject(s_thudnerAutoFieldDimensionsClass, s_thunderAutoFieldDimensionsConstructor,
+                     lengthMeters, widthMeters);
+  return dimensions;
 }
 
 bool LoadThunderAutoSendableChooser_ChooserSelection_TypeClass(JNIEnv* env) {

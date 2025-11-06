@@ -394,7 +394,7 @@ jobject Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject_1getFieldSymme
 /*
  * Class:     com_thunder_lib_jni_ThunderLibJNI
  * Method:    ThunderAutoProject_getFieldDimensions
- * Signature: (J)Ledu/wpi/first/math/Pair;
+ * Signature: (J)Lcom/thunder/lib/trajectory/FieldDimensions;
  */
 jobject Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject_1getFieldDimensions(
     JNIEnv* env,
@@ -409,15 +409,8 @@ jobject Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject_1getFieldDimen
     length = dimensions.length.value();
   }
 
-  jobject widthDouble = DoubleConstruct(env, width);
-  jobject lengthDouble = DoubleConstruct(env, length);
-
-  jobject pair = PairConstruct(env, widthDouble, lengthDouble);
-
-  env->DeleteLocalRef(widthDouble);
-  env->DeleteLocalRef(lengthDouble);
-
-  return pair;
+  jobject dimensions = FieldDimensionsConstruct(env, length, width);
+  return dimensions;
 }
 
 /*

@@ -44,6 +44,8 @@ jint JNI_OnLoad(JavaVM* vm, void* reserved) {
       break;
     if (!LoadFieldSymmetryClass(env))
       break;
+    if (!LoadFieldDimensionsClass(env))
+      break;
     if (!LoadThunderAutoSendableChooser_ChooserSelection_TypeClass(env))
       break;
 
@@ -71,5 +73,6 @@ void JNI_OnUnload(JavaVM* vm, void* reserved) {
 
   UnloadThunderTrajectoryStateClass(env);
   UnloadFieldSymmetryClass(env);
+  UnloadFieldDimensionsClass(env);
   UnloadThunderAutoSendableChooser_ChooserSelection_TypeClass(env);
 }

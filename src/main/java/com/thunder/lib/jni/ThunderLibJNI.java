@@ -6,10 +6,9 @@ import java.util.HashSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.thunder.lib.auto.ThunderAutoSendableChooser;
+import com.thunder.lib.trajectory.FieldDimensions;
 import com.thunder.lib.trajectory.FieldSymmetry;
 import com.thunder.lib.trajectory.ThunderTrajectoryState;
-
-import edu.wpi.first.math.Pair;
 
 /**
  * Class for loading the driver via JNI.
@@ -107,7 +106,7 @@ public class ThunderLibJNI {
 
   public static native FieldSymmetry ThunderAutoProject_getFieldSymmetry(long handle);
 
-  public static native Pair<Double, Double> ThunderAutoProject_getFieldDimensions(long handle);
+  public static native FieldDimensions ThunderAutoProject_getFieldDimensions(long handle);
 
   public static native void ThunderAutoProject_setRemoteUpdatesEnabled(long handle, boolean enabled);
 

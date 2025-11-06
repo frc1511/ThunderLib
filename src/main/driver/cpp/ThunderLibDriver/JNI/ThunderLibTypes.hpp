@@ -29,6 +29,15 @@ void UnloadFieldSymmetryClass(JNIEnv* env);
 
 jobject FieldSymmetryGet(JNIEnv* env, thunder::driver::FieldSymmetry symmetry);
 
+// com.thunder.lib.trajectory.FieldDimensions
+
+#define THUNDERLIB_FIELDDIMENSIONS_SIGNATURE "com/thunder/lib/trajectory/FieldDimensions"
+
+bool LoadFieldDimensionsClass(JNIEnv* env);
+void UnloadFieldDimensionsClass(JNIEnv* env);
+
+jobject FieldDimensionsConstruct(JNIEnv* env, jdouble lengthMeters, jdouble widthMeters);
+
 // com.thunder.lib.auto.ThunderAutoSendableChooser$ChooserSelection$Type
 
 #define THUNDERLIB_THUNDERAUTOSENDABLECHOOSER_CHOOSERSELECTION_TYPE_SIGNATURE "com/thunder/lib/auto/ThunderAutoSendableChooser$ChooserSelection$Type"

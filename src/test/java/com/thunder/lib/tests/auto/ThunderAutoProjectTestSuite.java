@@ -11,6 +11,7 @@ import java.util.Optional;
 import com.thunder.lib.auto.ThunderAutoProject;
 import com.thunder.lib.auto.ThunderAutoTrajectory;
 import com.thunder.lib.tests.BaseTestSuite;
+import com.thunder.lib.trajectory.FieldDimensions;
 import com.thunder.lib.trajectory.FieldSymmetry;
 import com.thunder.lib.trajectory.ThunderTrajectoryState;
 
@@ -30,6 +31,9 @@ public class ThunderAutoProjectTestSuite extends BaseTestSuite {
     assertEquals("SimpleTrajectory", project.getName());
 
     assertEquals(FieldSymmetry.ROTATIONAL, project.getFieldSymmetry());
+    FieldDimensions fieldDimensions = project.getFieldDimensions();
+    assertEquals(8.08, fieldDimensions.length, TRAJ_DOUBLE_TOLERANCE);
+    assertEquals(17.55, fieldDimensions.width, TRAJ_DOUBLE_TOLERANCE);
 
     String trajectoryName = "MySimpleTrajectory";
     assertTrue(project.hasTrajectory(trajectoryName));
