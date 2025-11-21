@@ -4,9 +4,6 @@
 #include <spdlog/sinks/basic_file_sink.h>
 #include <mutex>
 
-#include <frc/DriverStation.h>
-#include <frc/Errors.h>
-
 static const std::string kThunderLibLoggerName = "ThunderLib";
 
 static std::shared_ptr<spdlog::logger> s_thunderLibLogger;

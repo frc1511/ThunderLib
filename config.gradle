@@ -21,6 +21,7 @@ nativeUtils.wpi.addWarningsAsErrors()
 
 nativeUtils.setSinglePrintPerPlatform()
 
+// Vendor dependencies (in vendordeps/). Just WPILibNewCommands for now.
 nativeUtils.wpi.addVendorDeps()
 nativeUtils.wpi.getVendorDeps().loadAll()
 nativeUtils.wpi.getVendorDeps().getNativeVendor().initializeNativeDependencies()
@@ -41,7 +42,11 @@ model {
     binaries {
         withType(NativeBinarySpec).all {
             nativeUtils.usePlatformArguments(it)
-            nativeUtils.wpi.getVendorDeps().getNativeVendor().cpp(it)
+
+            // Only ThunderLib gets WPILibNewCommands
+            if (it.component.name == 'ThunderLib' || it.component.name == 'ThunderLibTest') { 
+                nativeUtils.wpi.getVendorDeps().getNativeVendor().cpp(it)
+            }
         }
     }
 }

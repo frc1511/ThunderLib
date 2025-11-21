@@ -188,7 +188,7 @@ model {
                 lib library: 'ThunderLibCore', linkage: 'shared'
             }
             nativeUtils.useRequiredLibrary(it, "driver_shared")
-            nativeUtils.useRequiredLibrary(it, 'wpilib_shared')
+            nativeUtils.useRequiredLibrary(it, "ntcore_shared")
         }
         ThunderLibCore(NativeLibrarySpec) {
             sources.cpp {

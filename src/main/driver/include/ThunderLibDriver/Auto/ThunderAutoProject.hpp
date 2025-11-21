@@ -5,6 +5,7 @@
 #include <ThunderLibCore/Auto/ThunderAutoProject.hpp>
 #include <ThunderLibCore/Auto/ThunderAutoOutputTrajectory.hpp>
 #include <networktables/NetworkTable.h>
+#include <networktables/NetworkTableInstance.h>
 #include <ntcore_c.h>
 #include <filesystem>
 #include <functional>
@@ -97,6 +98,10 @@ class ThunderAutoProject {
                              const std::unordered_set<std::string>& removedAutoModes) noexcept;
 
  private:
+ static std::filesystem::path getDeployDirectoryPath() noexcept;
+
+ private:
+  nt::NetworkTableInstance m_networkTableInstance;
   std::shared_ptr<nt::NetworkTable> m_thunderAutoNetworkTable;
   NT_Listener m_ntRemoteUpdateListenerId = 0;
 

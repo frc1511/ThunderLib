@@ -4,8 +4,6 @@
 #include <ThunderLib/Auto/ThunderAutoMode.hpp>
 #include <frc2/command/Command.h>
 #include <frc2/command/CommandPtr.h>
-#include <networktables/NetworkTable.h>
-#include <ntcore_c.h>
 #include <unordered_map>
 #include <unordered_set>
 #include <filesystem>

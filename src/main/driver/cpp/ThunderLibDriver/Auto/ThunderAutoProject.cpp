@@ -1,13 +1,12 @@
 #include <ThunderLibDriver/Auto/ThunderAutoProject.hpp>
 #include <ThunderLibDriver/Logger.hpp>
 #include <ThunderLibDriver/Error.hpp>
-#include <networktables/NetworkTableInstance.h>
-#include <frc/Filesystem.h>
 
 namespace thunder::driver {
 
 ThunderAutoProject::ThunderAutoProject() noexcept
-    : m_thunderAutoNetworkTable(nt::NetworkTableInstance::GetDefault().GetTable("ThunderAuto")) {}
+    : m_networkTableInstance(nt::NetworkTableInstance::GetDefault()),
+      m_thunderAutoNetworkTable(m_networkTableInstance.GetTable("ThunderAuto")) {}
 
 ThunderAutoProject::ThunderAutoProject(const std::filesystem::path& projectPath) noexcept
     : ThunderAutoProject() {
@@ -30,7 +29,11 @@ bool ThunderAutoProject::load(const std::filesystem::path& projectPath) noexcept
 
   std::filesystem::path absoluteProjectPath = projectPath;
   if (!projectPath.has_root_path()) {
-    absoluteProjectPath = frc::filesystem::GetDeployDirectory() / projectPath;
+    absoluteProjectPath = getDeployDirectoryPath() / projectPath;
+  }
+
+  if (!projectPath.has_extension()) {
+    absoluteProjectPath.replace_extension(".thunderauto");
   }
 
   // Open Project.
@@ -74,7 +77,7 @@ bool ThunderAutoProject::load(const std::filesystem::path& projectPath) noexcept
 }
 
 bool ThunderAutoProject::discoverAndLoadFromDeployDirectory() noexcept {
-  std::filesystem::path deployDirectory = frc::filesystem::GetDeployDirectory();
+  std::filesystem::path deployDirectory = getDeployDirectoryPath();
 
   std::vector<std::filesystem::path> discoveredProjects = core::DiscoverThunderAutoProjects(deployDirectory);
   if (discoveredProjects.empty()) {
@@ -377,6 +380,16 @@ void ThunderAutoProject::callUpdateSubscribers(
   for (auto& [id, callback] : m_remoteUpdateSubscribers) {
     callback(updatedTrajectories, removedTrajectories, updatedAutoModes, removedAutoModes);
   }
+}
+
+std::filesystem::path ThunderAutoProject::getDeployDirectoryPath() noexcept {
+  std::filesystem::path deployDirectory;
+#ifdef __FRC_ROBORIO__
+  deployDirectory = "/home/lvuser/deploy";
+#else
+  deployDirectory = std::filesystem::current_path() / "src" / "main" / "deploy";
+#endif
+  return deployDirectory;
 }
 
 }  // namespace thunder::driver
