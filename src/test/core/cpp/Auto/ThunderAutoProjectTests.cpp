@@ -86,43 +86,47 @@ static void CreateExampleProjectState(ThunderAutoProjectState& state) {
   // Add an auto mode
   {
     // Trajectory step
-    auto step1 = std::make_shared<ThunderAutoModeTrajectoryStep>();
+    auto step1 = std::make_unique<ThunderAutoModeTrajectoryStep>();
     step1->trajectoryName = "Trajectory1";
 
     // Action step
-    auto step2 = std::make_shared<ThunderAutoModeActionStep>();
+    auto step2 = std::make_unique<ThunderAutoModeActionStep>();
     step2->actionName = "action1";
 
     // Trajectory step
-    auto step3 = std::make_shared<ThunderAutoModeTrajectoryStep>();
+    auto step3 = std::make_unique<ThunderAutoModeTrajectoryStep>();
     step3->trajectoryName = "Trajectory2";
 
-    auto step4True = std::make_shared<ThunderAutoModeActionStep>();
+    auto step4True = std::make_unique<ThunderAutoModeActionStep>();
     step4True->actionName = "action2";
-    auto step4Else = std::make_shared<ThunderAutoModeActionStep>();
+    auto step4Else = std::make_unique<ThunderAutoModeActionStep>();
     step4Else->actionName = "action3";
 
-    auto step4 = std::make_shared<ThunderAutoModeBoolBranchStep>();
+    auto step4 = std::make_unique<ThunderAutoModeBoolBranchStep>();
     step4->conditionName = "booleanCondition1";
-    step4->trueBranch.push_back(step4True);
-    step4->elseBranch.push_back(step4Else);
+    step4->trueBranch.push_back(std::move(step4True));
+    step4->elseBranch.push_back(std::move(step4Else));
 
-    auto step5 = std::make_shared<ThunderAutoModeSwitchBranchStep>();
+    auto step5 = std::make_unique<ThunderAutoModeSwitchBranchStep>();
 
-    auto step5Case1 = std::make_shared<ThunderAutoModeActionStep>();
+    auto step5Case1 = std::make_unique<ThunderAutoModeActionStep>();
     step5Case1->actionName = "action1";
-    auto step5Case2 = std::make_shared<ThunderAutoModeActionStep>();
+    auto step5Case2 = std::make_unique<ThunderAutoModeActionStep>();
     step5Case2->actionName = "action2";
-    auto step5Default = std::make_shared<ThunderAutoModeActionStep>();
+    auto step5Default = std::make_unique<ThunderAutoModeActionStep>();
     step5Default->actionName = "action3";
 
     step5->conditionName = "switchCondition1";
-    step5->caseBranches[1] = {step5Case1};
-    step5->caseBranches[2] = {step5Case2};
-    step5->defaultBranch = {step5Default};
+    step5->caseBranches[1].push_back(std::move(step5Case1));
+    step5->caseBranches[2].push_back(std::move(step5Case2));
+    step5->defaultBranch.push_back(std::move(step5Default));
 
     ThunderAutoMode autoMode;
-    autoMode.steps = {step1, step2, step3, step4, step5};
+    autoMode.steps.push_back(std::move(step1));
+    autoMode.steps.push_back(std::move(step2));
+    autoMode.steps.push_back(std::move(step3));
+    autoMode.steps.push_back(std::move(step4));
+    autoMode.steps.push_back(std::move(step5));
 
     state.autoModes["AutoMode1"] = autoMode;
   }

@@ -243,15 +243,15 @@ struct ThunderAutoProjectState {
   void fromJsonCurrentVersion(const wpi::json& json);
 
   void validateActionsAndTrajectories();
-  void validateActionsAndTrajectoriesInAutoModeStep(std::shared_ptr<const ThunderAutoModeStep> step);
+  void validateActionsAndTrajectoriesInAutoModeStep(const std::unique_ptr<ThunderAutoModeStep>& step);
 
   void validateWaypointLinks();
 
-  void renameActionsInAutoModeStep(std::shared_ptr<ThunderAutoModeStep> step,
+  void renameActionsInAutoModeStep(std::unique_ptr<ThunderAutoModeStep>& step,
                                    const std::string& oldName,
                                    const std::string& newName);
 
-  void renameTrajectoryInAutoModeStep(std::shared_ptr<ThunderAutoModeStep> step,
+  void renameTrajectoryInAutoModeStep(std::unique_ptr<ThunderAutoModeStep>& step,
                                       const std::string& oldName,
                                       const std::string& newName);
 };

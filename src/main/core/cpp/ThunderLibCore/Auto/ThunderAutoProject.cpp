@@ -525,7 +525,7 @@ void ThunderAutoProjectState::validateActionsAndTrajectories() {
 }
 
 void ThunderAutoProjectState::validateActionsAndTrajectoriesInAutoModeStep(
-    std::shared_ptr<const ThunderAutoModeStep> step) {
+    const std::unique_ptr<ThunderAutoModeStep>& step) {
   switch (step->type()) {
     using enum ThunderAutoModeStepType;
     case ACTION: {
@@ -746,7 +746,7 @@ void ThunderAutoProjectState::renameAction(const std::string& oldName, const std
   }
 }
 
-void ThunderAutoProjectState::renameActionsInAutoModeStep(std::shared_ptr<ThunderAutoModeStep> step,
+void ThunderAutoProjectState::renameActionsInAutoModeStep(std::unique_ptr<ThunderAutoModeStep>& step,
                                                           const std::string& oldName,
                                                           const std::string& newName) {
   switch (step->type()) {
@@ -763,12 +763,12 @@ void ThunderAutoProjectState::renameActionsInAutoModeStep(std::shared_ptr<Thunde
     case TRAJECTORY:
       break;
     case BRANCH_BOOL: {
-      const auto branchStep = reinterpret_cast<const ThunderAutoModeBoolBranchStep*>(step.get());
+      auto branchStep = reinterpret_cast<ThunderAutoModeBoolBranchStep*>(step.get());
 
       using namespace std::placeholders;
 
-      const auto& trueSteps = branchStep->trueBranch;
-      const auto& elseSteps = branchStep->elseBranch;
+      auto& trueSteps = branchStep->trueBranch;
+      auto& elseSteps = branchStep->elseBranch;
       std::for_each(
           trueSteps.begin(), trueSteps.end(),
           std::bind(&ThunderAutoProjectState::renameActionsInAutoModeStep, this, _1, oldName, newName));
@@ -779,16 +779,16 @@ void ThunderAutoProjectState::renameActionsInAutoModeStep(std::shared_ptr<Thunde
       break;
     }
     case BRANCH_SWITCH: {
-      const auto branchStep = reinterpret_cast<const ThunderAutoModeSwitchBranchStep*>(step.get());
+      auto branchStep = reinterpret_cast<ThunderAutoModeSwitchBranchStep*>(step.get());
 
       using namespace std::placeholders;
 
-      for (const auto& [caseID, caseSteps] : branchStep->caseBranches) {
+      for (auto& [caseID, caseSteps] : branchStep->caseBranches) {
         std::for_each(
             caseSteps.begin(), caseSteps.end(),
             std::bind(&ThunderAutoProjectState::renameActionsInAutoModeStep, this, _1, oldName, newName));
       }
-      const auto& defaultSteps = branchStep->defaultBranch;
+      auto& defaultSteps = branchStep->defaultBranch;
       std::for_each(
           defaultSteps.begin(), defaultSteps.end(),
           std::bind(&ThunderAutoProjectState::renameActionsInAutoModeStep, this, _1, oldName, newName));
@@ -1266,7 +1266,7 @@ void ThunderAutoProjectState::trajectoryRename(const std::string& oldName, const
   }
 }
 
-void ThunderAutoProjectState::renameTrajectoryInAutoModeStep(std::shared_ptr<ThunderAutoModeStep> step,
+void ThunderAutoProjectState::renameTrajectoryInAutoModeStep(std::unique_ptr<ThunderAutoModeStep>& step,
                                                              const std::string& oldName,
                                                              const std::string& newName) {
   switch (step->type()) {
@@ -1283,12 +1283,12 @@ void ThunderAutoProjectState::renameTrajectoryInAutoModeStep(std::shared_ptr<Thu
       break;
     }
     case BRANCH_BOOL: {
-      const auto branchStep = reinterpret_cast<const ThunderAutoModeBoolBranchStep*>(step.get());
+      auto branchStep = reinterpret_cast<ThunderAutoModeBoolBranchStep*>(step.get());
 
       using namespace std::placeholders;
 
-      const auto& trueSteps = branchStep->trueBranch;
-      const auto& elseSteps = branchStep->elseBranch;
+      auto& trueSteps = branchStep->trueBranch;
+      auto& elseSteps = branchStep->elseBranch;
       std::for_each(
           trueSteps.begin(), trueSteps.end(),
           std::bind(&ThunderAutoProjectState::renameTrajectoryInAutoModeStep, this, _1, oldName, newName));
@@ -1299,16 +1299,16 @@ void ThunderAutoProjectState::renameTrajectoryInAutoModeStep(std::shared_ptr<Thu
       break;
     }
     case BRANCH_SWITCH: {
-      const auto branchStep = reinterpret_cast<const ThunderAutoModeSwitchBranchStep*>(step.get());
+      auto branchStep = reinterpret_cast<ThunderAutoModeSwitchBranchStep*>(step.get());
 
       using namespace std::placeholders;
 
-      for (const auto& [caseID, caseSteps] : branchStep->caseBranches) {
+      for (auto& [caseID, caseSteps] : branchStep->caseBranches) {
         std::for_each(
             caseSteps.begin(), caseSteps.end(),
             std::bind(&ThunderAutoProjectState::renameTrajectoryInAutoModeStep, this, _1, oldName, newName));
       }
-      const auto& defaultSteps = branchStep->defaultBranch;
+      auto& defaultSteps = branchStep->defaultBranch;
       std::for_each(
           defaultSteps.begin(), defaultSteps.end(),
           std::bind(&ThunderAutoProjectState::renameTrajectoryInAutoModeStep, this, _1, oldName, newName));
@@ -2102,7 +2102,7 @@ static size_t DeserializeTrajectories(DataInputStream& stream,
 }
 
 static size_t SerializeAutoModeStep(const ThunderAutoModeStep* autoModeStep, DataOutputStream& stream);
-static size_t DeserializeAutoModeStep(DataInputStream& stream, std::shared_ptr<ThunderAutoModeStep>& step);
+static size_t DeserializeAutoModeStep(DataInputStream& stream, std::unique_ptr<ThunderAutoModeStep>& step);
 
 static size_t SerializeAutoModeActionStep(const ThunderAutoModeActionStep* actionStep,
                                           DataOutputStream& stream) {
@@ -2194,9 +2194,9 @@ static size_t DeserializeAutoModeBoolBranchStep(DataInputStream& stream,
     sum += stream >> numTrueSteps;
 
     for (size_t stepIndex = 0; stepIndex < static_cast<size_t>(numTrueSteps); ++stepIndex) {
-      std::shared_ptr<ThunderAutoModeStep> step;
+      std::unique_ptr<ThunderAutoModeStep> step;
       sum += DeserializeAutoModeStep(stream, step);
-      boolBranchStep->trueBranch.push_back(step);
+      boolBranchStep->trueBranch.push_back(std::move(step));
     }
   }
 
@@ -2205,9 +2205,9 @@ static size_t DeserializeAutoModeBoolBranchStep(DataInputStream& stream,
     sum += stream >> numElseSteps;
 
     for (size_t stepIndex = 0; stepIndex < static_cast<size_t>(numElseSteps); ++stepIndex) {
-      std::shared_ptr<ThunderAutoModeStep> step;
+      std::unique_ptr<ThunderAutoModeStep> step;
       sum += DeserializeAutoModeStep(stream, step);
-      boolBranchStep->elseBranch.push_back(step);
+      boolBranchStep->elseBranch.push_back(std::move(step));
     }
   }
 
@@ -2281,14 +2281,14 @@ static size_t DeserializeAutoModeSwitchBranchStep(DataInputStream& stream,
       uint8_t numCaseSteps;
       sum += stream >> numCaseSteps;
 
-      std::list<std::shared_ptr<ThunderAutoModeStep>> caseSteps;
+      std::list<std::unique_ptr<ThunderAutoModeStep>> caseSteps;
       for (size_t stepIndex = 0; stepIndex < static_cast<size_t>(numCaseSteps); ++stepIndex) {
-        std::shared_ptr<ThunderAutoModeStep> step;
+        std::unique_ptr<ThunderAutoModeStep> step;
         sum += DeserializeAutoModeStep(stream, step);
-        caseSteps.push_back(step);
+        caseSteps.push_back(std::move(step));
       }
 
-      switchBranchStep->caseBranches.emplace(caseValue, caseSteps);
+      switchBranchStep->caseBranches.emplace(caseValue, std::move(caseSteps));
     }
   }
 
@@ -2297,9 +2297,9 @@ static size_t DeserializeAutoModeSwitchBranchStep(DataInputStream& stream,
     sum += stream >> numDefaultSteps;
 
     for (size_t stepIndex = 0; stepIndex < static_cast<size_t>(numDefaultSteps); ++stepIndex) {
-      std::shared_ptr<ThunderAutoModeStep> step;
+      std::unique_ptr<ThunderAutoModeStep> step;
       sum += DeserializeAutoModeStep(stream, step);
-      switchBranchStep->defaultBranch.push_back(step);
+      switchBranchStep->defaultBranch.push_back(std::move(step));
     }
   }
 
@@ -2337,7 +2337,7 @@ static size_t SerializeAutoModeStep(const ThunderAutoModeStep* autoModeStep, Dat
   return sum;
 }
 
-static size_t DeserializeAutoModeStep(DataInputStream& stream, std::shared_ptr<ThunderAutoModeStep>& step) {
+static size_t DeserializeAutoModeStep(DataInputStream& stream, std::unique_ptr<ThunderAutoModeStep>& step) {
   size_t sum = 0;
 
   uint8_t stepTypeByte;
@@ -2348,27 +2348,27 @@ static size_t DeserializeAutoModeStep(DataInputStream& stream, std::shared_ptr<T
 
   switch (stepType) {
     case ACTION: {
-      auto actionStep = std::make_shared<ThunderAutoModeActionStep>();
+      auto actionStep = std::make_unique<ThunderAutoModeActionStep>();
       sum += DeserializeAutoModeActionStep(stream, actionStep.get());
-      step = actionStep;
+      step = std::move(actionStep);
       break;
     }
     case TRAJECTORY: {
-      auto trajectoryStep = std::make_shared<ThunderAutoModeTrajectoryStep>();
+      auto trajectoryStep = std::make_unique<ThunderAutoModeTrajectoryStep>();
       sum += DeserializeAutoModeTrajectoryStep(stream, trajectoryStep.get());
-      step = trajectoryStep;
+      step = std::move(trajectoryStep);
       break;
     }
     case BRANCH_BOOL: {
-      auto boolBranchStep = std::make_shared<ThunderAutoModeBoolBranchStep>();
+      auto boolBranchStep = std::make_unique<ThunderAutoModeBoolBranchStep>();
       sum += DeserializeAutoModeBoolBranchStep(stream, boolBranchStep.get());
-      step = boolBranchStep;
+      step = std::move(boolBranchStep);
       break;
     }
     case BRANCH_SWITCH: {
-      auto switchBranchStep = std::make_shared<ThunderAutoModeSwitchBranchStep>();
+      auto switchBranchStep = std::make_unique<ThunderAutoModeSwitchBranchStep>();
       sum += DeserializeAutoModeSwitchBranchStep(stream, switchBranchStep.get());
-      step = switchBranchStep;
+      step = std::move(switchBranchStep);
       break;
     }
     default:
@@ -2414,9 +2414,9 @@ static size_t DeserializeAutoMode(DataInputStream& stream,
   ThunderAutoMode autoMode;
 
   for (size_t stepIndex = 0; stepIndex < static_cast<size_t>(numSteps); ++stepIndex) {
-    std::shared_ptr<ThunderAutoModeStep> step;
+    std::unique_ptr<ThunderAutoModeStep> step;
     sum += DeserializeAutoModeStep(stream, step);
-    autoMode.steps.push_back(step);
+    autoMode.steps.push_back(std::move(step));
   }
 
   uint64_t autoModeHash;

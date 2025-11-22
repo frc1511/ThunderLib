@@ -28,8 +28,8 @@ bool operator==(const ThunderAutoModeStep& lhs, const ThunderAutoModeStep& rhs) 
   }
 }
 
-bool operator==(const std::shared_ptr<ThunderAutoModeStep>& lhs,
-                const std::shared_ptr<ThunderAutoModeStep>& rhs) noexcept {
+bool operator==(const std::unique_ptr<ThunderAutoModeStep>& lhs,
+                const std::unique_ptr<ThunderAutoModeStep>& rhs) noexcept {
   if (lhs.get() == rhs.get()) {
     return true;
   }
@@ -37,6 +37,96 @@ bool operator==(const std::shared_ptr<ThunderAutoModeStep>& lhs,
     return false;
   }
   return (*lhs == *rhs);
+}
+
+ThunderAutoModeBoolBranchStep::ThunderAutoModeBoolBranchStep(const ThunderAutoModeBoolBranchStep& other) {
+  trueBranch.clear();
+  for (const auto& step : other.trueBranch) {
+    trueBranch.push_back(step->clone());
+  }
+
+  elseBranch.clear();
+  for (const auto& step : other.elseBranch) {
+    elseBranch.push_back(step->clone());
+  }
+
+  conditionName = other.conditionName;
+}
+
+ThunderAutoModeBoolBranchStep& ThunderAutoModeBoolBranchStep::operator=(
+    const ThunderAutoModeBoolBranchStep& other) noexcept {
+  if (this != &other) {
+    trueBranch.clear();
+    for (const auto& step : other.trueBranch) {
+      trueBranch.push_back(step->clone());
+    }
+
+    elseBranch.clear();
+    for (const auto& step : other.elseBranch) {
+      elseBranch.push_back(step->clone());
+    }
+
+    conditionName = other.conditionName;
+  }
+  return *this;
+}
+
+ThunderAutoModeSwitchBranchStep::ThunderAutoModeSwitchBranchStep(
+    const ThunderAutoModeSwitchBranchStep& other) {
+  caseBranches.clear();
+  for (const auto& [caseID, steps] : other.caseBranches) {
+    std::list<std::unique_ptr<ThunderAutoModeStep>> clonedSteps;
+    for (const auto& step : steps) {
+      clonedSteps.push_back(step->clone());
+    }
+    caseBranches[caseID] = std::move(clonedSteps);
+  }
+
+  defaultBranch.clear();
+  for (const auto& step : other.defaultBranch) {
+    defaultBranch.push_back(step->clone());
+  }
+
+  conditionName = other.conditionName;
+}
+
+ThunderAutoModeSwitchBranchStep& ThunderAutoModeSwitchBranchStep::operator=(
+    const ThunderAutoModeSwitchBranchStep& other) noexcept {
+  if (this != &other) {
+    caseBranches.clear();
+    for (const auto& [caseID, steps] : other.caseBranches) {
+      std::list<std::unique_ptr<ThunderAutoModeStep>> clonedSteps;
+      for (const auto& step : steps) {
+        clonedSteps.push_back(step->clone());
+      }
+      caseBranches[caseID] = std::move(clonedSteps);
+    }
+
+    defaultBranch.clear();
+    for (const auto& step : other.defaultBranch) {
+      defaultBranch.push_back(step->clone());
+    }
+
+    conditionName = other.conditionName;
+  }
+  return *this;
+}
+
+ThunderAutoMode::ThunderAutoMode(const ThunderAutoMode& other) {
+  steps.clear();
+  for (const auto& step : other.steps) {
+    steps.push_back(step->clone());
+  }
+}
+
+ThunderAutoMode& ThunderAutoMode::operator=(const ThunderAutoMode& other) noexcept {
+  if (this != &other) {
+    steps.clear();
+    for (const auto& step : other.steps) {
+      steps.push_back(step->clone());
+    }
+  }
+  return *this;
 }
 
 static void to_json(wpi::json& json, const ThunderAutoModeStepType& stepType) {
@@ -73,7 +163,7 @@ static void from_json(const wpi::json& json, ThunderAutoModeStepType& stepType) 
   }
 }
 
-static void to_json(wpi::json& json, const std::shared_ptr<ThunderAutoModeStep>& step);
+static void to_json(wpi::json& json, const std::unique_ptr<ThunderAutoModeStep>& step);
 
 static void to_json(wpi::json& json, const ThunderAutoModeStep& step) {
   json["type"] = step.type();
@@ -124,29 +214,28 @@ static void to_json(wpi::json& json, const ThunderAutoModeStep& step) {
   }
 }
 
-static void to_json(wpi::json& json, const std::shared_ptr<ThunderAutoModeStep>& step) {
+static void to_json(wpi::json& json, const std::unique_ptr<ThunderAutoModeStep>& step) {
   ThunderLibCoreAssert(step != nullptr, "Step is null?");
   json = *step;
 }
 
-static void from_json(const wpi::json& json, std::shared_ptr<ThunderAutoModeStep>& step) {
+static void from_json(const wpi::json& json, std::unique_ptr<ThunderAutoModeStep>& step) {
   ThunderAutoModeStepType stepType = json.at("type").get<ThunderAutoModeStepType>();
   switch (stepType) {
     case ThunderAutoModeStepType::ACTION: {
-      auto actionStep = std::make_shared<ThunderAutoModeActionStep>();
+      auto actionStep = std::make_unique<ThunderAutoModeActionStep>();
       json.at("action").get_to(actionStep->actionName);
-      step = actionStep;
+      step = std::move(actionStep);
       break;
     }
     case ThunderAutoModeStepType::TRAJECTORY: {
-      auto trajectoryStep = std::make_shared<ThunderAutoModeTrajectoryStep>();
+      auto trajectoryStep = std::make_unique<ThunderAutoModeTrajectoryStep>();
       json.at("trajectory").get_to(trajectoryStep->trajectoryName);
-      step = trajectoryStep;
+      step = std::move(trajectoryStep);
       break;
     }
     case ThunderAutoModeStepType::BRANCH_BOOL: {
-      auto branchBoolStep = std::make_shared<ThunderAutoModeBoolBranchStep>();
-
+      auto branchBoolStep = std::make_unique<ThunderAutoModeBoolBranchStep>();
       if (json.contains("true_branch")) {
         json.at("true_branch").get_to(branchBoolStep->trueBranch);
       }
@@ -155,12 +244,11 @@ static void from_json(const wpi::json& json, std::shared_ptr<ThunderAutoModeStep
       }
       json.at("condition").get_to(branchBoolStep->conditionName);
 
-      step = branchBoolStep;
+      step = std::move(branchBoolStep);
       break;
     }
     case ThunderAutoModeStepType::BRANCH_SWITCH: {
-      auto branchSwitchStep = std::make_shared<ThunderAutoModeSwitchBranchStep>();
-
+      auto branchSwitchStep = std::make_unique<ThunderAutoModeSwitchBranchStep>();
       if (json.contains("case_branches")) {
         const wpi::json& nextStepsJson = json.at("case_branches");
         for (const auto& [key, value] : nextStepsJson.items()) {
@@ -173,7 +261,7 @@ static void from_json(const wpi::json& json, std::shared_ptr<ThunderAutoModeStep
       }
       json.at("condition").get_to(branchSwitchStep->conditionName);
 
-      step = branchSwitchStep;
+      step = std::move(branchSwitchStep);
       break;
     }
     default:
