@@ -98,9 +98,9 @@ static void CreateExampleProjectState(ThunderAutoProjectState& state) {
     step3->trajectoryName = "Trajectory2";
 
     auto step4True = std::make_shared<ThunderAutoModeActionStep>();
-    step2->actionName = "action2";
+    step4True->actionName = "action2";
     auto step4Else = std::make_shared<ThunderAutoModeActionStep>();
-    step2->actionName = "action3";
+    step4Else->actionName = "action3";
 
     auto step4 = std::make_shared<ThunderAutoModeBoolBranchStep>();
     step4->conditionName = "booleanCondition1";
