@@ -51,7 +51,7 @@ struct ThunderAutoEditorState {
   View view = View::TRAJECTORY;
 
   ThunderAutoTrajectoryEditorState trajectoryEditorState;
-  ThunderAutoModeEditorState modeEditorState;
+  ThunderAutoModeEditorState autoModeEditorState;
 
   bool operator==(const ThunderAutoEditorState& other) const noexcept = default;
 };

@@ -46,14 +46,14 @@ void from_json(const wpi::json& json, ThunderAutoEditorState& state) {
   json.at("view").get_to(viewIndex);
   state.view = static_cast<ThunderAutoEditorState::View>(viewIndex);
   json.at("trajectory_editor_state").get_to(state.trajectoryEditorState);
-  json.at("mode_editor_state").get_to(state.modeEditorState);
+  json.at("auto_mode_editor_state").get_to(state.autoModeEditorState);
 }
 
 void to_json(wpi::json& json, const ThunderAutoEditorState& state) noexcept {
   json = wpi::json{
       {"view", static_cast<size_t>(state.view)},
       {"trajectory_editor_state", state.trajectoryEditorState},
-      {"mode_editor_state", state.modeEditorState},
+      {"auto_mode_editor_state", state.autoModeEditorState},
   };
 }
 
