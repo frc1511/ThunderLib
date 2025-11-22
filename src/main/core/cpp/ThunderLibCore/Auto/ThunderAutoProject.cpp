@@ -441,11 +441,11 @@ void ThunderAutoProjectState::fromJsonCurrentVersion(const wpi::json& json) {
   json.at("waypoint_links").get_to(waypointLinks);
   json.at("editor_state").get_to(editorState);
 
-  validateActions();
+  validateActionsAndTrajectories();
   validateWaypointLinks();
 }
 
-void ThunderAutoProjectState::validateActions() {
+void ThunderAutoProjectState::validateActionsAndTrajectories() {
   // Validate references in action groups.
 
   for (auto& [actionName, actionInfo] : m_actions) {
@@ -512,7 +512,77 @@ void ThunderAutoProjectState::validateActions() {
     }
   }
 
-  // TODO: Validate references in auto modes
+  // Validate references in auto modes
+
+  for (auto& [name, autoMode] : autoModes) {
+    using namespace std::placeholders;
+
+    const auto& steps = autoMode.steps;
+    std::for_each(
+        steps.begin(), steps.end(),
+        std::bind(&ThunderAutoProjectState::validateActionsAndTrajectoriesInAutoModeStep, this, _1));
+  }
+}
+
+void ThunderAutoProjectState::validateActionsAndTrajectoriesInAutoModeStep(
+    std::shared_ptr<const ThunderAutoModeStep> step) {
+  switch (step->type()) {
+    using enum ThunderAutoModeStepType;
+    case ACTION: {
+      const auto actionStep = reinterpret_cast<const ThunderAutoModeActionStep*>(step.get());
+      const std::string& actionName = actionStep->actionName;
+      // Action steps with no action name just do nothing, so ignore them.
+      if (!actionName.empty() && !m_actions.contains(actionName)) {
+        throw RuntimeError::Construct("Auto mode action step contains reference to non-existent action '{}'",
+                                      actionStep->actionName);
+      }
+      break;
+    }
+    case TRAJECTORY: {
+      const auto trajectoryStep = reinterpret_cast<const ThunderAutoModeTrajectoryStep*>(step.get());
+      const std::string& trajectoryName = trajectoryStep->trajectoryName;
+      // Trajectory steps with no trajectory name just do nothing, so ignore them.
+      if (!trajectoryName.empty() && !trajectories.contains(trajectoryName)) {
+        throw RuntimeError::Construct(
+            "Auto mode trajectory step contains reference to non-existent trajectory '{}'",
+            trajectoryStep->trajectoryName);
+      }
+      break;
+    }
+    case BRANCH_BOOL: {
+      const auto branchStep = reinterpret_cast<const ThunderAutoModeBoolBranchStep*>(step.get());
+
+      using namespace std::placeholders;
+
+      const auto& trueSteps = branchStep->trueBranch;
+      const auto& elseSteps = branchStep->elseBranch;
+      std::for_each(
+          trueSteps.begin(), trueSteps.end(),
+          std::bind(&ThunderAutoProjectState::validateActionsAndTrajectoriesInAutoModeStep, this, _1));
+      std::for_each(
+          elseSteps.begin(), elseSteps.end(),
+          std::bind(&ThunderAutoProjectState::validateActionsAndTrajectoriesInAutoModeStep, this, _1));
+      break;
+    }
+    case BRANCH_SWITCH: {
+      const auto branchStep = reinterpret_cast<const ThunderAutoModeSwitchBranchStep*>(step.get());
+
+      using namespace std::placeholders;
+
+      for (const auto& [caseID, caseSteps] : branchStep->caseBranches) {
+        std::for_each(
+            caseSteps.begin(), caseSteps.end(),
+            std::bind(&ThunderAutoProjectState::validateActionsAndTrajectoriesInAutoModeStep, this, _1));
+      }
+      const auto& defaultSteps = branchStep->defaultBranch;
+      std::for_each(
+          defaultSteps.begin(), defaultSteps.end(),
+          std::bind(&ThunderAutoProjectState::validateActionsAndTrajectoriesInAutoModeStep, this, _1));
+      break;
+    }
+    default:
+      ThunderLibCoreUnreachable("Invalid auto mode step type");
+  }
 }
 
 void ThunderAutoProjectState::validateWaypointLinks() {
@@ -527,13 +597,6 @@ void ThunderAutoProjectState::validateWaypointLinks() {
       }
     }
   }
-}
-
-std::optional<frc::Pose2d> ThunderAutoProjectState::getAutoModeInitialPose(
-    std::string_view autoModeName) const noexcept {
-  // TODO: Once auto modes are added
-
-  return std::nullopt;
 }
 
 void ThunderAutoProjectState::addAction(const std::string& actionName,
@@ -608,7 +671,16 @@ void ThunderAutoProjectState::removeAction(const std::string& actionToRemoveName
     }
   }
 
-  // TODO: Remove references in auto modes
+  // Remove references in auto modes
+
+  for (auto& [name, autoMode] : autoModes) {
+    using namespace std::placeholders;
+
+    auto& steps = autoMode.steps;
+    std::for_each(
+        steps.begin(), steps.end(),
+        std::bind(&ThunderAutoProjectState::renameActionsInAutoModeStep, this, _1, actionToRemoveName, ""));
+  }
 }
 
 void ThunderAutoProjectState::renameAction(const std::string& oldName, const std::string& newName) {
@@ -662,7 +734,70 @@ void ThunderAutoProjectState::renameAction(const std::string& oldName, const std
     }
   }
 
-  // TODO: Rename references in auto modes
+  // Rename references in auto modes
+
+  for (auto& [name, autoMode] : autoModes) {
+    using namespace std::placeholders;
+
+    auto& steps = autoMode.steps;
+    std::for_each(
+        steps.begin(), steps.end(),
+        std::bind(&ThunderAutoProjectState::renameActionsInAutoModeStep, this, _1, oldName, newName));
+  }
+}
+
+void ThunderAutoProjectState::renameActionsInAutoModeStep(std::shared_ptr<ThunderAutoModeStep> step,
+                                                          const std::string& oldName,
+                                                          const std::string& newName) {
+  switch (step->type()) {
+    using enum ThunderAutoModeStepType;
+    case UNKNOWN:
+      break;
+    case ACTION: {
+      auto actionStep = reinterpret_cast<ThunderAutoModeActionStep*>(step.get());
+      if (actionStep->actionName == oldName) {
+        actionStep->actionName = newName;
+      }
+      break;
+    }
+    case TRAJECTORY:
+      break;
+    case BRANCH_BOOL: {
+      const auto branchStep = reinterpret_cast<const ThunderAutoModeBoolBranchStep*>(step.get());
+
+      using namespace std::placeholders;
+
+      const auto& trueSteps = branchStep->trueBranch;
+      const auto& elseSteps = branchStep->elseBranch;
+      std::for_each(
+          trueSteps.begin(), trueSteps.end(),
+          std::bind(&ThunderAutoProjectState::renameActionsInAutoModeStep, this, _1, oldName, newName));
+      std::for_each(
+          elseSteps.begin(), elseSteps.end(),
+          std::bind(&ThunderAutoProjectState::renameActionsInAutoModeStep, this, _1, oldName, newName));
+
+      break;
+    }
+    case BRANCH_SWITCH: {
+      const auto branchStep = reinterpret_cast<const ThunderAutoModeSwitchBranchStep*>(step.get());
+
+      using namespace std::placeholders;
+
+      for (const auto& [caseID, caseSteps] : branchStep->caseBranches) {
+        std::for_each(
+            caseSteps.begin(), caseSteps.end(),
+            std::bind(&ThunderAutoProjectState::renameActionsInAutoModeStep, this, _1, oldName, newName));
+      }
+      const auto& defaultSteps = branchStep->defaultBranch;
+      std::for_each(
+          defaultSteps.begin(), defaultSteps.end(),
+          std::bind(&ThunderAutoProjectState::renameActionsInAutoModeStep, this, _1, oldName, newName));
+
+      break;
+    }
+    default:
+      ThunderLibCoreUnreachable("Invalid auto mode step type");
+  }
 }
 
 void ThunderAutoProjectState::moveActionBeforeOther(const std::string& actionName,
@@ -1093,30 +1228,101 @@ void ThunderAutoProjectState::trajectoryDelete(const std::string& trajectoryName
     trajectoryEditorState.selectionIndex = 0;
   }
 
-  // TODO: Remove references in auto modes
+  // Remove references in auto modes
+
+  for (auto& [name, autoMode] : autoModes) {
+    using namespace std::placeholders;
+
+    auto& steps = autoMode.steps;
+    std::for_each(
+        steps.begin(), steps.end(),
+        std::bind(&ThunderAutoProjectState::renameTrajectoryInAutoModeStep, this, _1, trajectoryName, ""));
+  }
 }
 
-void ThunderAutoProjectState::trajectoryRename(const std::string& oldTrajectoryName,
-                                               const std::string& newTrajectoryName) {
-  auto oldTrajectoryIt = trajectories.find(oldTrajectoryName);
+void ThunderAutoProjectState::trajectoryRename(const std::string& oldName, const std::string& newName) {
+  auto oldTrajectoryIt = trajectories.find(oldName);
   if (oldTrajectoryIt == trajectories.end()) {
     throw LogicError::Construct("Cannot rename trajectory: original trajectory does not exist");
   }
 
   auto nodeHandle = trajectories.extract(oldTrajectoryIt);
-  nodeHandle.key() = newTrajectoryName;
+  nodeHandle.key() = newName;
   trajectories.insert(std::move(nodeHandle));
 
   // Show the new trajectory in the editor.
 
   if (editorState.view == ThunderAutoEditorState::View::TRAJECTORY &&
-      editorState.trajectoryEditorState.currentTrajectoryName == oldTrajectoryName) {
-    editorState.trajectoryEditorState.currentTrajectoryName = newTrajectoryName;
+      editorState.trajectoryEditorState.currentTrajectoryName == oldName) {
+    editorState.trajectoryEditorState.currentTrajectoryName = newName;
   } else {
     editorState.trajectoryEditorState.currentTrajectoryName = "";
   }
 
-  // TODO: Update references in auto modes
+  // Rename references in auto modes
+
+  for (auto& [name, autoMode] : autoModes) {
+    using namespace std::placeholders;
+
+    auto& steps = autoMode.steps;
+    std::for_each(
+        steps.begin(), steps.end(),
+        std::bind(&ThunderAutoProjectState::renameTrajectoryInAutoModeStep, this, _1, oldName, newName));
+  }
+}
+
+void ThunderAutoProjectState::renameTrajectoryInAutoModeStep(std::shared_ptr<ThunderAutoModeStep> step,
+                                                             const std::string& oldName,
+                                                             const std::string& newName) {
+  switch (step->type()) {
+    using enum ThunderAutoModeStepType;
+    case UNKNOWN:
+      break;
+    case ACTION:
+      break;
+    case TRAJECTORY: {
+      auto trajectoryStep = reinterpret_cast<ThunderAutoModeTrajectoryStep*>(step.get());
+      if (trajectoryStep->trajectoryName == oldName) {
+        trajectoryStep->trajectoryName = newName;
+      }
+      break;
+    }
+    case BRANCH_BOOL: {
+      const auto branchStep = reinterpret_cast<const ThunderAutoModeBoolBranchStep*>(step.get());
+
+      using namespace std::placeholders;
+
+      const auto& trueSteps = branchStep->trueBranch;
+      const auto& elseSteps = branchStep->elseBranch;
+      std::for_each(
+          trueSteps.begin(), trueSteps.end(),
+          std::bind(&ThunderAutoProjectState::renameTrajectoryInAutoModeStep, this, _1, oldName, newName));
+      std::for_each(
+          elseSteps.begin(), elseSteps.end(),
+          std::bind(&ThunderAutoProjectState::renameTrajectoryInAutoModeStep, this, _1, oldName, newName));
+
+      break;
+    }
+    case BRANCH_SWITCH: {
+      const auto branchStep = reinterpret_cast<const ThunderAutoModeSwitchBranchStep*>(step.get());
+
+      using namespace std::placeholders;
+
+      for (const auto& [caseID, caseSteps] : branchStep->caseBranches) {
+        std::for_each(
+            caseSteps.begin(), caseSteps.end(),
+            std::bind(&ThunderAutoProjectState::renameTrajectoryInAutoModeStep, this, _1, oldName, newName));
+      }
+      const auto& defaultSteps = branchStep->defaultBranch;
+      std::for_each(
+          defaultSteps.begin(), defaultSteps.end(),
+          std::bind(&ThunderAutoProjectState::renameTrajectoryInAutoModeStep, this, _1, oldName, newName));
+
+      break;
+    }
+    default:
+      ThunderLibCoreUnreachable("Invalid auto mode step type");
+  }
 }
 
 void ThunderAutoProjectState::trajectoryDuplicate(const std::string& oldTrajectoryName,

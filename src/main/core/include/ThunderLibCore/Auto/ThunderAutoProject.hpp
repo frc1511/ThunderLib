@@ -186,16 +186,6 @@ struct ThunderAutoProjectState {
    */
   void fromJson(const wpi::json& json, const ThunderAutoProjectVersion& version);
 
-  /**
-   * Finds the initial pose for a given auto mode.
-   *
-   * @param autoModeName The name of the auto mode to find the initial pose for.
-   *
-   * @return An optional Pose2d representing the initial pose of the auto mode, or std::nullopt if not
-   * available.
-   */
-  std::optional<frc::Pose2d> getAutoModeInitialPose(std::string_view autoModeName) const noexcept;
-
   bool operator==(const ThunderAutoProjectState& other) const noexcept {
     return trajectories == other.trajectories && autoModes == other.autoModes &&
            m_actions == other.m_actions && m_actionsOrder == other.m_actionsOrder &&
@@ -244,8 +234,18 @@ struct ThunderAutoProjectState {
   void fromJsonPre2026Version(const wpi::json& json);
   void fromJsonCurrentVersion(const wpi::json& json);
 
-  void validateActions();
+  void validateActionsAndTrajectories();
+  void validateActionsAndTrajectoriesInAutoModeStep(std::shared_ptr<const ThunderAutoModeStep> step);
+
   void validateWaypointLinks();
+
+  void renameActionsInAutoModeStep(std::shared_ptr<ThunderAutoModeStep> step,
+                                   const std::string& oldName,
+                                   const std::string& newName);
+
+  void renameTrajectoryInAutoModeStep(std::shared_ptr<ThunderAutoModeStep> step,
+                                      const std::string& oldName,
+                                      const std::string& newName);
 };
 
 class ThunderAutoProject {
