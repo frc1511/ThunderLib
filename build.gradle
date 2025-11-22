@@ -11,7 +11,7 @@ plugins {
 }
 
 // WPILib Version
-ext.wpilibVersion = "2025.+"
+ext.wpilibVersion = "2026.+"
 
 repositories {
     mavenCentral()
@@ -42,8 +42,6 @@ dependencies {
     implementation "edu.wpi.first.wpimath:wpimath-java:$wpilibVersion"
     implementation "edu.wpi.first.wpiunits:wpiunits-java:$wpilibVersion"
     implementation "edu.wpi.first.hal:hal-java:$wpilibVersion"
-    implementation "com.google.protobuf:protobuf-java:4.31.1"
-    implementation "us.hebi.quickbuf:quickbuf-runtime:1.4"
     implementation "org.ejml:ejml-simple:0.44.0"
     implementation "com.fasterxml.jackson.core:jackson-annotations:2.19.2"
     implementation "com.fasterxml.jackson.core:jackson-core:2.19.2"
@@ -52,6 +50,7 @@ dependencies {
 
     testImplementation 'org.junit.jupiter:junit-jupiter:5.13.4'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    testRuntimeOnly 'us.hebi.quickbuf:quickbuf-runtime:1.4'
 }
 
 // Set up java tests
