@@ -8,7 +8,7 @@ using ::testing::ElementsAre;
 
 TEST(RecentItemListTests, DefaultConstructor) {
   RecentItemList<std::string, 5> recentItems;
-  EXPECT_EQ(recentItems.size(), 0);
+  EXPECT_EQ(recentItems.size(), 0UL);
   EXPECT_TRUE(recentItems.empty());
 }
 
