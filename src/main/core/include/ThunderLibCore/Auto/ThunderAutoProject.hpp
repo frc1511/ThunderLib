@@ -230,6 +230,14 @@ struct ThunderAutoProjectState {
   void trajectoryDuplicate(const std::string& oldTrajectoryName, const std::string& newTrajectoryName);
   void trajectoryReverseDirection(const std::string& trajectoryName);
 
+  void autoModeSelect(const std::string& autoModeName);
+  ThunderAutoMode& currentAutoMode();
+  const ThunderAutoMode& currentAutoMode() const;
+
+  void autoModeDelete(const std::string& autoModeName);
+  void autoModeRename(const std::string& oldAutoModeName, const std::string& newAutoModeName);
+  void autoModeDuplicate(const std::string& oldAutoModeName, const std::string& newAutoModeName);
+
  private:
   void fromJsonPre2026Version(const wpi::json& json);
   void fromJsonCurrentVersion(const wpi::json& json);

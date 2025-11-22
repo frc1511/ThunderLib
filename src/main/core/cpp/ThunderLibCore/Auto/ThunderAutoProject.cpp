@@ -885,15 +885,14 @@ std::list<std::string> ThunderAutoProjectState::findActionRecursionPath(
 
 void ThunderAutoProjectState::trajectorySelect(const std::string& trajectoryName) {
   if (!trajectoryName.empty() && !trajectories.contains(trajectoryName)) {
-    throw LogicError::Construct("Cannot select trajectory: trajectory does not exist");
+    throw LogicError::Construct("Cannot select trajectory: trajectory '{}' does not exist", trajectoryName);
   }
 
   editorState.view = ThunderAutoEditorState::View::TRAJECTORY;
 
   ThunderAutoTrajectoryEditorState& trajectoryEditorState = editorState.trajectoryEditorState;
+  trajectoryEditorState = ThunderAutoTrajectoryEditorState{};
   trajectoryEditorState.currentTrajectoryName = trajectoryName;
-  trajectoryEditorState.trajectorySelection = ThunderAutoTrajectoryEditorState::TrajectorySelection::NONE;
-  trajectoryEditorState.selectionIndex = 0;
 }
 
 ThunderAutoTrajectorySkeleton& ThunderAutoProjectState::currentTrajectory() {
@@ -1212,20 +1211,18 @@ void ThunderAutoProjectState::trajectoryUpdateSelectedWaypointFromLink() {
 void ThunderAutoProjectState::trajectoryDelete(const std::string& trajectoryName) {
   auto trajectoryIt = trajectories.find(trajectoryName);
   if (trajectoryIt == trajectories.end()) {
-    throw LogicError::Construct("Cannot delete trajectory: trajectory does not exist");
+    throw LogicError::Construct("Cannot delete trajectory: trajectory '{}' does not exist", trajectoryName);
   }
 
   trajectories.erase(trajectoryIt);
 
   // Deselect trajectory if selected.
 
-  const bool isInTrajectoryMode = editorState.view == ThunderAutoEditorState::View::TRAJECTORY;
+  const bool isInTrajectoryState = editorState.view == ThunderAutoEditorState::View::TRAJECTORY;
   ThunderAutoTrajectoryEditorState& trajectoryEditorState = editorState.trajectoryEditorState;
 
-  if (isInTrajectoryMode && trajectoryName == trajectoryEditorState.currentTrajectoryName) {
-    trajectoryEditorState.currentTrajectoryName = "";
-    trajectoryEditorState.trajectorySelection = ThunderAutoTrajectoryEditorState::TrajectorySelection::NONE;
-    trajectoryEditorState.selectionIndex = 0;
+  if (isInTrajectoryState && trajectoryName == trajectoryEditorState.currentTrajectoryName) {
+    trajectoryEditorState = ThunderAutoTrajectoryEditorState{};
   }
 
   // Remove references in auto modes
@@ -1243,7 +1240,7 @@ void ThunderAutoProjectState::trajectoryDelete(const std::string& trajectoryName
 void ThunderAutoProjectState::trajectoryRename(const std::string& oldName, const std::string& newName) {
   auto oldTrajectoryIt = trajectories.find(oldName);
   if (oldTrajectoryIt == trajectories.end()) {
-    throw LogicError::Construct("Cannot rename trajectory: original trajectory does not exist");
+    throw LogicError::Construct("Cannot rename trajectory: trajectory '{}' does not exist", oldName);
   }
 
   auto nodeHandle = trajectories.extract(oldTrajectoryIt);
@@ -1255,8 +1252,6 @@ void ThunderAutoProjectState::trajectoryRename(const std::string& oldName, const
   if (editorState.view == ThunderAutoEditorState::View::TRAJECTORY &&
       editorState.trajectoryEditorState.currentTrajectoryName == oldName) {
     editorState.trajectoryEditorState.currentTrajectoryName = newName;
-  } else {
-    editorState.trajectoryEditorState.currentTrajectoryName = "";
   }
 
   // Rename references in auto modes
@@ -1329,7 +1324,8 @@ void ThunderAutoProjectState::trajectoryDuplicate(const std::string& oldTrajecto
                                                   const std::string& newTrajectoryName) {
   auto oldTrajectoryIt = trajectories.find(oldTrajectoryName);
   if (oldTrajectoryIt == trajectories.end()) {
-    throw LogicError::Construct("Cannot duplicate trajectory: original trajectory does not exist");
+    throw LogicError::Construct("Cannot duplicate trajectory: trajectory '{}' does not exist",
+                                oldTrajectoryName);
   }
 
   trajectories.emplace(newTrajectoryName, oldTrajectoryIt->second);
@@ -1340,11 +1336,109 @@ void ThunderAutoProjectState::trajectoryDuplicate(const std::string& oldTrajecto
 void ThunderAutoProjectState::trajectoryReverseDirection(const std::string& trajectoryName) {
   auto trajectoryIt = trajectories.find(trajectoryName);
   if (trajectoryIt == trajectories.end()) {
-    throw LogicError::Construct("Cannot reverse trajectory: trajectory does not exist");
+    throw LogicError::Construct("Cannot reverse trajectory: trajectory '{}' does not exist", trajectoryName);
   }
 
   ThunderAutoTrajectorySkeleton& skeleton = trajectoryIt->second;
   skeleton.reverseDirection();
+}
+
+void ThunderAutoProjectState::autoModeSelect(const std::string& autoModeName) {
+  if (!autoModeName.empty() && !autoModes.contains(autoModeName)) {
+    throw LogicError::Construct("Cannot select auto mode: auto mode '{}' does not exist", autoModeName);
+  }
+
+  editorState.view = ThunderAutoEditorState::View::AUTO_MODE;
+
+  ThunderAutoModeEditorState& autoModeEditorState = editorState.autoModeEditorState;
+  autoModeEditorState = ThunderAutoModeEditorState{};
+  autoModeEditorState.currentAutoModeName = autoModeName;
+}
+
+ThunderAutoMode& ThunderAutoProjectState::currentAutoMode() {
+  if (editorState.view != ThunderAutoEditorState::View::AUTO_MODE) {
+    throw LogicError::Construct("Cannot get current auto mode: not in auto mode editor view");
+  }
+
+  const std::string& autoModeName = editorState.autoModeEditorState.currentAutoModeName;
+  if (autoModeName.empty()) {
+    throw LogicError::Construct("Cannot get current auto mode: no auto mode selected");
+  }
+
+  auto autoModeIt = autoModes.find(autoModeName);
+  if (autoModeIt == autoModes.end()) {
+    throw LogicError::Construct("Cannot get current auto mode: selected auto mode does not exist");
+  }
+
+  ThunderAutoMode& autoMode = autoModeIt->second;
+  return autoMode;
+}
+
+const ThunderAutoMode& ThunderAutoProjectState::currentAutoMode() const {
+  if (editorState.view != ThunderAutoEditorState::View::AUTO_MODE) {
+    throw LogicError::Construct("Cannot get current auto mode: not in auto mode editor view");
+  }
+
+  const std::string& autoModeName = editorState.autoModeEditorState.currentAutoModeName;
+  if (autoModeName.empty()) {
+    throw LogicError::Construct("Cannot get current auto mode: no auto mode selected");
+  }
+
+  auto autoModeIt = autoModes.find(autoModeName);
+  if (autoModeIt == autoModes.end()) {
+    throw LogicError::Construct("Cannot get current auto mode: selected auto mode does not exist");
+  }
+
+  const ThunderAutoMode& autoMode = autoModeIt->second;
+  return autoMode;
+}
+
+void ThunderAutoProjectState::autoModeDelete(const std::string& autoModeName) {
+  auto autoModeIt = autoModes.find(autoModeName);
+  if (autoModeIt == autoModes.end()) {
+    throw LogicError::Construct("Cannot delete auto mode: auto mode '{}' does not exist", autoModeName);
+  }
+
+  autoModes.erase(autoModeIt);
+
+  // Deselect auto mode if selected.
+
+  const bool isInAutoModeState = editorState.view == ThunderAutoEditorState::View::AUTO_MODE;
+  ThunderAutoModeEditorState& autoModeEditorState = editorState.autoModeEditorState;
+
+  if (isInAutoModeState && autoModeName == autoModeEditorState.currentAutoModeName) {
+    autoModeEditorState = ThunderAutoModeEditorState{};
+  }
+}
+
+void ThunderAutoProjectState::autoModeRename(const std::string& oldName, const std::string& newName) {
+  auto oldAutoModeIt = autoModes.find(oldName);
+  if (oldAutoModeIt == autoModes.end()) {
+    throw LogicError::Construct("Cannot rename auto mode: auto mode '{}' does not exist", oldName);
+  }
+
+  auto nodeHandle = autoModes.extract(oldAutoModeIt);
+  nodeHandle.key() = newName;
+  autoModes.insert(std::move(nodeHandle));
+
+  // Show the new auto mode in the editor.
+
+  if (editorState.view == ThunderAutoEditorState::View::AUTO_MODE &&
+      editorState.autoModeEditorState.currentAutoModeName == oldName) {
+    editorState.autoModeEditorState.currentAutoModeName = newName;
+  }
+}
+
+void ThunderAutoProjectState::autoModeDuplicate(const std::string& oldAutoModeName,
+                                                const std::string& newAutoModeName) {
+  auto oldAutoModeIt = autoModes.find(oldAutoModeName);
+  if (oldAutoModeIt == autoModes.end()) {
+    throw LogicError::Construct("Cannot duplicate auto mode: auto mode '{}' does not exist", oldAutoModeName);
+  }
+
+  autoModes.emplace(newAutoModeName, oldAutoModeIt->second);
+
+  autoModeSelect(newAutoModeName);
 }
 
 static void to_json(wpi::json& json, const ThunderAutoProjectState& state) noexcept {
