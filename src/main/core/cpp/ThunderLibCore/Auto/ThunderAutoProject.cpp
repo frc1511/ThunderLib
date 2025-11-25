@@ -1393,6 +1393,130 @@ const ThunderAutoMode& ThunderAutoProjectState::currentAutoMode() const {
   return autoMode;
 }
 
+void ThunderAutoProjectState::currentAutoModeMoveStepBeforeOther(
+    const ThunderAutoModeStepPath& stepPath,
+    const ThunderAutoModeStepPath& otherStepPath) {
+  if (stepPath == otherStepPath)
+    return;
+
+  ThunderAutoMode& autoMode = currentAutoMode();
+
+  // Move the step.
+  auto [stepDirectory, stepIt] = autoMode.findStepAtPath(stepPath);
+  auto [otherStepDirectory, otherStepIt] = autoMode.findStepAtPath(otherStepPath);
+
+  std::unique_ptr<ThunderAutoModeStep> step = (*stepIt)->clone();
+  stepDirectory->erase(stepIt);
+  otherStepDirectory->insert(otherStepIt, std::move(step));
+
+  // Select the moved step.
+  auto& selectedStepPath = editorState.autoModeEditorState.selectedStepPath;
+  selectedStepPath = otherStepPath;
+  if (stepPath.isInSameDirectoryAs(otherStepPath) &&
+      stepPath.lastNode().stepIndex < otherStepPath.lastNode().stepIndex) {
+    selectedStepPath->lastNode().stepIndex--;
+  }
+}
+
+void ThunderAutoProjectState::currentAutoModeMoveStepAfterOther(
+    const ThunderAutoModeStepPath& stepPath,
+    const ThunderAutoModeStepPath& otherStepPath) {
+  if (stepPath == otherStepPath)
+    return;
+
+  ThunderAutoMode& autoMode = currentAutoMode();
+
+  // Move the step.
+  auto [stepDirectory, stepIt] = autoMode.findStepAtPath(stepPath);
+  auto [otherStepDirectory, otherStepIt] = autoMode.findStepAtPath(otherStepPath);
+
+  std::unique_ptr<ThunderAutoModeStep> step = (*stepIt)->clone();
+  stepDirectory->erase(stepIt);
+  otherStepDirectory->insert(std::next(otherStepIt), std::move(step));
+
+  // Select the moved step.
+  auto& selectedStepPath = editorState.autoModeEditorState.selectedStepPath;
+  selectedStepPath = otherStepPath;
+  if (!(stepPath.isInSameDirectoryAs(otherStepPath) &&
+        stepPath.lastNode().stepIndex < otherStepPath.lastNode().stepIndex)) {
+    selectedStepPath->lastNode().stepIndex++;
+  }
+}
+
+void ThunderAutoProjectState::currentAutoModeMoveStepIntoDirectory(
+    const ThunderAutoModeStepPath& stepPath,
+    const ThunderAutoModeStepPath& directoryPath) {
+  ThunderAutoMode& autoMode = currentAutoMode();
+
+  // Move the step.
+  auto [stepDirectory, stepIt] = autoMode.findStepAtPath(stepPath);
+  auto& newStepDirectory = autoMode.findStepDirectoryAtPath(directoryPath);
+
+  std::unique_ptr<ThunderAutoModeStep> step = (*stepIt)->clone();
+  stepDirectory->erase(stepIt);
+  newStepDirectory.push_back(std::move(step));
+
+  // Select the moved step.
+  auto& selectedStepPath = editorState.autoModeEditorState.selectedStepPath;
+  selectedStepPath = directoryPath;
+  selectedStepPath->lastNode().stepIndex = newStepDirectory.size() - 1;
+}
+
+void ThunderAutoProjectState::currentAutoModeInsertStepBeforeOther(
+    const ThunderAutoModeStepPath& stepPath,
+    std::unique_ptr<ThunderAutoModeStep> step) {
+  ThunderAutoMode& autoMode = currentAutoMode();
+
+  // Insert the step.
+  auto [stepDirectory, stepIt] = autoMode.findStepAtPath(stepPath);
+  stepDirectory->insert(stepIt, std::move(step));
+
+  // Select the inserted step.
+  auto& selectedStepPath = editorState.autoModeEditorState.selectedStepPath;
+  selectedStepPath = stepPath;
+}
+
+void ThunderAutoProjectState::currentAutoModeInsertStepAfterOther(const ThunderAutoModeStepPath& stepPath,
+                                                                  std::unique_ptr<ThunderAutoModeStep> step) {
+  ThunderAutoMode& autoMode = currentAutoMode();
+
+  // Insert the step.
+  auto [stepDirectory, stepIt] = autoMode.findStepAtPath(stepPath);
+  stepDirectory->insert(std::next(stepIt), std::move(step));
+
+  // Select the inserted step.
+  auto& selectedStepPath = editorState.autoModeEditorState.selectedStepPath;
+  selectedStepPath = stepPath;
+  selectedStepPath->lastNode().stepIndex++;
+}
+
+void ThunderAutoProjectState::currentAutoModeInsertStepInDirectory(
+    const ThunderAutoModeStepPath& directoryPath,
+    std::unique_ptr<ThunderAutoModeStep> step) {
+  ThunderAutoMode& autoMode = currentAutoMode();
+
+  // Insert the step.
+  auto& stepDirectory = autoMode.findStepDirectoryAtPath(directoryPath);
+  stepDirectory.push_back(std::move(step));
+
+  // Select the inserted step.
+  auto& selectedStepPath = editorState.autoModeEditorState.selectedStepPath;
+  selectedStepPath = directoryPath;
+  selectedStepPath->lastNode().stepIndex = stepDirectory.size() - 1;
+}
+
+void ThunderAutoProjectState::currentAutoModeDeleteStep(const ThunderAutoModeStepPath& stepPath) {
+  ThunderAutoMode& autoMode = currentAutoMode();
+
+  auto& selectedStepPath = editorState.autoModeEditorState.selectedStepPath;
+  if (selectedStepPath == stepPath) {
+    selectedStepPath = std::nullopt;
+  }
+
+  auto [stepsList, stepIt] = autoMode.findStepAtPath(stepPath);
+  stepsList->erase(stepIt);
+}
+
 void ThunderAutoProjectState::autoModeDelete(const std::string& autoModeName) {
   auto autoModeIt = autoModes.find(autoModeName);
   if (autoModeIt == autoModes.end()) {

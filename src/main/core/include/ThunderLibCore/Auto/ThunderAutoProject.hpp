@@ -233,6 +233,13 @@ struct ThunderAutoProjectState {
   void autoModeSelect(const std::string& autoModeName);
   ThunderAutoMode& currentAutoMode();
   const ThunderAutoMode& currentAutoMode() const;
+  void currentAutoModeMoveStepBeforeOther(const ThunderAutoModeStepPath& stepPath, const ThunderAutoModeStepPath& otherStepPath);
+  void currentAutoModeMoveStepAfterOther(const ThunderAutoModeStepPath& stepPath, const ThunderAutoModeStepPath& otherStepPath);
+  void currentAutoModeMoveStepIntoDirectory(const ThunderAutoModeStepPath& stepPath, const ThunderAutoModeStepPath& directoryPath);
+  void currentAutoModeInsertStepBeforeOther(const ThunderAutoModeStepPath& stepPath, std::unique_ptr<ThunderAutoModeStep> step);
+  void currentAutoModeInsertStepAfterOther(const ThunderAutoModeStepPath& stepPath, std::unique_ptr<ThunderAutoModeStep> step);
+  void currentAutoModeInsertStepInDirectory(const ThunderAutoModeStepPath& directoryPath, std::unique_ptr<ThunderAutoModeStep> step);
+  void currentAutoModeDeleteStep(const ThunderAutoModeStepPath& stepPath);
 
   void autoModeDelete(const std::string& autoModeName);
   void autoModeRename(const std::string& oldAutoModeName, const std::string& newAutoModeName);

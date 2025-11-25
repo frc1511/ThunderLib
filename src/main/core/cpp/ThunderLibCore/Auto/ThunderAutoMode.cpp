@@ -1,7 +1,23 @@
 #include <ThunderLibCore/Auto/ThunderAutoMode.hpp>
 #include <ThunderLibCore/Error.hpp>
+#include <fmt/format.h>
 
 namespace thunder::core {
+
+const char* ThunderAutoModeStepTypeToString(ThunderAutoModeStepType type) noexcept {
+  switch (type) {
+    case ThunderAutoModeStepType::ACTION:
+      return "Action";
+    case ThunderAutoModeStepType::TRAJECTORY:
+      return "Trajectory";
+    case ThunderAutoModeStepType::BRANCH_BOOL:
+      return "Boolean Condition";
+    case ThunderAutoModeStepType::BRANCH_SWITCH:
+      return "Switch Condition";
+    default:
+      return "Unknown";
+  }
+}
 
 bool operator==(const ThunderAutoModeStep& lhs, const ThunderAutoModeStep& rhs) noexcept {
   if (lhs.type() != rhs.type()) {
@@ -127,6 +143,186 @@ ThunderAutoMode& ThunderAutoMode::operator=(const ThunderAutoMode& other) noexce
     }
   }
   return *this;
+}
+
+ThunderAutoMode::StepPosition ThunderAutoMode::findStepAtPath(const ThunderAutoModeStepPath& stepPath) {
+  using enum ThunderAutoModeStepPath::Node::DirectoryType;
+
+  if (stepPath.path.empty()) {
+    throw InvalidArgumentError::Construct("Step path is empty");
+  }
+
+  StepDirectory* stepsList = &steps;
+  StepDirectory::iterator stepIt = steps.begin();
+
+  auto pathIt = stepPath.path.begin();
+  if (pathIt->directoryType != ROOT) {
+    throw InvalidArgumentError::Construct(
+        "Auto mode step path must start at root directory, got directory type {}",
+        static_cast<int>(pathIt->directoryType));
+  }
+
+  while (pathIt != stepPath.path.end()) {
+    ThunderAutoModeStepPath::Node stepPathNode = *pathIt;
+
+    if (stepPathNode.stepIndex >= stepsList->size()) {
+      throw InvalidArgumentError::Construct("Auto mode step path index {} is out of bounds (size {})",
+                                            stepPathNode.stepIndex, stepsList->size());
+    }
+
+    stepIt = stepsList->begin();
+    std::advance(stepIt, stepPathNode.stepIndex);
+
+    if (++pathIt == stepPath.path.end()) {
+      break;
+    }
+
+    stepPathNode = *pathIt;
+
+    ThunderAutoModeStepType stepType = (*stepIt)->type();
+    switch (stepType) {
+      using enum ThunderAutoModeStepType;
+      case BRANCH_BOOL: {
+        auto& branchBoolStep = static_cast<ThunderAutoModeBoolBranchStep&>(**stepIt);
+        if (stepPathNode.directoryType == BOOL_TRUE) {
+          stepsList = &branchBoolStep.trueBranch;
+        } else if (stepPathNode.directoryType == BOOL_ELSE) {
+          stepsList = &branchBoolStep.elseBranch;
+        } else {
+          throw InvalidArgumentError::Construct(
+              "Auto mode step path directory type {} is invalid for boolean branch",
+              static_cast<int>(stepPathNode.directoryType));
+        }
+        break;
+      }
+      case BRANCH_SWITCH: {
+        auto& branchSwitchStep = static_cast<ThunderAutoModeSwitchBranchStep&>(**stepIt);
+        if (stepPathNode.directoryType == SWITCH_DEFAULT) {
+          stepsList = &branchSwitchStep.defaultBranch;
+        } else if (stepPathNode.directoryType == SWITCH_CASE) {
+          auto caseIt = branchSwitchStep.caseBranches.find(stepPathNode.caseBranchValue);
+          if (caseIt == branchSwitchStep.caseBranches.end()) {
+            throw InvalidArgumentError::Construct(
+                "Auto mode step path case branch value {} does not exist in switch branch",
+                stepPathNode.caseBranchValue);
+          }
+          stepsList = &caseIt->second;
+        } else {
+          throw InvalidArgumentError::Construct(
+              "Auto mode step path directory type {} is invalid for switch branch",
+              static_cast<int>(stepPathNode.directoryType));
+        }
+        break;
+      }
+      default:
+        throw InvalidArgumentError::Construct(
+            "Auto mode step path cannot descend into non-branch step of type {}",
+            ThunderAutoModeStepTypeToString(stepType));
+    }
+  }
+
+  return std::make_pair(stepsList, stepIt);
+}
+
+ThunderAutoMode::StepDirectory& ThunderAutoMode::findStepDirectoryAtPath(
+    const ThunderAutoModeStepPath& stepPath) {
+  using enum ThunderAutoModeStepPath::Node::DirectoryType;
+
+  if (stepPath.path.empty()) {
+    return steps;
+  }
+
+  StepDirectory* stepsList = &steps;
+  StepDirectory::iterator stepIt = steps.begin();
+
+  auto pathIt = stepPath.path.begin();
+  if (pathIt->directoryType != ROOT) {
+    throw InvalidArgumentError::Construct(
+        "Auto mode step path must start at root directory, got directory type {}",
+        static_cast<int>(pathIt->directoryType));
+  }
+
+  while (pathIt != stepPath.path.end()) {
+    ThunderAutoModeStepPath::Node stepPathNode = *pathIt;
+
+    if (std::next(pathIt) == stepPath.path.end()) {
+      break;
+    }
+
+    stepIt = stepsList->begin();
+    std::advance(stepIt, stepPathNode.stepIndex);
+
+    stepPathNode = *++pathIt;
+
+    ThunderAutoModeStepType stepType = (*stepIt)->type();
+    switch (stepType) {
+      case ThunderAutoModeStepType::BRANCH_BOOL: {
+        auto& branchBoolStep = static_cast<ThunderAutoModeBoolBranchStep&>(**stepIt);
+        if (stepPathNode.directoryType == BOOL_TRUE) {
+          stepsList = &branchBoolStep.trueBranch;
+        } else if (stepPathNode.directoryType == BOOL_ELSE) {
+          stepsList = &branchBoolStep.elseBranch;
+        } else {
+          throw InvalidArgumentError::Construct(
+              "Auto mode step path directory type {} is invalid for boolean branch",
+              static_cast<int>(stepPathNode.directoryType));
+        }
+        break;
+      }
+      case ThunderAutoModeStepType::BRANCH_SWITCH: {
+        auto& branchSwitchStep = static_cast<ThunderAutoModeSwitchBranchStep&>(**stepIt);
+        if (stepPathNode.directoryType == SWITCH_DEFAULT) {
+          stepsList = &branchSwitchStep.defaultBranch;
+        } else if (stepPathNode.directoryType == SWITCH_CASE) {
+          auto caseIt = branchSwitchStep.caseBranches.find(stepPathNode.caseBranchValue);
+          if (caseIt == branchSwitchStep.caseBranches.end()) {
+            throw InvalidArgumentError::Construct(
+                "Auto mode step path case branch value {} does not exist in switch branch",
+                stepPathNode.caseBranchValue);
+          }
+          stepsList = &caseIt->second;
+        } else {
+          throw InvalidArgumentError::Construct(
+              "Auto mode step path directory type {} is invalid for switch branch",
+              static_cast<int>(stepPathNode.directoryType));
+        }
+        break;
+      }
+      default:
+        throw InvalidArgumentError::Construct(
+            "Auto mode step path cannot descend into non-branch step of type {}",
+            ThunderAutoModeStepTypeToString(stepType));
+    }
+  }
+
+  return *stepsList;
+}
+
+std::string ThunderAutoModeStepPathToString(const ThunderAutoModeStepPath& stepPath) {
+  std::string pathStr;
+  for (const auto& node : stepPath.path) {
+    switch (node.directoryType) {
+      case ThunderAutoModeStepPath::Node::DirectoryType::ROOT:
+        break;
+      case ThunderAutoModeStepPath::Node::DirectoryType::BOOL_TRUE:
+        pathStr += "/true";
+        break;
+      case ThunderAutoModeStepPath::Node::DirectoryType::BOOL_ELSE:
+        pathStr += "/else";
+        break;
+      case ThunderAutoModeStepPath::Node::DirectoryType::SWITCH_CASE:
+        pathStr += fmt::format("/case_{}", node.caseBranchValue);
+        break;
+      case ThunderAutoModeStepPath::Node::DirectoryType::SWITCH_DEFAULT:
+        pathStr += "/default";
+        break;
+      default:
+        ThunderLibCoreUnreachable("Invalid auto mode step path node directory type");
+    }
+    pathStr += fmt::format("/{}", node.stepIndex);
+  }
+
+  return pathStr;
 }
 
 static void to_json(wpi::json& json, const ThunderAutoModeStepType& stepType) {

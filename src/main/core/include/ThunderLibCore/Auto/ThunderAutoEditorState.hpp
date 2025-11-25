@@ -1,7 +1,7 @@
 #pragma once
 
+#include <ThunderLibCore/Auto/ThunderAutoMode.hpp>
 #include <wpi/json.h>
-
 #include <string>
 
 namespace thunder::core {
@@ -35,6 +35,7 @@ void to_json(wpi::json& json, const ThunderAutoTrajectoryEditorState& state) noe
 // State for Auto Mode editor.
 struct ThunderAutoModeEditorState {
   std::string currentAutoModeName;
+  std::optional<ThunderAutoModeStepPath> selectedStepPath;
 
   bool operator==(const ThunderAutoModeEditorState& other) const noexcept = default;
 };
