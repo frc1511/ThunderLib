@@ -156,8 +156,7 @@ struct ThunderAutoModeStepPath {
 
     Node() = default;
 
-    explicit Node(DirectoryType dirType)
-        : directoryType(dirType) {}
+    explicit Node(DirectoryType dirType);
 
     bool operator==(const Node& other) const noexcept {
       if (directoryType != other.directoryType) {
@@ -169,83 +168,80 @@ struct ThunderAutoModeStepPath {
       return stepIndex == other.stepIndex;
     }
 
-    bool isSameDirectoryAs(const Node& other) const noexcept {
-      if (directoryType != other.directoryType) {
-        return false;
-      }
-      if (directoryType == DirectoryType::SWITCH_CASE && caseBranchValue != other.caseBranchValue) {
-        return false;
-      }
-      return true;
-    }
+    /**
+     * Returns true if this node is in the same directory as the other node (essentially the same as == but
+     * ignores stepIndex).
+     *
+     * @param other The other node to compare.
+     * @return True or false.
+     */
+    bool isSameDirectoryAs(const Node& other) const noexcept;
 
-    Node prev() const {
-      Node prev = *this;
-      --prev.stepIndex;
-      return prev;
-    }
+    /**
+     * Returns a new node representing the previous step in the directory.
+     *
+     * @return The previous node.
+     */
+    Node prev() const;
 
-    Node next() const {
-      Node next = *this;
-      ++next.stepIndex;
-      return next;
-    }
+    /**
+     * Returns a new node representing the next step in the directory.
+     *
+     * @return The next node.
+     */
+    Node next() const;
   };
 
   std::vector<Node> path;
 
   bool operator==(const ThunderAutoModeStepPath& other) const noexcept = default;
 
-  ThunderAutoModeStepPath parentPath() const {
-    ThunderAutoModeStepPath parent = *this;
-    if (!parent.path.empty()) {
-      parent.path.pop_back();
-    }
-    return parent;
-  }
+  /**
+   * Returns the parent path of this path.
+   *
+   * @return The parent path.
+   */
+  ThunderAutoModeStepPath parentPath() const;
 
-  bool hasParentPath(const ThunderAutoModeStepPath& other) const noexcept {
-    if (other.path.size() >= path.size()) {
-      return false;
-    }
+  /**
+   * Returns true if this path has the other path as its parent path.
+   *
+   * @param other The other path to check.
+   * @return True or false.
+   */
+  bool hasParentPath(const ThunderAutoModeStepPath& other) const noexcept;
 
-    for (size_t i = 0; i < other.path.size(); ++i) {
-      if (path[i] != other.path[i]) {
-        return false;
-      }
-    }
+  /**
+   * Returns true if this path is in the same directory as the other path.
+   *
+   * @param other The other path to check.
+   * @return True or false.
+   */
+  bool isInSameDirectoryAs(const ThunderAutoModeStepPath& other) const noexcept;
 
-    return true;
-  }
+  /**
+   * Appends a node to the path and returns a new path.
+   *
+   * @param node The node to append.
+   * @return The new path.
+   */
+  ThunderAutoModeStepPath operator/(Node node) const;
 
-  bool isInSameDirectoryAs(const ThunderAutoModeStepPath& other) const noexcept {
-    if (other.path.size() != path.size()) {
-      return false;
-    }
+  /**
+   * Appends a node to the path.
+   *
+   * @param node The node to append.
+   * @return Reference to this path.
+   */
+  ThunderAutoModeStepPath& operator/=(Node node);
 
-    for (size_t i = 0; i < path.size() - 1; ++i) {
-      if (path[i] != other.path[i]) {
-        return false;
-      }
-    }
-
-    return path.back().isSameDirectoryAs(other.path.back());
-  }
-
-  ThunderAutoModeStepPath operator/(Node node) const {
-    ThunderAutoModeStepPath newPath = *this;
-    newPath.path.push_back(node);
-    return newPath;
-  }
-
-  ThunderAutoModeStepPath& operator/=(Node node) {
-    path.push_back(node);
-    return *this;
-  }
-
-  Node& lastNode() { return path.back(); }
-
-  const Node& lastNode() const { return path.back(); }
+  /**
+   * Returns a reference to the end node of the path.
+   *
+   * @return Reference to the end node.
+   */
+  Node& endNode() { return path.back(); }
+  const Node& endNode() const { return path.back(); }
 };
 
 std::string ThunderAutoModeStepPathToString(const ThunderAutoModeStepPath& stepPath);

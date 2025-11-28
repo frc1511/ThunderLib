@@ -1413,8 +1413,8 @@ void ThunderAutoProjectState::currentAutoModeMoveStepBeforeOther(
   auto& selectedStepPath = editorState.autoModeEditorState.selectedStepPath;
   selectedStepPath = otherStepPath;
   if (stepPath.isInSameDirectoryAs(otherStepPath) &&
-      stepPath.lastNode().stepIndex < otherStepPath.lastNode().stepIndex) {
-    selectedStepPath->lastNode().stepIndex--;
+      stepPath.endNode().stepIndex < otherStepPath.endNode().stepIndex) {
+    selectedStepPath->endNode().stepIndex--;
   }
 }
 
@@ -1438,8 +1438,8 @@ void ThunderAutoProjectState::currentAutoModeMoveStepAfterOther(
   auto& selectedStepPath = editorState.autoModeEditorState.selectedStepPath;
   selectedStepPath = otherStepPath;
   if (!(stepPath.isInSameDirectoryAs(otherStepPath) &&
-        stepPath.lastNode().stepIndex < otherStepPath.lastNode().stepIndex)) {
-    selectedStepPath->lastNode().stepIndex++;
+        stepPath.endNode().stepIndex < otherStepPath.endNode().stepIndex)) {
+    selectedStepPath->endNode().stepIndex++;
   }
 }
 
@@ -1459,7 +1459,7 @@ void ThunderAutoProjectState::currentAutoModeMoveStepIntoDirectory(
   // Select the moved step.
   auto& selectedStepPath = editorState.autoModeEditorState.selectedStepPath;
   selectedStepPath = directoryPath;
-  selectedStepPath->lastNode().stepIndex = newStepDirectory.size() - 1;
+  selectedStepPath->endNode().stepIndex = newStepDirectory.size() - 1;
 }
 
 void ThunderAutoProjectState::currentAutoModeInsertStepBeforeOther(
@@ -1487,7 +1487,7 @@ void ThunderAutoProjectState::currentAutoModeInsertStepAfterOther(const ThunderA
   // Select the inserted step.
   auto& selectedStepPath = editorState.autoModeEditorState.selectedStepPath;
   selectedStepPath = stepPath;
-  selectedStepPath->lastNode().stepIndex++;
+  selectedStepPath->endNode().stepIndex++;
 }
 
 void ThunderAutoProjectState::currentAutoModeInsertStepInDirectory(
@@ -1502,7 +1502,7 @@ void ThunderAutoProjectState::currentAutoModeInsertStepInDirectory(
   // Select the inserted step.
   auto& selectedStepPath = editorState.autoModeEditorState.selectedStepPath;
   selectedStepPath = directoryPath;
-  selectedStepPath->lastNode().stepIndex = stepDirectory.size() - 1;
+  selectedStepPath->endNode().stepIndex = stepDirectory.size() - 1;
 }
 
 void ThunderAutoProjectState::currentAutoModeDeleteStep(const ThunderAutoModeStepPath& stepPath) {

@@ -128,6 +128,80 @@ ThunderAutoModeSwitchBranchStep& ThunderAutoModeSwitchBranchStep::operator=(
   return *this;
 }
 
+ThunderAutoModeStepPath::Node::Node(DirectoryType dirType) : directoryType(dirType) {}
+
+bool ThunderAutoModeStepPath::Node::isSameDirectoryAs(const Node& other) const noexcept {
+  if (directoryType != other.directoryType) {
+    return false;
+  }
+  if (directoryType == DirectoryType::SWITCH_CASE && caseBranchValue != other.caseBranchValue) {
+    return false;
+  }
+  return true;
+}
+
+ThunderAutoModeStepPath::Node ThunderAutoModeStepPath::Node::prev() const {
+  Node prev = *this;
+  if (prev.stepIndex == 0) {
+    throw LogicError::Construct("Cannot get previous step index from index 0");
+  }
+  --prev.stepIndex;
+  return prev;
+}
+
+ThunderAutoModeStepPath::Node ThunderAutoModeStepPath::Node::next() const {
+  Node next = *this;
+  ++next.stepIndex;
+  return next;
+}
+
+ThunderAutoModeStepPath ThunderAutoModeStepPath::parentPath() const {
+  ThunderAutoModeStepPath parent = *this;
+  if (!parent.path.empty()) {
+    parent.path.pop_back();
+  }
+  return parent;
+}
+
+bool ThunderAutoModeStepPath::hasParentPath(const ThunderAutoModeStepPath& other) const noexcept {
+  if (other.path.size() >= path.size()) {
+    return false;
+  }
+
+  for (size_t i = 0; i < other.path.size(); ++i) {
+    if (path[i] != other.path[i]) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+bool ThunderAutoModeStepPath::isInSameDirectoryAs(const ThunderAutoModeStepPath& other) const noexcept {
+  if (other.path.size() != path.size()) {
+    return false;
+  }
+
+  for (size_t i = 0; i < path.size() - 1; ++i) {
+    if (path[i] != other.path[i]) {
+      return false;
+    }
+  }
+
+  return path.back().isSameDirectoryAs(other.path.back());
+}
+
+ThunderAutoModeStepPath ThunderAutoModeStepPath::operator/(Node node) const {
+  ThunderAutoModeStepPath newPath = *this;
+  newPath.path.push_back(node);
+  return newPath;
+}
+
+ThunderAutoModeStepPath& ThunderAutoModeStepPath::operator/=(Node node) {
+  path.push_back(node);
+  return *this;
+}
+
 ThunderAutoMode::ThunderAutoMode(const ThunderAutoMode& other) {
   steps.clear();
   for (const auto& step : other.steps) {
