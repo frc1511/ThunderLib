@@ -275,6 +275,15 @@ struct ThunderAutoMode final {
   StepPosition findStepAtPath(const ThunderAutoModeStepPath& stepPath);
 
   /**
+   * Gets a reference to the step at the given path. Throws an exception if the path is invalid.
+   *
+   * @param stepPath The path to the step.
+   *
+   * @return A reference to the step.
+   */
+  ThunderAutoModeStep& getStepAtPath(const ThunderAutoModeStepPath& stepPath);
+
+  /**
    * Finds the step directory at the given path. Throws an exception if the path is invalid.
    *
    * @param stepPath The path to the step directory.

@@ -298,6 +298,11 @@ ThunderAutoMode::StepPosition ThunderAutoMode::findStepAtPath(const ThunderAutoM
   return std::make_pair(stepsList, stepIt);
 }
 
+ThunderAutoModeStep& ThunderAutoMode::getStepAtPath(const ThunderAutoModeStepPath& stepPath) {
+  auto [stepsList, stepIt] = findStepAtPath(stepPath);
+  return **stepIt;
+}
+
 ThunderAutoMode::StepDirectory& ThunderAutoMode::findStepDirectoryAtPath(
     const ThunderAutoModeStepPath& stepPath) {
   using enum ThunderAutoModeStepPath::Node::DirectoryType;
