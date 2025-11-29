@@ -1509,8 +1509,15 @@ void ThunderAutoProjectState::currentAutoModeDeleteStep(const ThunderAutoModeSte
   ThunderAutoMode& autoMode = currentAutoMode();
 
   auto& selectedStepPath = editorState.autoModeEditorState.selectedStepPath;
-  if (selectedStepPath == stepPath) {
-    selectedStepPath = std::nullopt;
+  if (selectedStepPath.has_value()) {
+    if (selectedStepPath == stepPath) {
+      selectedStepPath = std::nullopt;
+    }
+    else if (stepPath.isInSameDirectoryAs(*selectedStepPath) &&
+             stepPath.endNode().stepIndex < selectedStepPath->endNode().stepIndex) {
+      selectedStepPath->endNode().stepIndex--;
+    }
+
   }
 
   auto [stepsList, stepIt] = autoMode.findStepAtPath(stepPath);
