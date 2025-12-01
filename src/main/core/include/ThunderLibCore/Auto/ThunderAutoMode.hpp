@@ -91,6 +91,8 @@ struct ThunderAutoModeBoolBranchStep final : public ThunderAutoModeStep {
   std::list<std::unique_ptr<ThunderAutoModeStep>> elseBranch;
   std::string conditionName;
 
+  bool editorDisplayTrueBranch = true;
+
   ThunderAutoModeBoolBranchStep() = default;
 
   ThunderAutoModeBoolBranchStep(const ThunderAutoModeBoolBranchStep& other);
@@ -118,6 +120,9 @@ struct ThunderAutoModeSwitchBranchStep final : public ThunderAutoModeStep {
   std::map<int, std::list<std::unique_ptr<ThunderAutoModeStep>>> caseBranches;
   std::list<std::unique_ptr<ThunderAutoModeStep>> defaultBranch;
   std::string conditionName;
+
+  bool editorDisplayDefaultBranch = true;
+  int editorDisplayCaseBranch = 0;
 
   ThunderAutoModeSwitchBranchStep() = default;
 

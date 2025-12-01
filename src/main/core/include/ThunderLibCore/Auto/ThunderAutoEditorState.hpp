@@ -3,6 +3,7 @@
 #include <ThunderLibCore/Auto/ThunderAutoMode.hpp>
 #include <wpi/json.h>
 #include <string>
+#include <optional>
 
 namespace thunder::core {
 

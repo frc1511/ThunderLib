@@ -67,6 +67,7 @@ ThunderAutoModeBoolBranchStep::ThunderAutoModeBoolBranchStep(const ThunderAutoMo
   }
 
   conditionName = other.conditionName;
+  editorDisplayTrueBranch = other.editorDisplayTrueBranch;
 }
 
 ThunderAutoModeBoolBranchStep& ThunderAutoModeBoolBranchStep::operator=(
@@ -84,6 +85,7 @@ ThunderAutoModeBoolBranchStep& ThunderAutoModeBoolBranchStep::operator=(
 
     conditionName = other.conditionName;
   }
+  editorDisplayTrueBranch = other.editorDisplayTrueBranch;
   return *this;
 }
 
@@ -104,6 +106,9 @@ ThunderAutoModeSwitchBranchStep::ThunderAutoModeSwitchBranchStep(
   }
 
   conditionName = other.conditionName;
+
+  editorDisplayDefaultBranch = other.editorDisplayDefaultBranch;
+  editorDisplayCaseBranch = other.editorDisplayCaseBranch;
 }
 
 ThunderAutoModeSwitchBranchStep& ThunderAutoModeSwitchBranchStep::operator=(
@@ -125,6 +130,8 @@ ThunderAutoModeSwitchBranchStep& ThunderAutoModeSwitchBranchStep::operator=(
 
     conditionName = other.conditionName;
   }
+  editorDisplayDefaultBranch = other.editorDisplayDefaultBranch;
+  editorDisplayCaseBranch = other.editorDisplayCaseBranch;
   return *this;
 }
 
