@@ -29,6 +29,17 @@ struct ThunderAutoModeStep {
   virtual ThunderAutoModeStepType type() const noexcept = 0;
 
   virtual std::unique_ptr<ThunderAutoModeStep> clone() const = 0;
+
+  int getID() const noexcept { return m_id; }
+
+ protected:
+  ThunderAutoModeStep();
+
+  ThunderAutoModeStep(const ThunderAutoModeStep& other) = default;
+  ThunderAutoModeStep& operator=(const ThunderAutoModeStep& other) noexcept = default;
+
+ private:
+  int m_id;
 };
 
 bool operator==(const ThunderAutoModeStep& lhs, const ThunderAutoModeStep& rhs) noexcept;

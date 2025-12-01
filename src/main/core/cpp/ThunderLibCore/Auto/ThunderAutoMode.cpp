@@ -1,6 +1,7 @@
 #include <ThunderLibCore/Auto/ThunderAutoMode.hpp>
 #include <ThunderLibCore/Error.hpp>
 #include <fmt/format.h>
+#include <random>
 
 namespace thunder::core {
 
@@ -17,6 +18,12 @@ const char* ThunderAutoModeStepTypeToString(ThunderAutoModeStepType type) noexce
     default:
       return "Unknown";
   }
+}
+
+ThunderAutoModeStep::ThunderAutoModeStep() {
+  static std::mt19937 generator{std::random_device{}()};
+  static std::uniform_int_distribution<int> distribution{INT32_MIN, INT32_MAX};
+  m_id = distribution(generator);
 }
 
 bool operator==(const ThunderAutoModeStep& lhs, const ThunderAutoModeStep& rhs) noexcept {
@@ -55,7 +62,8 @@ bool operator==(const std::unique_ptr<ThunderAutoModeStep>& lhs,
   return (*lhs == *rhs);
 }
 
-ThunderAutoModeBoolBranchStep::ThunderAutoModeBoolBranchStep(const ThunderAutoModeBoolBranchStep& other) {
+ThunderAutoModeBoolBranchStep::ThunderAutoModeBoolBranchStep(const ThunderAutoModeBoolBranchStep& other)
+    : ThunderAutoModeStep(other) {
   trueBranch.clear();
   for (const auto& step : other.trueBranch) {
     trueBranch.push_back(step->clone());
@@ -72,6 +80,7 @@ ThunderAutoModeBoolBranchStep::ThunderAutoModeBoolBranchStep(const ThunderAutoMo
 
 ThunderAutoModeBoolBranchStep& ThunderAutoModeBoolBranchStep::operator=(
     const ThunderAutoModeBoolBranchStep& other) noexcept {
+  ThunderAutoModeStep::operator=(other);
   if (this != &other) {
     trueBranch.clear();
     for (const auto& step : other.trueBranch) {
@@ -89,8 +98,8 @@ ThunderAutoModeBoolBranchStep& ThunderAutoModeBoolBranchStep::operator=(
   return *this;
 }
 
-ThunderAutoModeSwitchBranchStep::ThunderAutoModeSwitchBranchStep(
-    const ThunderAutoModeSwitchBranchStep& other) {
+ThunderAutoModeSwitchBranchStep::ThunderAutoModeSwitchBranchStep(const ThunderAutoModeSwitchBranchStep& other)
+    : ThunderAutoModeStep(other) {
   caseBranches.clear();
   for (const auto& [caseID, steps] : other.caseBranches) {
     std::list<std::unique_ptr<ThunderAutoModeStep>> clonedSteps;
@@ -113,6 +122,7 @@ ThunderAutoModeSwitchBranchStep::ThunderAutoModeSwitchBranchStep(
 
 ThunderAutoModeSwitchBranchStep& ThunderAutoModeSwitchBranchStep::operator=(
     const ThunderAutoModeSwitchBranchStep& other) noexcept {
+  ThunderAutoModeStep::operator=(other);
   if (this != &other) {
     caseBranches.clear();
     for (const auto& [caseID, steps] : other.caseBranches) {
