@@ -1,11 +1,13 @@
 #pragma once
 
+#include <ThunderLibCore/Auto/ThunderAutoTrajectorySkeleton.hpp>
 #include <wpi/json.h>
 #include <string>
 #include <map>
 #include <memory>
 #include <list>
 #include <utility>
+#include <optional>
 
 namespace thunder::core {
 
@@ -21,6 +23,55 @@ enum class ThunderAutoModeStepType {
 
 const char* ThunderAutoModeStepTypeToString(ThunderAutoModeStepType type) noexcept;
 
+struct ThunderAutoModeStepTrajectoryBehavior {
+  bool runsTrajectory = false;
+
+  struct {
+    // Whether a trajectory used in the step was not found in the available trajectories map.
+    bool isTrajectoryMissing = false;
+
+    // Whether the step contains a non-continuous sequence of trajectories (end+start poses don't match).
+    bool containsNonContinuousSequence = false;
+
+    explicit operator bool() const noexcept { return isTrajectoryMissing || containsNonContinuousSequence; }
+  } errorInfo;
+
+  /**
+   * The start and end poses of the trajectory(ies) run by this step.
+   *
+   * std::nullopt may signify the following, ordered by priority:
+   * 1. No trajectory is run by this step.
+   * 2. This step as a problem (see errorInfo).
+   * 3. The trajectory has multiple start/end poses (e.g., a branch step).
+   */
+  std::optional<frc::Pose2d> startPose, endPose;
+
+  /**
+   * Start steps may have conditional start poses, but must end at a single end pose.
+   */
+  bool isValidStartStep() const noexcept;
+
+  /**
+   * Middle steps must have a single start and end pose.
+   */
+  bool isValidMiddleStep() const noexcept;
+
+  /**
+   * End steps must start at a single start pose, but may have conditional end poses.
+   */
+  bool isValidEndStep() const noexcept;
+
+  /**
+   * Returns true if this step can follow the given previous step in an auto mode (essentially, if this step's
+   * start pose matches the previous step's end pose).
+   *
+   * @param previousStepBehavior The trajectory behavior of the previous step.
+   *
+   * @return True or false.
+   */
+  bool canFollow(const ThunderAutoModeStepTrajectoryBehavior& previousStepBehavior) const noexcept;
+};
+
 /**
  * Represents a step in a ThunderAuto mode.
  */
@@ -31,6 +82,12 @@ struct ThunderAutoModeStep {
   virtual std::unique_ptr<ThunderAutoModeStep> clone() const = 0;
 
   int getID() const noexcept { return m_id; }
+
+  virtual ThunderAutoModeStepTrajectoryBehavior getTrajectoryBehavior(
+      std::optional<frc::Pose2d> previousStepEndPose,
+      const std::map<std::string, ThunderAutoTrajectorySkeleton>& trajectories) const noexcept {
+    return ThunderAutoModeStepTrajectoryBehavior{};
+  }
 
  protected:
   ThunderAutoModeStep();
@@ -90,6 +147,10 @@ struct ThunderAutoModeTrajectoryStep final : public ThunderAutoModeStep {
     bool trajectoryNamesMatch = (trajectoryName == other.trajectoryName);
     return trajectoryNamesMatch;
   }
+
+  ThunderAutoModeStepTrajectoryBehavior getTrajectoryBehavior(
+      std::optional<frc::Pose2d> previousStepEndPose,
+      const std::map<std::string, ThunderAutoTrajectorySkeleton>& trajectories) const noexcept override;
 };
 
 /**
@@ -120,6 +181,10 @@ struct ThunderAutoModeBoolBranchStep final : public ThunderAutoModeStep {
 
     return trueStepBranchesMatch && elseStepBranchesMatch && conditionNamesMatch;
   }
+
+  ThunderAutoModeStepTrajectoryBehavior getTrajectoryBehavior(
+      std::optional<frc::Pose2d> previousStepEndPose,
+      const std::map<std::string, ThunderAutoTrajectorySkeleton>& trajectories) const noexcept override;
 };
 
 /**
@@ -151,116 +216,111 @@ struct ThunderAutoModeSwitchBranchStep final : public ThunderAutoModeStep {
 
     return caseBranchesMatch && defaultBranchesMatch && conditionNamesMatch;
   }
+
+  ThunderAutoModeStepTrajectoryBehavior getTrajectoryBehavior(
+      std::optional<frc::Pose2d> previousStepEndPose,
+      const std::map<std::string, ThunderAutoTrajectorySkeleton>& trajectories) const noexcept override;
 };
 
-/**
- * Represents a path to a specific step within an auto mode.
- */
-struct ThunderAutoModeStepPath {
+class ThunderAutoModeStepPath;
+
+class ThunderAutoModeStepDirectoryPath {
+ public:
   struct Node {
-    enum class DirectoryType {
-      ROOT,
+    size_t stepIndex = 0;
+
+    enum class Type {
       BOOL_TRUE,
       BOOL_ELSE,
       SWITCH_CASE,
       SWITCH_DEFAULT,
-    } directoryType = DirectoryType::ROOT;
+    } directoryType;
 
     int caseBranchValue = 0;
 
-    size_t stepIndex = 0;
-
-    Node() = default;
-
-    explicit Node(DirectoryType dirType);
-
     bool operator==(const Node& other) const noexcept {
+      if (stepIndex != other.stepIndex) {
+        return false;
+      }
       if (directoryType != other.directoryType) {
         return false;
       }
-      if (directoryType == DirectoryType::SWITCH_CASE && caseBranchValue != other.caseBranchValue) {
+      if (directoryType == Type::SWITCH_CASE && caseBranchValue != other.caseBranchValue) {
         return false;
       }
-      return stepIndex == other.stepIndex;
+      return true;
     }
-
-    /**
-     * Returns true if this node is in the same directory as the other node (essentially the same as == but
-     * ignores stepIndex).
-     *
-     * @param other The other node to compare.
-     * @return True or false.
-     */
-    bool isSameDirectoryAs(const Node& other) const noexcept;
-
-    /**
-     * Returns a new node representing the previous step in the directory.
-     *
-     * @return The previous node.
-     */
-    Node prev() const;
-
-    /**
-     * Returns a new node representing the next step in the directory.
-     *
-     * @return The next node.
-     */
-    Node next() const;
   };
 
-  std::vector<Node> path;
+ private:
+  std::vector<Node> m_path;
+
+ public:
+  ThunderAutoModeStepDirectoryPath() = default;
+  explicit ThunderAutoModeStepDirectoryPath(std::vector<Node>&& path) : m_path(std::move(path)) {}
+
+  bool operator==(const ThunderAutoModeStepDirectoryPath& other) const noexcept = default;
+
+  size_t depth() const noexcept { return m_path.size(); }
+
+  std::span<const Node> path() const noexcept { return m_path; }
+  std::span<Node> path() noexcept { return m_path; }
+
+  std::span<const Node> parentPath() const noexcept {
+    if (m_path.size() == 0) {
+      return {};
+    }
+    return std::span<const Node>(m_path.data(), m_path.size() - 1);
+  }
+
+  bool hasParentPath(const ThunderAutoModeStepDirectoryPath& path) const noexcept;
+  bool hasParentPath(const ThunderAutoModeStepPath& path) const noexcept;
+
+  ThunderAutoModeStepPath step(int stepIndex) const noexcept;
+
+  size_t getCommonPathDepth(const ThunderAutoModeStepDirectoryPath& otherPath) const noexcept;
+  size_t getCommonPathDepth(const ThunderAutoModeStepPath& otherPath,
+                            bool matchEndStepsWithDirNodes = true) const noexcept;
+};
+
+// Directory + End Node
+class ThunderAutoModeStepPath {
+  ThunderAutoModeStepDirectoryPath m_directory;
+  size_t m_stepIndex = 0;
+
+ public:
+  explicit ThunderAutoModeStepPath(size_t stepIndex) : m_stepIndex(stepIndex) {}
+
+  ThunderAutoModeStepPath(const ThunderAutoModeStepDirectoryPath& directory, size_t stepIndex)
+      : m_directory(directory), m_stepIndex(stepIndex) {}
 
   bool operator==(const ThunderAutoModeStepPath& other) const noexcept = default;
 
-  /**
-   * Returns the parent path of this path.
-   *
-   * @return The parent path.
-   */
-  ThunderAutoModeStepPath parentPath() const;
+  const ThunderAutoModeStepDirectoryPath& directoryPath() const noexcept { return m_directory; }
+  ThunderAutoModeStepDirectoryPath& directoryPath() noexcept { return m_directory; }
 
-  /**
-   * Returns true if this path has the other path as its parent path.
-   *
-   * @param other The other path to check.
-   * @return True or false.
-   */
-  bool hasParentPath(const ThunderAutoModeStepPath& other) const noexcept;
+  size_t stepIndex() const noexcept { return m_stepIndex; }
+  void setStepIndex(size_t stepIndex) noexcept { m_stepIndex = stepIndex; }
 
-  /**
-   * Returns true if this path is in the same directory as the other path.
-   *
-   * @param other The other path to check.
-   * @return True or false.
-   */
-  bool isInSameDirectoryAs(const ThunderAutoModeStepPath& other) const noexcept;
+  size_t depth() const noexcept { return m_directory.depth() + 1; }
 
-  /**
-   * Appends a node to the path and returns a new path.
-   *
-   * @param node The node to append.
-   * @return The new path.
-   */
-  ThunderAutoModeStepPath operator/(Node node) const;
+  bool hasParentPath(const ThunderAutoModeStepDirectoryPath& path) const noexcept;
+  bool hasParentPath(const ThunderAutoModeStepPath& path) const noexcept;
 
-  /**
-   * Appends a node to the path.
-   *
-   * @param node The node to append.
-   * @return Reference to this path.
-   */
-  ThunderAutoModeStepPath& operator/=(Node node);
+  void updateWithRemovalOfStep(const ThunderAutoModeStepPath& removedStepPath);
 
-  /**
-   * Returns a reference to the end node of the path.
-   *
-   * @return Reference to the end node.
-   */
-  Node& endNode() { return path.back(); }
-  const Node& endNode() const { return path.back(); }
+  ThunderAutoModeStepDirectoryPath boolBranch(bool b) const noexcept;
+  ThunderAutoModeStepDirectoryPath switchBranchCase(int caseValue) const noexcept;
+  ThunderAutoModeStepDirectoryPath switchBranchDefault() const noexcept;
+
+  size_t getCommonPathDepth(const ThunderAutoModeStepDirectoryPath& otherPath,
+                            bool matchEndStepsWithDirNodes = true) const noexcept;
+  size_t getCommonPathDepth(const ThunderAutoModeStepPath& otherPath,
+                            bool matchEndStepsWithDirNodes = true) const noexcept;
 };
 
-std::string ThunderAutoModeStepPathToString(const ThunderAutoModeStepPath& stepPath);
+std::string ThunderAutoModeStepDirectoryPathToString(const ThunderAutoModeStepDirectoryPath& directory);
+std::string ThunderAutoModeStepPathToString(const ThunderAutoModeStepPath& path);
 
 /**
  * Represents an auto mode, which is a sequence of steps that the robot
@@ -306,7 +366,10 @@ struct ThunderAutoMode final {
    *
    * @return A reference to the step directory.
    */
-  StepDirectory& findStepDirectoryAtPath(const ThunderAutoModeStepPath& stepPath);
+  StepDirectory& findStepDirectoryAtPath(const ThunderAutoModeStepDirectoryPath& stepDirectoryPath);
+
+  ThunderAutoModeStepTrajectoryBehavior getTrajectoryBehavior(
+      const std::map<std::string, ThunderAutoTrajectorySkeleton>& trajectories) const noexcept;
 };
 
 void to_json(wpi::json& json, const ThunderAutoMode& mode);

@@ -2,6 +2,7 @@
 #include <ThunderLibCore/Error.hpp>
 #include <fmt/format.h>
 #include <random>
+#include <queue>
 
 namespace thunder::core {
 
@@ -18,6 +19,47 @@ const char* ThunderAutoModeStepTypeToString(ThunderAutoModeStepType type) noexce
     default:
       return "Unknown";
   }
+}
+
+bool ThunderAutoModeStepTrajectoryBehavior::isValidStartStep() const noexcept {
+  if (!runsTrajectory)
+    return true;
+  if (errorInfo)
+    return false;
+
+  return endPose.has_value();
+}
+
+bool ThunderAutoModeStepTrajectoryBehavior::isValidMiddleStep() const noexcept {
+  if (!runsTrajectory)
+    return true;
+  if (errorInfo)
+    return false;
+
+  return startPose.has_value() && endPose.has_value();
+}
+
+bool ThunderAutoModeStepTrajectoryBehavior::isValidEndStep() const noexcept {
+  if (!runsTrajectory)
+    return true;
+  if (errorInfo)
+    return false;
+
+  return startPose.has_value();
+}
+
+bool ThunderAutoModeStepTrajectoryBehavior::canFollow(
+    const ThunderAutoModeStepTrajectoryBehavior& previousStepBehavior) const noexcept {
+  if (!runsTrajectory || !previousStepBehavior.runsTrajectory)
+    return true;
+
+  if (errorInfo || previousStepBehavior.errorInfo)
+    return false;
+
+  if (!startPose.has_value() || !previousStepBehavior.endPose.has_value())
+    return false;
+
+  return (startPose.value() == previousStepBehavior.endPose.value());
 }
 
 ThunderAutoModeStep::ThunderAutoModeStep() {
@@ -62,6 +104,87 @@ bool operator==(const std::unique_ptr<ThunderAutoModeStep>& lhs,
   return (*lhs == *rhs);
 }
 
+ThunderAutoModeStepTrajectoryBehavior ThunderAutoModeTrajectoryStep::getTrajectoryBehavior(
+    std::optional<frc::Pose2d> previousStepEndPose,
+    const std::map<std::string, ThunderAutoTrajectorySkeleton>& trajectories) const noexcept {
+  (void)previousStepEndPose;
+
+  ThunderAutoModeStepTrajectoryBehavior behavior;
+  auto it = trajectories.find(trajectoryName);
+  if (it == trajectories.end()) {
+    behavior.runsTrajectory = true;
+    behavior.errorInfo.isTrajectoryMissing = true;
+    return behavior;
+  }
+
+  ThunderAutoTrajectoryBehavior trajBehavior = it->second.getBehavior();
+  behavior.runsTrajectory = true;
+  behavior.startPose = trajBehavior.startPose;
+  behavior.endPose = trajBehavior.endPose;
+
+  return behavior;
+}
+
+static ThunderAutoModeStepTrajectoryBehavior GetStepSequenceTrajectoryBehavior(
+    std::optional<frc::Pose2d> previousStepEndPose,
+    const std::list<std::unique_ptr<ThunderAutoModeStep>>& branch,
+    const std::map<std::string, ThunderAutoTrajectorySkeleton>& trajectories) noexcept {
+  ThunderAutoModeStepTrajectoryBehavior behavior;
+  behavior.startPose = behavior.endPose = previousStepEndPose;
+
+  for (auto it = branch.begin(); it != branch.end(); it++) {
+    const auto& step = *it;
+
+    ThunderAutoModeStepTrajectoryBehavior stepBehavior =
+        step->getTrajectoryBehavior(behavior.endPose, trajectories);
+
+    // Ignore steps that don't run trajectories.
+    if (!stepBehavior.runsTrajectory)
+      continue;
+
+    bool previouslyRanTrajectory = behavior.runsTrajectory;
+    behavior.runsTrajectory = true;
+
+    if (stepBehavior.errorInfo) {
+      behavior.errorInfo = stepBehavior.errorInfo;
+      behavior.startPose = behavior.endPose = std::nullopt;
+      break;
+    }
+
+    if (previouslyRanTrajectory && !behavior.endPose.has_value()) {
+      // Not possible to run another trajectory because the last step didn't end at a single pose.
+      behavior.errorInfo.containsNonContinuousSequence = true;
+      behavior.startPose = behavior.endPose = std::nullopt;
+      break;
+    }
+
+    if (stepBehavior.startPose.has_value()) {
+      if (previouslyRanTrajectory || previousStepEndPose.has_value()) {
+        // Check continuity between steps.
+        if (behavior.endPose != stepBehavior.startPose.value()) {
+          behavior.errorInfo.containsNonContinuousSequence = true;
+          behavior.startPose = behavior.endPose = std::nullopt;
+          break;
+        }
+
+        behavior.endPose = stepBehavior.endPose;
+      } else {
+        behavior.startPose = stepBehavior.startPose;
+        behavior.endPose = stepBehavior.endPose;
+      }
+    } else if (previouslyRanTrajectory || previousStepEndPose.has_value()) {
+      // A trajectory was run in a previous step but this step's trajectory does not have a single start pose.
+      behavior.errorInfo.containsNonContinuousSequence = true;
+      behavior.startPose = behavior.endPose = std::nullopt;
+      break;
+    } else {
+      behavior.endPose = stepBehavior.endPose;
+    }
+  }
+
+  return behavior;
+}
+
 ThunderAutoModeBoolBranchStep::ThunderAutoModeBoolBranchStep(const ThunderAutoModeBoolBranchStep& other)
     : ThunderAutoModeStep(other) {
   trueBranch.clear();
@@ -96,6 +219,54 @@ ThunderAutoModeBoolBranchStep& ThunderAutoModeBoolBranchStep::operator=(
   }
   editorDisplayTrueBranch = other.editorDisplayTrueBranch;
   return *this;
+}
+
+ThunderAutoModeStepTrajectoryBehavior ThunderAutoModeBoolBranchStep::getTrajectoryBehavior(
+    std::optional<frc::Pose2d> previousStepEndPose,
+    const std::map<std::string, ThunderAutoTrajectorySkeleton>& trajectories) const noexcept {
+  ThunderAutoModeStepTrajectoryBehavior trueBranchBehavior =
+      GetStepSequenceTrajectoryBehavior(previousStepEndPose, trueBranch, trajectories);
+
+  ThunderAutoModeStepTrajectoryBehavior elseBranchBehavior =
+      GetStepSequenceTrajectoryBehavior(previousStepEndPose, elseBranch, trajectories);
+
+  ThunderAutoModeStepTrajectoryBehavior combinedBehavior;
+  if (!trueBranchBehavior.runsTrajectory && !elseBranchBehavior.runsTrajectory) {
+    combinedBehavior.runsTrajectory = false;
+    return combinedBehavior;
+  }
+  combinedBehavior.runsTrajectory = true;
+
+  auto trueErrorInfo = trueBranchBehavior.errorInfo;
+  auto elseErrorInfo = elseBranchBehavior.errorInfo;
+
+  if (trueErrorInfo || elseErrorInfo) {
+    combinedBehavior.errorInfo.isTrajectoryMissing =
+        trueErrorInfo.isTrajectoryMissing || elseErrorInfo.isTrajectoryMissing;
+    combinedBehavior.errorInfo.containsNonContinuousSequence =
+        trueErrorInfo.containsNonContinuousSequence || elseErrorInfo.containsNonContinuousSequence;
+    return combinedBehavior;
+  }
+
+  // If no trajectory gets run in either branch then the robot won't move from its last pose.
+  if (!trueBranchBehavior.runsTrajectory) {
+    trueBranchBehavior.startPose = trueBranchBehavior.endPose = previousStepEndPose;
+  }
+  if (!elseBranchBehavior.runsTrajectory) {
+    elseBranchBehavior.startPose = elseBranchBehavior.endPose = previousStepEndPose;
+  }
+
+  if (trueBranchBehavior.startPose.has_value() && elseBranchBehavior.startPose.has_value() &&
+      (trueBranchBehavior.startPose.value() == elseBranchBehavior.startPose.value())) {
+    combinedBehavior.startPose = trueBranchBehavior.startPose;
+  }
+
+  if (trueBranchBehavior.endPose.has_value() && elseBranchBehavior.endPose.has_value() &&
+      (trueBranchBehavior.endPose.value() == elseBranchBehavior.endPose.value())) {
+    combinedBehavior.endPose = trueBranchBehavior.endPose;
+  }
+
+  return combinedBehavior;
 }
 
 ThunderAutoModeSwitchBranchStep::ThunderAutoModeSwitchBranchStep(const ThunderAutoModeSwitchBranchStep& other)
@@ -145,78 +316,276 @@ ThunderAutoModeSwitchBranchStep& ThunderAutoModeSwitchBranchStep::operator=(
   return *this;
 }
 
-ThunderAutoModeStepPath::Node::Node(DirectoryType dirType) : directoryType(dirType) {}
+ThunderAutoModeStepTrajectoryBehavior ThunderAutoModeSwitchBranchStep::getTrajectoryBehavior(
+    std::optional<frc::Pose2d> previousStepEndPose,
+    const std::map<std::string, ThunderAutoTrajectorySkeleton>& trajectories) const noexcept {
+  ThunderAutoModeStepTrajectoryBehavior defaultBranchBehavior =
+      GetStepSequenceTrajectoryBehavior(previousStepEndPose, defaultBranch, trajectories);
 
-bool ThunderAutoModeStepPath::Node::isSameDirectoryAs(const Node& other) const noexcept {
-  if (directoryType != other.directoryType) {
-    return false;
-  }
-  if (directoryType == DirectoryType::SWITCH_CASE && caseBranchValue != other.caseBranchValue) {
-    return false;
-  }
-  return true;
-}
-
-ThunderAutoModeStepPath::Node ThunderAutoModeStepPath::Node::prev() const {
-  Node prev = *this;
-  if (prev.stepIndex == 0) {
-    throw LogicError::Construct("Cannot get previous step index from index 0");
-  }
-  --prev.stepIndex;
-  return prev;
-}
-
-ThunderAutoModeStepPath::Node ThunderAutoModeStepPath::Node::next() const {
-  Node next = *this;
-  ++next.stepIndex;
-  return next;
-}
-
-ThunderAutoModeStepPath ThunderAutoModeStepPath::parentPath() const {
-  ThunderAutoModeStepPath parent = *this;
-  if (!parent.path.empty()) {
-    parent.path.pop_back();
-  }
-  return parent;
-}
-
-bool ThunderAutoModeStepPath::hasParentPath(const ThunderAutoModeStepPath& other) const noexcept {
-  if (other.path.size() >= path.size()) {
-    return false;
+  if (!defaultBranchBehavior.runsTrajectory) {
+    defaultBranchBehavior.startPose = defaultBranchBehavior.endPose = previousStepEndPose;
   }
 
-  for (size_t i = 0; i < other.path.size(); ++i) {
-    if (path[i] != other.path[i]) {
-      return false;
+  ThunderAutoModeStepTrajectoryBehavior combinedBehavior = defaultBranchBehavior;
+
+  for (const auto& [value, branch] : caseBranches) {
+    ThunderAutoModeStepTrajectoryBehavior branchBehavior =
+        GetStepSequenceTrajectoryBehavior(previousStepEndPose, branch, trajectories);
+
+    combinedBehavior.runsTrajectory |= branchBehavior.runsTrajectory;
+
+    if (branchBehavior.errorInfo) {
+      combinedBehavior.errorInfo.isTrajectoryMissing |= branchBehavior.errorInfo.isTrajectoryMissing;
+      combinedBehavior.errorInfo.containsNonContinuousSequence |=
+          branchBehavior.errorInfo.containsNonContinuousSequence;
+
+      combinedBehavior.startPose = combinedBehavior.endPose = std::nullopt;
+      continue;
+    }
+    if (combinedBehavior.errorInfo) {
+      continue;
+    }
+
+    // If no trajectory gets run in this branch, then the robot won't move from its last position.
+    if (!branchBehavior.runsTrajectory) {
+      branchBehavior.startPose = branchBehavior.endPose = previousStepEndPose;
+    }
+
+    if (combinedBehavior.startPose != branchBehavior.startPose) {
+      combinedBehavior.startPose = std::nullopt;
+    }
+    if (combinedBehavior.endPose != branchBehavior.endPose) {
+      combinedBehavior.endPose = std::nullopt;
     }
   }
 
-  return true;
-}
-
-bool ThunderAutoModeStepPath::isInSameDirectoryAs(const ThunderAutoModeStepPath& other) const noexcept {
-  if (other.path.size() != path.size()) {
-    return false;
+  if (!combinedBehavior.runsTrajectory) {
+    combinedBehavior.startPose = combinedBehavior.endPose = std::nullopt;
   }
 
-  for (size_t i = 0; i < path.size() - 1; ++i) {
-    if (path[i] != other.path[i]) {
-      return false;
+  return combinedBehavior;
+}
+
+bool ThunderAutoModeStepDirectoryPath::hasParentPath(
+    const ThunderAutoModeStepDirectoryPath& path) const noexcept {
+  const size_t pathDepth = path.depth();
+  if (depth() <= pathDepth)
+    return false;
+
+  size_t commonPathDepth = getCommonPathDepth(path);
+  return pathDepth == commonPathDepth;
+}
+
+bool ThunderAutoModeStepDirectoryPath::hasParentPath(const ThunderAutoModeStepPath& path) const noexcept {
+  const size_t pathDepth = path.depth();
+  if (depth() < pathDepth)  // Not <= because we consider steps to be parents of their branches,
+                            // ex. /0/0 is parent to /0/0.true/
+    return false;
+
+  size_t commonPathDepth = getCommonPathDepth(path);
+  return pathDepth == commonPathDepth;
+}
+
+ThunderAutoModeStepPath ThunderAutoModeStepDirectoryPath::step(int stepIndex) const noexcept {
+  return ThunderAutoModeStepPath(*this, stepIndex);
+}
+
+size_t ThunderAutoModeStepDirectoryPath::getCommonPathDepth(
+    const ThunderAutoModeStepDirectoryPath& otherPath) const noexcept {
+  std::span<const Node> dir1 = m_path;
+  std::span<const Node> dir2 = otherPath.path();
+
+  const size_t maxDepth = std::min(dir1.size(), dir2.size());
+  size_t commonPathDepth = 0;
+  for (size_t i = 0; i < maxDepth; i++) {
+    if (dir1[i] != dir2[i]) {
+      return commonPathDepth;
+    }
+    commonPathDepth++;
+  }
+  return commonPathDepth;
+}
+
+size_t ThunderAutoModeStepDirectoryPath::getCommonPathDepth(const ThunderAutoModeStepPath& otherPath,
+                                                            bool matchEndStepsWithDirNodes) const noexcept {
+  std::span<const Node> dir1 = m_path;
+  std::span<const Node> dir2 = otherPath.directoryPath().path();
+
+  const size_t maxDepth = std::min(dir1.size(), dir2.size());
+  size_t commonPathDepth = 0;
+  for (size_t i = 0; i < maxDepth; i++) {
+    if (dir1[i] != dir2[i]) {
+      return commonPathDepth;
+    }
+    commonPathDepth++;
+  }
+
+  if (matchEndStepsWithDirNodes) {
+    if ((otherPath.depth() == commonPathDepth + 1) && (commonPathDepth < dir1.size())) {
+      if (otherPath.stepIndex() == dir1[commonPathDepth].stepIndex) {
+        commonPathDepth++;
+      }
     }
   }
 
-  return path.back().isSameDirectoryAs(other.path.back());
+  return commonPathDepth;
 }
 
-ThunderAutoModeStepPath ThunderAutoModeStepPath::operator/(Node node) const {
-  ThunderAutoModeStepPath newPath = *this;
-  newPath.path.push_back(node);
-  return newPath;
+bool ThunderAutoModeStepPath::hasParentPath(const ThunderAutoModeStepDirectoryPath& path) const noexcept {
+  const size_t pathDepth = path.depth();
+  if (depth() <= pathDepth)
+    return false;
+
+  size_t commonPathDepth = getCommonPathDepth(path);
+  return pathDepth == commonPathDepth;
 }
 
-ThunderAutoModeStepPath& ThunderAutoModeStepPath::operator/=(Node node) {
-  path.push_back(node);
-  return *this;
+bool ThunderAutoModeStepPath::hasParentPath(const ThunderAutoModeStepPath& path) const noexcept {
+  const size_t pathDepth = path.depth();
+  if (depth() <= pathDepth)
+    return false;
+
+  size_t commonPathDepth = getCommonPathDepth(path);
+  return pathDepth == commonPathDepth;
+}
+
+void ThunderAutoModeStepPath::updateWithRemovalOfStep(const ThunderAutoModeStepPath& removedStepPath) {
+  const size_t currentStepPathDepth = depth();
+  const size_t removedStepPathDepth = removedStepPath.depth();
+  ThunderLibCoreAssert(removedStepPathDepth > 0);
+
+  const size_t commonPathDepth = getCommonPathDepth(removedStepPath, false);
+
+  if (commonPathDepth == removedStepPathDepth) {
+    throw LogicError::Construct("Cannot update step path because it is child to removed step path");
+  }
+  // Check if the common path is the parent directory of the removed step.
+  else if (commonPathDepth == removedStepPathDepth - 1) {
+    const size_t removedStepIndex = removedStepPath.stepIndex();
+
+    ThunderLibCoreAssert(currentStepPathDepth >= commonPathDepth + 1);
+    size_t& currentStepIndex = (currentStepPathDepth == commonPathDepth + 1)
+                                   ? m_stepIndex
+                                   : m_directory.path()[commonPathDepth].stepIndex;
+
+    if (removedStepIndex < currentStepIndex) {
+      currentStepIndex--;
+    }
+  }
+}
+
+ThunderAutoModeStepDirectoryPath ThunderAutoModeStepPath::boolBranch(bool b) const noexcept {
+  using enum ThunderAutoModeStepDirectoryPath::Node::Type;
+
+  ThunderAutoModeStepDirectoryPath::Node node{
+      .stepIndex = m_stepIndex,
+      .directoryType = b ? BOOL_TRUE : BOOL_ELSE,
+  };
+
+  std::span<const ThunderAutoModeStepDirectoryPath::Node> path = m_directory.path();
+  std::vector<ThunderAutoModeStepDirectoryPath::Node> newPath(path.begin(), path.end());
+  newPath.push_back(node);
+
+  return ThunderAutoModeStepDirectoryPath(std::move(newPath));
+}
+
+ThunderAutoModeStepDirectoryPath ThunderAutoModeStepPath::switchBranchCase(int caseValue) const noexcept {
+  ThunderAutoModeStepDirectoryPath::Node node{
+      .stepIndex = m_stepIndex,
+      .directoryType = ThunderAutoModeStepDirectoryPath::Node::Type::SWITCH_CASE,
+      .caseBranchValue = caseValue,
+  };
+
+  std::span<const ThunderAutoModeStepDirectoryPath::Node> path = m_directory.path();
+  std::vector<ThunderAutoModeStepDirectoryPath::Node> newPath(path.begin(), path.end());
+  newPath.push_back(node);
+
+  return ThunderAutoModeStepDirectoryPath(std::move(newPath));
+}
+
+ThunderAutoModeStepDirectoryPath ThunderAutoModeStepPath::switchBranchDefault() const noexcept {
+  ThunderAutoModeStepDirectoryPath::Node node{
+      .stepIndex = m_stepIndex,
+      .directoryType = ThunderAutoModeStepDirectoryPath::Node::Type::SWITCH_DEFAULT,
+  };
+
+  std::span<const ThunderAutoModeStepDirectoryPath::Node> path = m_directory.path();
+  std::vector<ThunderAutoModeStepDirectoryPath::Node> newPath(path.begin(), path.end());
+  newPath.push_back(node);
+
+  return ThunderAutoModeStepDirectoryPath(std::move(newPath));
+}
+
+size_t ThunderAutoModeStepPath::getCommonPathDepth(const ThunderAutoModeStepDirectoryPath& otherPath,
+                                                   bool matchEndStepsWithDirNodes) const noexcept {
+  return otherPath.getCommonPathDepth(*this, matchEndStepsWithDirNodes);
+}
+
+size_t ThunderAutoModeStepPath::getCommonPathDepth(const ThunderAutoModeStepPath& otherPath,
+                                                   bool matchEndStepsWithDirNodes) const noexcept {
+  std::span<const ThunderAutoModeStepDirectoryPath::Node> dir1 = m_directory.path();
+  std::span<const ThunderAutoModeStepDirectoryPath::Node> dir2 = otherPath.directoryPath().path();
+
+  const size_t maxDepth = std::min(dir1.size(), dir2.size());
+  size_t commonPathDepth = 0;
+  for (size_t i = 0; i < maxDepth; i++) {
+    if (dir1[i] != dir2[i]) {
+      return commonPathDepth;
+    }
+    commonPathDepth++;
+  }
+
+  if (dir1.size() == dir2.size()) {
+    if (stepIndex() == otherPath.stepIndex()) {
+      commonPathDepth++;
+    }
+  } else if (matchEndStepsWithDirNodes) {
+    if (dir1.size() < dir2.size()) {
+      if (stepIndex() == dir2[commonPathDepth].stepIndex) {
+        commonPathDepth++;
+      }
+    } else if (dir1.size() > dir2.size()) {
+      if (otherPath.stepIndex() == dir1[commonPathDepth].stepIndex) {
+        commonPathDepth++;
+      }
+    }
+  }
+
+  return commonPathDepth;
+}
+
+std::string ThunderAutoModeStepDirectoryPathToString(const ThunderAutoModeStepDirectoryPath& directory) {
+  std::string directoryStr;
+
+  for (const ThunderAutoModeStepDirectoryPath::Node& node : directory.path()) {
+    directoryStr += fmt::format("/{}", node.stepIndex);
+
+    switch (node.directoryType) {
+      using enum ThunderAutoModeStepDirectoryPath::Node::Type;
+      case BOOL_TRUE:
+        directoryStr += ".true";
+        break;
+      case BOOL_ELSE:
+        directoryStr += ".false";
+        break;
+      case SWITCH_CASE:
+        directoryStr += fmt::format(".case{}", node.caseBranchValue);
+        break;
+      case SWITCH_DEFAULT:
+        directoryStr += ".default";
+        break;
+      default:
+        ThunderLibCoreUnreachable("Invalid auto mode step directory path node directory type");
+    }
+  }
+
+  return directoryStr;
+}
+
+std::string ThunderAutoModeStepPathToString(const ThunderAutoModeStepPath& path) {
+  std::string pathStr = ThunderAutoModeStepDirectoryPathToString(path.directoryPath());
+  pathStr += fmt::format("/{}", path.stepIndex());
+  return pathStr;
 }
 
 ThunderAutoMode::ThunderAutoMode(const ThunderAutoMode& other) {
@@ -236,83 +605,17 @@ ThunderAutoMode& ThunderAutoMode::operator=(const ThunderAutoMode& other) noexce
   return *this;
 }
 
-ThunderAutoMode::StepPosition ThunderAutoMode::findStepAtPath(const ThunderAutoModeStepPath& stepPath) {
-  using enum ThunderAutoModeStepPath::Node::DirectoryType;
+ThunderAutoMode::StepPosition ThunderAutoMode::findStepAtPath(const ThunderAutoModeStepPath& path) {
+  StepDirectory& directory = findStepDirectoryAtPath(path.directoryPath());
 
-  if (stepPath.path.empty()) {
-    throw InvalidArgumentError::Construct("Step path is empty");
+  if (path.stepIndex() >= directory.size()) {
+    throw InvalidArgumentError::Construct("Auto mode step path index {} is out of bounds (size {})",
+                                          path.stepIndex(), directory.size());
   }
 
-  StepDirectory* stepsList = &steps;
-  StepDirectory::iterator stepIt = steps.begin();
+  StepDirectory::iterator stepIt = std::next(directory.begin(), path.stepIndex());
 
-  auto pathIt = stepPath.path.begin();
-  if (pathIt->directoryType != ROOT) {
-    throw InvalidArgumentError::Construct(
-        "Auto mode step path must start at root directory, got directory type {}",
-        static_cast<int>(pathIt->directoryType));
-  }
-
-  while (pathIt != stepPath.path.end()) {
-    ThunderAutoModeStepPath::Node stepPathNode = *pathIt;
-
-    if (stepPathNode.stepIndex >= stepsList->size()) {
-      throw InvalidArgumentError::Construct("Auto mode step path index {} is out of bounds (size {})",
-                                            stepPathNode.stepIndex, stepsList->size());
-    }
-
-    stepIt = stepsList->begin();
-    std::advance(stepIt, stepPathNode.stepIndex);
-
-    if (++pathIt == stepPath.path.end()) {
-      break;
-    }
-
-    stepPathNode = *pathIt;
-
-    ThunderAutoModeStepType stepType = (*stepIt)->type();
-    switch (stepType) {
-      using enum ThunderAutoModeStepType;
-      case BRANCH_BOOL: {
-        auto& branchBoolStep = static_cast<ThunderAutoModeBoolBranchStep&>(**stepIt);
-        if (stepPathNode.directoryType == BOOL_TRUE) {
-          stepsList = &branchBoolStep.trueBranch;
-        } else if (stepPathNode.directoryType == BOOL_ELSE) {
-          stepsList = &branchBoolStep.elseBranch;
-        } else {
-          throw InvalidArgumentError::Construct(
-              "Auto mode step path directory type {} is invalid for boolean branch",
-              static_cast<int>(stepPathNode.directoryType));
-        }
-        break;
-      }
-      case BRANCH_SWITCH: {
-        auto& branchSwitchStep = static_cast<ThunderAutoModeSwitchBranchStep&>(**stepIt);
-        if (stepPathNode.directoryType == SWITCH_DEFAULT) {
-          stepsList = &branchSwitchStep.defaultBranch;
-        } else if (stepPathNode.directoryType == SWITCH_CASE) {
-          auto caseIt = branchSwitchStep.caseBranches.find(stepPathNode.caseBranchValue);
-          if (caseIt == branchSwitchStep.caseBranches.end()) {
-            throw InvalidArgumentError::Construct(
-                "Auto mode step path case branch value {} does not exist in switch branch",
-                stepPathNode.caseBranchValue);
-          }
-          stepsList = &caseIt->second;
-        } else {
-          throw InvalidArgumentError::Construct(
-              "Auto mode step path directory type {} is invalid for switch branch",
-              static_cast<int>(stepPathNode.directoryType));
-        }
-        break;
-      }
-      default:
-        throw InvalidArgumentError::Construct(
-            "Auto mode step path cannot descend into non-branch step of type {}",
-            ThunderAutoModeStepTypeToString(stepType));
-    }
-  }
-
-  return std::make_pair(stepsList, stepIt);
+  return std::make_pair(&directory, stepIt);
 }
 
 ThunderAutoModeStep& ThunderAutoMode::getStepAtPath(const ThunderAutoModeStepPath& stepPath) {
@@ -321,104 +624,77 @@ ThunderAutoModeStep& ThunderAutoMode::getStepAtPath(const ThunderAutoModeStepPat
 }
 
 ThunderAutoMode::StepDirectory& ThunderAutoMode::findStepDirectoryAtPath(
-    const ThunderAutoModeStepPath& stepPath) {
-  using enum ThunderAutoModeStepPath::Node::DirectoryType;
+    const ThunderAutoModeStepDirectoryPath& path) {
+  using enum ThunderAutoModeStepDirectoryPath::Node::Type;
 
-  if (stepPath.path.empty()) {
-    return steps;
+  std::queue<ThunderAutoModeStepDirectoryPath::Node> nodesToVisit;
+  for (const auto& node : path.path()) {
+    nodesToVisit.push(node);
   }
 
-  StepDirectory* stepsList = &steps;
-  StepDirectory::iterator stepIt = steps.begin();
+  StepDirectory* currentDirectory = &steps;
+  StepDirectory::iterator currentIt = currentDirectory->begin();
 
-  auto pathIt = stepPath.path.begin();
-  if (pathIt->directoryType != ROOT) {
-    throw InvalidArgumentError::Construct(
-        "Auto mode step path must start at root directory, got directory type {}",
-        static_cast<int>(pathIt->directoryType));
-  }
+  while (!nodesToVisit.empty()) {
+    ThunderAutoModeStepDirectoryPath::Node currentNode = nodesToVisit.front();
+    nodesToVisit.pop();
 
-  while (pathIt != stepPath.path.end()) {
-    ThunderAutoModeStepPath::Node stepPathNode = *pathIt;
-
-    if (std::next(pathIt) == stepPath.path.end()) {
-      break;
+    if (currentNode.stepIndex >= currentDirectory->size()) {
+      throw InvalidArgumentError::Construct("Auto mode step path index {} is out of bounds (size {})",
+                                            currentNode.stepIndex, currentDirectory->size());
     }
 
-    stepIt = stepsList->begin();
-    std::advance(stepIt, stepPathNode.stepIndex);
+    currentIt = currentDirectory->begin();
+    std::advance(currentIt, currentNode.stepIndex);
 
-    stepPathNode = *++pathIt;
-
-    ThunderAutoModeStepType stepType = (*stepIt)->type();
+    ThunderAutoModeStepType stepType = (*currentIt)->type();
     switch (stepType) {
-      case ThunderAutoModeStepType::BRANCH_BOOL: {
-        auto& branchBoolStep = static_cast<ThunderAutoModeBoolBranchStep&>(**stepIt);
-        if (stepPathNode.directoryType == BOOL_TRUE) {
-          stepsList = &branchBoolStep.trueBranch;
-        } else if (stepPathNode.directoryType == BOOL_ELSE) {
-          stepsList = &branchBoolStep.elseBranch;
+      using enum ThunderAutoModeStepType;
+      case BRANCH_BOOL: {
+        auto& branchBoolStep = static_cast<ThunderAutoModeBoolBranchStep&>(**currentIt);
+        if (currentNode.directoryType == BOOL_TRUE) {
+          currentDirectory = &branchBoolStep.trueBranch;
+        } else if (currentNode.directoryType == BOOL_ELSE) {
+          currentDirectory = &branchBoolStep.elseBranch;
         } else {
           throw InvalidArgumentError::Construct(
-              "Auto mode step path directory type {} is invalid for boolean branch",
-              static_cast<int>(stepPathNode.directoryType));
+              "Auto mode step directory path node type {} is invalid for boolean branch",
+              static_cast<int>(currentNode.directoryType));
         }
         break;
       }
-      case ThunderAutoModeStepType::BRANCH_SWITCH: {
-        auto& branchSwitchStep = static_cast<ThunderAutoModeSwitchBranchStep&>(**stepIt);
-        if (stepPathNode.directoryType == SWITCH_DEFAULT) {
-          stepsList = &branchSwitchStep.defaultBranch;
-        } else if (stepPathNode.directoryType == SWITCH_CASE) {
-          auto caseIt = branchSwitchStep.caseBranches.find(stepPathNode.caseBranchValue);
+      case BRANCH_SWITCH: {
+        auto& branchSwitchStep = static_cast<ThunderAutoModeSwitchBranchStep&>(**currentIt);
+        if (currentNode.directoryType == SWITCH_DEFAULT) {
+          currentDirectory = &branchSwitchStep.defaultBranch;
+        } else if (currentNode.directoryType == SWITCH_CASE) {
+          auto caseIt = branchSwitchStep.caseBranches.find(currentNode.caseBranchValue);
           if (caseIt == branchSwitchStep.caseBranches.end()) {
             throw InvalidArgumentError::Construct(
-                "Auto mode step path case branch value {} does not exist in switch branch",
-                stepPathNode.caseBranchValue);
+                "Auto mode step directory path case branch value {} does not exist in switch branch",
+                currentNode.caseBranchValue);
           }
-          stepsList = &caseIt->second;
+          currentDirectory = &caseIt->second;
         } else {
           throw InvalidArgumentError::Construct(
-              "Auto mode step path directory type {} is invalid for switch branch",
-              static_cast<int>(stepPathNode.directoryType));
+              "Auto mode step directory path node type {} is invalid for switch branch",
+              static_cast<int>(currentNode.directoryType));
         }
         break;
       }
       default:
         throw InvalidArgumentError::Construct(
-            "Auto mode step path cannot descend into non-branch step of type {}",
+            "Auto mode step directory path cannot descend into non-branch step of type {}",
             ThunderAutoModeStepTypeToString(stepType));
     }
   }
 
-  return *stepsList;
+  return *currentDirectory;
 }
 
-std::string ThunderAutoModeStepPathToString(const ThunderAutoModeStepPath& stepPath) {
-  std::string pathStr;
-  for (const auto& node : stepPath.path) {
-    switch (node.directoryType) {
-      case ThunderAutoModeStepPath::Node::DirectoryType::ROOT:
-        break;
-      case ThunderAutoModeStepPath::Node::DirectoryType::BOOL_TRUE:
-        pathStr += "/true";
-        break;
-      case ThunderAutoModeStepPath::Node::DirectoryType::BOOL_ELSE:
-        pathStr += "/else";
-        break;
-      case ThunderAutoModeStepPath::Node::DirectoryType::SWITCH_CASE:
-        pathStr += fmt::format("/case_{}", node.caseBranchValue);
-        break;
-      case ThunderAutoModeStepPath::Node::DirectoryType::SWITCH_DEFAULT:
-        pathStr += "/default";
-        break;
-      default:
-        ThunderLibCoreUnreachable("Invalid auto mode step path node directory type");
-    }
-    pathStr += fmt::format("/{}", node.stepIndex);
-  }
-
-  return pathStr;
+ThunderAutoModeStepTrajectoryBehavior ThunderAutoMode::getTrajectoryBehavior(
+    const std::map<std::string, ThunderAutoTrajectorySkeleton>& trajectories) const noexcept {
+  return GetStepSequenceTrajectoryBehavior(std::nullopt, steps, trajectories);
 }
 
 static void to_json(wpi::json& json, const ThunderAutoModeStepType& stepType) {

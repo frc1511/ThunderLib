@@ -402,6 +402,20 @@ const ThunderAutoTrajectorySkeletonWaypoint& ThunderAutoTrajectorySkeleton::getP
   return *it;
 }
 
+ThunderAutoTrajectoryBehavior ThunderAutoTrajectorySkeleton::getBehavior() const {
+  if (numPoints() < 2) {
+    throw LogicError::Construct("Cannot get behavior: trajectory has less than two points");
+  }
+
+  const ThunderAutoTrajectorySkeletonWaypoint& first = front();
+  const ThunderAutoTrajectorySkeletonWaypoint& last = back();
+
+  frc::Pose2d startPose{first.position().x, first.position().y, m_startRotation};
+  frc::Pose2d endPose{last.position().x, last.position().y, m_endRotation};
+
+  return ThunderAutoTrajectoryBehavior{.startPose = startPose, .endPose = endPose};
+}
+
 ThunderAutoTrajectoryAction& ThunderAutoTrajectorySkeleton::getAction(size_t index) {
   if (index >= m_actions.size()) {
     throw OutOfRangeError::Construct("Index out of bounds");
@@ -889,7 +903,8 @@ static void from_json(const wpi::json& json, ThunderAutoTrajectoryRotation& rota
 
 static void to_json(wpi::json& json, const ThunderAutoTrajectoryAction& action) {
   json = wpi::json{
-      {"action", action.action}, {"editor_locked", action.editorLocked},
+      {"action", action.action},
+      {"editor_locked", action.editorLocked},
       // TODO: zone end position
   };
 }

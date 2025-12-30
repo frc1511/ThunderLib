@@ -9,6 +9,7 @@
 #include <units/angular_velocity.h>
 #include <units/acceleration.h>
 #include <units/angular_acceleration.h>
+#include <frc/geometry/Pose2d.h>
 #include <wpi/json.h>
 #include <gcem.hpp>
 
@@ -368,6 +369,13 @@ struct ThunderAutoTrajectoryAction {
   bool operator==(const ThunderAutoTrajectoryAction& other) const = default;
 };
 
+struct ThunderAutoTrajectoryBehavior {
+  frc::Pose2d startPose;
+  frc::Pose2d endPose;
+
+  bool operator==(const ThunderAutoTrajectoryBehavior& other) const = default;
+};
+
 /**
  * Represents the outline of a ThunderAuto trajectory. Contains a list of
  * waypoints and properties that describe how the trajectory should be formed.
@@ -389,9 +397,11 @@ class ThunderAutoTrajectorySkeleton {
   explicit ThunderAutoTrajectorySkeleton(ThunderAutoTrajectorySkeletonSettings settings = {})
       : m_settings(settings) {}
 
-  explicit ThunderAutoTrajectorySkeleton(std::initializer_list<ThunderAutoTrajectorySkeletonWaypoint> points,
-                                         ThunderAutoTrajectorySkeletonSettings settings = {})
-      : m_settings(settings), m_points(points) {}
+  ThunderAutoTrajectorySkeleton(std::initializer_list<ThunderAutoTrajectorySkeletonWaypoint> points,
+                                CanonicalAngle startRotation,
+                                CanonicalAngle endRotation,
+                                ThunderAutoTrajectorySkeletonSettings settings = {})
+      : m_settings(settings), m_points(points), m_startRotation(startRotation), m_endRotation(endRotation) {}
 
   explicit ThunderAutoTrajectorySkeleton(const wpi::json& json) : ThunderAutoTrajectorySkeleton() {
     fromJson(json);
@@ -469,6 +479,8 @@ class ThunderAutoTrajectorySkeleton {
 
   ThunderAutoTrajectorySkeletonWaypoint& getPoint(size_t index);
   const ThunderAutoTrajectorySkeletonWaypoint& getPoint(size_t index) const;
+
+  ThunderAutoTrajectoryBehavior getBehavior() const;
 
   // Actions
 

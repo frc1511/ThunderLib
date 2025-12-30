@@ -1393,11 +1393,23 @@ const ThunderAutoMode& ThunderAutoProjectState::currentAutoMode() const {
   return autoMode;
 }
 
-void ThunderAutoProjectState::currentAutoModeMoveStepBeforeOther(
+bool ThunderAutoProjectState::currentAutoModeMoveStepBeforeOther(
     const ThunderAutoModeStepPath& stepPath,
     const ThunderAutoModeStepPath& otherStepPath) {
   if (stepPath == otherStepPath)
-    return;
+    return false;
+
+  if (otherStepPath.hasParentPath(stepPath)) {
+    ThunderLibCoreLogger::Warn("Cannot move a step under one of its own children");
+    return false;
+  }
+  if (otherStepPath.stepIndex() != 0) {
+    bool isInSameDirectory = (stepPath.directoryPath() == otherStepPath.directoryPath());
+    if (isInSameDirectory && stepPath.stepIndex() == otherStepPath.stepIndex() - 1) {
+      ThunderLibCoreLogger::Warn("Won't move step because it's already in the target position");
+      return false;
+    }
+  }
 
   ThunderAutoMode& autoMode = currentAutoMode();
 
@@ -1409,20 +1421,31 @@ void ThunderAutoProjectState::currentAutoModeMoveStepBeforeOther(
   stepDirectory->erase(stepIt);
   otherStepDirectory->insert(otherStepIt, std::move(step));
 
+  ThunderAutoModeStepPath newStepPath = otherStepPath;
+  newStepPath.updateWithRemovalOfStep(stepPath);
+
   // Select the moved step.
   auto& selectedStepPath = editorState.autoModeEditorState.selectedStepPath;
-  selectedStepPath = otherStepPath;
-  if (stepPath.isInSameDirectoryAs(otherStepPath) &&
-      stepPath.endNode().stepIndex < otherStepPath.endNode().stepIndex) {
-    selectedStepPath->endNode().stepIndex--;
-  }
+  selectedStepPath = newStepPath;
+
+  return true;
 }
 
-void ThunderAutoProjectState::currentAutoModeMoveStepAfterOther(
+bool ThunderAutoProjectState::currentAutoModeMoveStepAfterOther(
     const ThunderAutoModeStepPath& stepPath,
     const ThunderAutoModeStepPath& otherStepPath) {
   if (stepPath == otherStepPath)
-    return;
+    return false;
+
+  if (otherStepPath.hasParentPath(stepPath)) {
+    ThunderLibCoreLogger::Warn("Cannot move a step under one of its own children");
+    return false;
+  }
+  bool isInSameDirectory = (stepPath.directoryPath() == otherStepPath.directoryPath());
+  if (isInSameDirectory && stepPath.stepIndex() == otherStepPath.stepIndex() + 1) {
+    ThunderLibCoreLogger::Warn("Won't move step because it's already in the target position");
+    return false;
+  }
 
   ThunderAutoMode& autoMode = currentAutoMode();
 
@@ -1434,19 +1457,30 @@ void ThunderAutoProjectState::currentAutoModeMoveStepAfterOther(
   stepDirectory->erase(stepIt);
   otherStepDirectory->insert(std::next(otherStepIt), std::move(step));
 
+  ThunderAutoModeStepPath newStepPath = otherStepPath;
+  newStepPath.updateWithRemovalOfStep(stepPath);
+  newStepPath.setStepIndex(newStepPath.stepIndex() + 1);
+
   // Select the moved step.
   auto& selectedStepPath = editorState.autoModeEditorState.selectedStepPath;
-  selectedStepPath = otherStepPath;
-  if (!(stepPath.isInSameDirectoryAs(otherStepPath) &&
-        stepPath.endNode().stepIndex < otherStepPath.endNode().stepIndex)) {
-    selectedStepPath->endNode().stepIndex++;
-  }
+  selectedStepPath = newStepPath;
+
+  return true;
 }
 
-void ThunderAutoProjectState::currentAutoModeMoveStepIntoDirectory(
+bool ThunderAutoProjectState::currentAutoModeMoveStepIntoDirectory(
     const ThunderAutoModeStepPath& stepPath,
-    const ThunderAutoModeStepPath& directoryPath) {
+    const ThunderAutoModeStepDirectoryPath& directoryPath) {
   ThunderAutoMode& autoMode = currentAutoMode();
+
+  if (directoryPath.hasParentPath(stepPath)) {
+    ThunderLibCoreLogger::Warn("Cannot move a step under one of its own children");
+    return false;
+  }
+  if (stepPath.directoryPath() == directoryPath) {
+    ThunderLibCoreLogger::Warn("Won't move step because it's already in the target directory");
+    return false;
+  }
 
   // Move the step.
   auto [stepDirectory, stepIt] = autoMode.findStepAtPath(stepPath);
@@ -1456,10 +1490,14 @@ void ThunderAutoProjectState::currentAutoModeMoveStepIntoDirectory(
   stepDirectory->erase(stepIt);
   newStepDirectory.push_back(std::move(step));
 
+  ThunderAutoModeStepPath newStepPath = directoryPath.step(newStepDirectory.size() - 1);
+  newStepPath.updateWithRemovalOfStep(stepPath);
+
   // Select the moved step.
   auto& selectedStepPath = editorState.autoModeEditorState.selectedStepPath;
-  selectedStepPath = directoryPath;
-  selectedStepPath->endNode().stepIndex = newStepDirectory.size() - 1;
+  selectedStepPath = newStepPath;
+
+  return true;
 }
 
 void ThunderAutoProjectState::currentAutoModeInsertStepBeforeOther(
@@ -1487,11 +1525,11 @@ void ThunderAutoProjectState::currentAutoModeInsertStepAfterOther(const ThunderA
   // Select the inserted step.
   auto& selectedStepPath = editorState.autoModeEditorState.selectedStepPath;
   selectedStepPath = stepPath;
-  selectedStepPath->endNode().stepIndex++;
+  selectedStepPath->setStepIndex(selectedStepPath->stepIndex() + 1);
 }
 
 void ThunderAutoProjectState::currentAutoModeInsertStepInDirectory(
-    const ThunderAutoModeStepPath& directoryPath,
+    const ThunderAutoModeStepDirectoryPath& directoryPath,
     std::unique_ptr<ThunderAutoModeStep> step) {
   ThunderAutoMode& autoMode = currentAutoMode();
 
@@ -1501,8 +1539,7 @@ void ThunderAutoProjectState::currentAutoModeInsertStepInDirectory(
 
   // Select the inserted step.
   auto& selectedStepPath = editorState.autoModeEditorState.selectedStepPath;
-  selectedStepPath = directoryPath;
-  selectedStepPath->endNode().stepIndex = stepDirectory.size() - 1;
+  selectedStepPath = directoryPath.step(stepDirectory.size() - 1);
 }
 
 void ThunderAutoProjectState::currentAutoModeDeleteStep(const ThunderAutoModeStepPath& stepPath) {
@@ -1510,14 +1547,11 @@ void ThunderAutoProjectState::currentAutoModeDeleteStep(const ThunderAutoModeSte
 
   auto& selectedStepPath = editorState.autoModeEditorState.selectedStepPath;
   if (selectedStepPath.has_value()) {
-    if (selectedStepPath == stepPath) {
+    if (selectedStepPath == stepPath || selectedStepPath->hasParentPath(stepPath)) {
       selectedStepPath = std::nullopt;
+    } else {
+      selectedStepPath->updateWithRemovalOfStep(stepPath);
     }
-    else if (stepPath.isInSameDirectoryAs(*selectedStepPath) &&
-             stepPath.endNode().stepIndex < selectedStepPath->endNode().stepIndex) {
-      selectedStepPath->endNode().stepIndex--;
-    }
-
   }
 
   auto [stepsList, stepIt] = autoMode.findStepAtPath(stepPath);

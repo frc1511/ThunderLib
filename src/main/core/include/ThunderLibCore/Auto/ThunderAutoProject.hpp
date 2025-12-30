@@ -208,11 +208,45 @@ struct ThunderAutoProjectState {
    */
   std::list<std::string> findActionRecursionPath(const std::string& actionName) const;
 
+  /**
+   * Updates the editor state to select the trajectory with the given name. If the editor state is not already
+   * in trajectory editing mode, it will switch to that mode.
+   *
+   * Throws an exception if no trajectory exists in the project state with the given name.
+   *
+   * @param trajectoryName The name of the trajectory to select.
+   */
   void trajectorySelect(const std::string& trajectoryName);
+
+  /**
+   * Returns the currently selected trajectory as referenced by the editor state.
+   *
+   * Throws an exception if no trajectory is currently selected, or the selected trajectory is missing from
+   * the project state.
+   *
+   * @return Reference to the currently selected trajectory.
+   */
   ThunderAutoTrajectorySkeleton& currentTrajectory();
   const ThunderAutoTrajectorySkeleton& currentTrajectory() const;
+
+  /**
+   * Returns the currently selected waypoint in the current trajectory as referenced by the editor state.
+   *
+   * Throws an exception if no trajectory is currently selected, or the selected trajectory is missing from
+   * the project state, or if no waypoint is currently selected.
+   *
+   * @return Reference to the currently selected trajectory waypoint.
+   */
   ThunderAutoTrajectorySkeletonWaypoint& currentTrajectorySelectedWaypoint();
   const ThunderAutoTrajectorySkeletonWaypoint& currentTrajectorySelectedWaypoint() const;
+
+  /**
+   * Trajectory manipulation functions, for use by the editor.
+   *
+   * Most of these functions modify the currently selected trajectory as referenced by the editor state. An
+   * exception will be thrown if no trajectory is currently selected, (same as currentTrajectory()).
+   */
+
   void currentTrajectoryInsertWaypoint(size_t index, Point2d position, CanonicalAngle outgoingHeading);
   void currentTrajectoryPrependWaypoint(Point2d position, CanonicalAngle outgoingHeading);
   void currentTrajectoryAppendWaypoint(Point2d position, CanonicalAngle outgoingHeading);
@@ -230,15 +264,52 @@ struct ThunderAutoProjectState {
   void trajectoryDuplicate(const std::string& oldTrajectoryName, const std::string& newTrajectoryName);
   void trajectoryReverseDirection(const std::string& trajectoryName);
 
+  /**
+   * Updates the editor state to select the auto mode with the given name. If the editor state is not already
+   * in auto mode editing mode, it will switch to that mode.
+   *
+   * Throws an exception if no auto mode exists in the project state with the given name.
+   *
+   * @param autoModeName The name of the auto mode to select.
+   */
   void autoModeSelect(const std::string& autoModeName);
+
+  /**
+   * Returns the currently selected auto mode as referenced by the editor state.
+   *
+   * Throws an exception if no auto mode is currently selected, or the selected auto mode is missing from the
+   * project state.
+   *
+   * @return Reference to the currently selected auto mode.
+   */
   ThunderAutoMode& currentAutoMode();
   const ThunderAutoMode& currentAutoMode() const;
-  void currentAutoModeMoveStepBeforeOther(const ThunderAutoModeStepPath& stepPath, const ThunderAutoModeStepPath& otherStepPath);
-  void currentAutoModeMoveStepAfterOther(const ThunderAutoModeStepPath& stepPath, const ThunderAutoModeStepPath& otherStepPath);
-  void currentAutoModeMoveStepIntoDirectory(const ThunderAutoModeStepPath& stepPath, const ThunderAutoModeStepPath& directoryPath);
-  void currentAutoModeInsertStepBeforeOther(const ThunderAutoModeStepPath& stepPath, std::unique_ptr<ThunderAutoModeStep> step);
-  void currentAutoModeInsertStepAfterOther(const ThunderAutoModeStepPath& stepPath, std::unique_ptr<ThunderAutoModeStep> step);
-  void currentAutoModeInsertStepInDirectory(const ThunderAutoModeStepPath& directoryPath, std::unique_ptr<ThunderAutoModeStep> step);
+
+  /**
+   * Auto mode step manipulation functions, for use by the editor. Steps can be moved or inserted to positions
+   * relative to other steps.
+   *
+   * Most of these functions modify the currently selected auto mode as referenced by the editor state. An
+   * exception will be thrown if no auto mode is currently selected, (same as currentAutoMode()).
+   *
+   * These functions will throw an exception if step paths are invalid.
+   *
+   * These functions will return true if the operation was successful, or false if no changes to the state
+   * were made (for example, trying to move a step to the same position it is already in).
+   */
+
+  bool currentAutoModeMoveStepBeforeOther(const ThunderAutoModeStepPath& stepPath,
+                                          const ThunderAutoModeStepPath& otherStepPath);
+  bool currentAutoModeMoveStepAfterOther(const ThunderAutoModeStepPath& stepPath,
+                                         const ThunderAutoModeStepPath& otherStepPath);
+  bool currentAutoModeMoveStepIntoDirectory(const ThunderAutoModeStepPath& stepPath,
+                                            const ThunderAutoModeStepDirectoryPath& directoryPath);
+  void currentAutoModeInsertStepBeforeOther(const ThunderAutoModeStepPath& stepPath,
+                                            std::unique_ptr<ThunderAutoModeStep> step);
+  void currentAutoModeInsertStepAfterOther(const ThunderAutoModeStepPath& stepPath,
+                                           std::unique_ptr<ThunderAutoModeStep> step);
+  void currentAutoModeInsertStepInDirectory(const ThunderAutoModeStepDirectoryPath& directoryPath,
+                                            std::unique_ptr<ThunderAutoModeStep> step);
   void currentAutoModeDeleteStep(const ThunderAutoModeStepPath& stepPath);
 
   void autoModeDelete(const std::string& autoModeName);
