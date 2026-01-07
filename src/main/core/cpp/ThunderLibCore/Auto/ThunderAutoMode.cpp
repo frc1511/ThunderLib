@@ -125,22 +125,40 @@ ThunderAutoModeStepTrajectoryBehavior ThunderAutoModeTrajectoryStep::getTrajecto
   return behavior;
 }
 
-static ThunderAutoModeStepTrajectoryBehavior GetStepSequenceTrajectoryBehavior(
+static ThunderAutoModeStepTrajectoryBehaviorTreeNode GetStepSequenceTrajectoryBehaviorTree(
     std::optional<frc::Pose2d> previousStepEndPose,
     const std::list<std::unique_ptr<ThunderAutoModeStep>>& branch,
     const std::map<std::string, ThunderAutoTrajectorySkeleton>& trajectories) noexcept {
   ThunderAutoModeStepTrajectoryBehavior behavior;
   behavior.startPose = behavior.endPose = previousStepEndPose;
+  std::vector<ThunderAutoModeStepTrajectoryBehaviorTreeNode> children;
 
-  for (auto it = branch.begin(); it != branch.end(); it++) {
+  size_t firstTrajectoryStepIndex = 0, lastTrajectoryStepIndex = 0;
+
+  int stepIndex = 0;
+  for (auto it = branch.begin(); it != branch.end(); it++, stepIndex++) {
     const auto& step = *it;
 
-    ThunderAutoModeStepTrajectoryBehavior stepBehavior =
-        step->getTrajectoryBehavior(behavior.endPose, trajectories);
+    ThunderAutoModeStepTrajectoryBehaviorTreeNode stepBehaviorTreeNode =
+        step->getTrajectoryBehaviorTree(behavior.endPose, trajectories);
+
+    const ThunderAutoModeStepTrajectoryBehavior stepBehavior = stepBehaviorTreeNode.behavior;
+    children.push_back(std::move(stepBehaviorTreeNode));
 
     // Ignore steps that don't run trajectories.
     if (!stepBehavior.runsTrajectory)
       continue;
+
+    if (!behavior.runsTrajectory) {
+      firstTrajectoryStepIndex = stepIndex;
+    }
+    lastTrajectoryStepIndex = stepIndex;
+
+    if (behavior.errorInfo) {
+      // Previous step had an error so skip processing further steps.
+      // We never "break" in this loop because we still need to update lastTrajectoryStepIndex.
+      continue;
+    }
 
     bool previouslyRanTrajectory = behavior.runsTrajectory;
     behavior.runsTrajectory = true;
@@ -148,14 +166,14 @@ static ThunderAutoModeStepTrajectoryBehavior GetStepSequenceTrajectoryBehavior(
     if (stepBehavior.errorInfo) {
       behavior.errorInfo = stepBehavior.errorInfo;
       behavior.startPose = behavior.endPose = std::nullopt;
-      break;
+      continue;
     }
 
     if (previouslyRanTrajectory && !behavior.endPose.has_value()) {
       // Not possible to run another trajectory because the last step didn't end at a single pose.
       behavior.errorInfo.containsNonContinuousSequence = true;
       behavior.startPose = behavior.endPose = std::nullopt;
-      break;
+      continue;
     }
 
     if (stepBehavior.startPose.has_value()) {
@@ -164,7 +182,7 @@ static ThunderAutoModeStepTrajectoryBehavior GetStepSequenceTrajectoryBehavior(
         if (behavior.endPose != stepBehavior.startPose.value()) {
           behavior.errorInfo.containsNonContinuousSequence = true;
           behavior.startPose = behavior.endPose = std::nullopt;
-          break;
+          continue;
         }
 
         behavior.endPose = stepBehavior.endPose;
@@ -176,13 +194,20 @@ static ThunderAutoModeStepTrajectoryBehavior GetStepSequenceTrajectoryBehavior(
       // A trajectory was run in a previous step but this step's trajectory does not have a single start pose.
       behavior.errorInfo.containsNonContinuousSequence = true;
       behavior.startPose = behavior.endPose = std::nullopt;
-      break;
+      continue;
     } else {
       behavior.endPose = stepBehavior.endPose;
     }
   }
 
-  return behavior;
+  if (behavior.runsTrajectory) {
+    behavior.trajectoryStepRange = std::make_pair(firstTrajectoryStepIndex, lastTrajectoryStepIndex);
+  }
+
+  ThunderAutoModeStepTrajectoryBehaviorTreeNode root;
+  root.behavior = behavior;
+  root.childrenVec = std::move(children);
+  return root;
 }
 
 ThunderAutoModeBoolBranchStep::ThunderAutoModeBoolBranchStep(const ThunderAutoModeBoolBranchStep& other)
@@ -221,19 +246,25 @@ ThunderAutoModeBoolBranchStep& ThunderAutoModeBoolBranchStep::operator=(
   return *this;
 }
 
-ThunderAutoModeStepTrajectoryBehavior ThunderAutoModeBoolBranchStep::getTrajectoryBehavior(
+ThunderAutoModeStepTrajectoryBehaviorTreeNode ThunderAutoModeBoolBranchStep::getTrajectoryBehaviorTree(
     std::optional<frc::Pose2d> previousStepEndPose,
     const std::map<std::string, ThunderAutoTrajectorySkeleton>& trajectories) const noexcept {
-  ThunderAutoModeStepTrajectoryBehavior trueBranchBehavior =
-      GetStepSequenceTrajectoryBehavior(previousStepEndPose, trueBranch, trajectories);
+  ThunderAutoModeStepTrajectoryBehaviorTreeNode combinedBehaviorTree;
+  combinedBehaviorTree.childrenMap[true] =
+      GetStepSequenceTrajectoryBehaviorTree(previousStepEndPose, trueBranch, trajectories);
 
-  ThunderAutoModeStepTrajectoryBehavior elseBranchBehavior =
-      GetStepSequenceTrajectoryBehavior(previousStepEndPose, elseBranch, trajectories);
+  combinedBehaviorTree.childrenMap[false] =
+      GetStepSequenceTrajectoryBehaviorTree(previousStepEndPose, elseBranch, trajectories);
 
-  ThunderAutoModeStepTrajectoryBehavior combinedBehavior;
+  ThunderAutoModeStepTrajectoryBehavior& trueBranchBehavior = combinedBehaviorTree.childrenMap[true].behavior;
+  ThunderAutoModeStepTrajectoryBehavior& elseBranchBehavior =
+      combinedBehaviorTree.childrenMap[false].behavior;
+  ThunderAutoModeStepTrajectoryBehavior& combinedBehavior = combinedBehaviorTree.behavior;
+
   if (!trueBranchBehavior.runsTrajectory && !elseBranchBehavior.runsTrajectory) {
     combinedBehavior.runsTrajectory = false;
-    return combinedBehavior;
+    combinedBehavior.startPose = combinedBehavior.endPose = previousStepEndPose;
+    return combinedBehaviorTree;
   }
   combinedBehavior.runsTrajectory = true;
 
@@ -245,7 +276,7 @@ ThunderAutoModeStepTrajectoryBehavior ThunderAutoModeBoolBranchStep::getTrajecto
         trueErrorInfo.isTrajectoryMissing || elseErrorInfo.isTrajectoryMissing;
     combinedBehavior.errorInfo.containsNonContinuousSequence =
         trueErrorInfo.containsNonContinuousSequence || elseErrorInfo.containsNonContinuousSequence;
-    return combinedBehavior;
+    return combinedBehaviorTree;
   }
 
   // If no trajectory gets run in either branch then the robot won't move from its last pose.
@@ -266,7 +297,7 @@ ThunderAutoModeStepTrajectoryBehavior ThunderAutoModeBoolBranchStep::getTrajecto
     combinedBehavior.endPose = trueBranchBehavior.endPose;
   }
 
-  return combinedBehavior;
+  return combinedBehaviorTree;
 }
 
 ThunderAutoModeSwitchBranchStep::ThunderAutoModeSwitchBranchStep(const ThunderAutoModeSwitchBranchStep& other)
@@ -316,21 +347,27 @@ ThunderAutoModeSwitchBranchStep& ThunderAutoModeSwitchBranchStep::operator=(
   return *this;
 }
 
-ThunderAutoModeStepTrajectoryBehavior ThunderAutoModeSwitchBranchStep::getTrajectoryBehavior(
+ThunderAutoModeStepTrajectoryBehaviorTreeNode ThunderAutoModeSwitchBranchStep::getTrajectoryBehaviorTree(
     std::optional<frc::Pose2d> previousStepEndPose,
     const std::map<std::string, ThunderAutoTrajectorySkeleton>& trajectories) const noexcept {
-  ThunderAutoModeStepTrajectoryBehavior defaultBranchBehavior =
-      GetStepSequenceTrajectoryBehavior(previousStepEndPose, defaultBranch, trajectories);
+  ThunderAutoModeStepTrajectoryBehaviorTreeNode defaultBranchBehaviorTree =
+      GetStepSequenceTrajectoryBehaviorTree(previousStepEndPose, defaultBranch, trajectories);
 
+  ThunderAutoModeStepTrajectoryBehavior& defaultBranchBehavior = defaultBranchBehaviorTree.behavior;
   if (!defaultBranchBehavior.runsTrajectory) {
     defaultBranchBehavior.startPose = defaultBranchBehavior.endPose = previousStepEndPose;
   }
 
-  ThunderAutoModeStepTrajectoryBehavior combinedBehavior = defaultBranchBehavior;
+  ThunderAutoModeStepTrajectoryBehaviorTreeNode combinedBehaviorTree;
+  combinedBehaviorTree.behavior = defaultBranchBehavior;
+  combinedBehaviorTree.childrenVec.push_back(std::move(defaultBranchBehaviorTree));
+  ThunderAutoModeStepTrajectoryBehavior& combinedBehavior = combinedBehaviorTree.behavior;
 
   for (const auto& [value, branch] : caseBranches) {
-    ThunderAutoModeStepTrajectoryBehavior branchBehavior =
-        GetStepSequenceTrajectoryBehavior(previousStepEndPose, branch, trajectories);
+    combinedBehaviorTree.childrenMap[value] =
+        GetStepSequenceTrajectoryBehaviorTree(previousStepEndPose, branch, trajectories);
+
+    ThunderAutoModeStepTrajectoryBehavior& branchBehavior = combinedBehaviorTree.childrenMap[value].behavior;
 
     combinedBehavior.runsTrajectory |= branchBehavior.runsTrajectory;
 
@@ -359,11 +396,7 @@ ThunderAutoModeStepTrajectoryBehavior ThunderAutoModeSwitchBranchStep::getTrajec
     }
   }
 
-  if (!combinedBehavior.runsTrajectory) {
-    combinedBehavior.startPose = combinedBehavior.endPose = std::nullopt;
-  }
-
-  return combinedBehavior;
+  return combinedBehaviorTree;
 }
 
 bool ThunderAutoModeStepDirectoryPath::hasParentPath(
@@ -694,7 +727,14 @@ ThunderAutoMode::StepDirectory& ThunderAutoMode::findStepDirectoryAtPath(
 
 ThunderAutoModeStepTrajectoryBehavior ThunderAutoMode::getTrajectoryBehavior(
     const std::map<std::string, ThunderAutoTrajectorySkeleton>& trajectories) const noexcept {
-  return GetStepSequenceTrajectoryBehavior(std::nullopt, steps, trajectories);
+  ThunderAutoModeStepTrajectoryBehaviorTreeNode tree =
+      GetStepSequenceTrajectoryBehaviorTree(std::nullopt, steps, trajectories);
+  return tree.behavior;
+}
+
+ThunderAutoModeStepTrajectoryBehaviorTreeNode ThunderAutoMode::getTrajectoryBehaviorTree(
+    const std::map<std::string, ThunderAutoTrajectorySkeleton>& trajectories) const noexcept {
+  return GetStepSequenceTrajectoryBehaviorTree(std::nullopt, steps, trajectories);
 }
 
 static void to_json(wpi::json& json, const ThunderAutoModeStepType& stepType) {

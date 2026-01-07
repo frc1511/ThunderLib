@@ -47,6 +47,12 @@ struct ThunderAutoModeStepTrajectoryBehavior {
   std::optional<frc::Pose2d> startPose, endPose;
 
   /**
+   * For branch steps only: the indices of the first and last steps that run trajectories, or std::nullopt if
+   * none do.
+   */
+  std::optional<std::pair<size_t, size_t>> trajectoryStepRange;
+
+  /**
    * Start steps may have conditional start poses, but must end at a single end pose.
    */
   bool isValidStartStep() const noexcept;
@@ -72,6 +78,12 @@ struct ThunderAutoModeStepTrajectoryBehavior {
   bool canFollow(const ThunderAutoModeStepTrajectoryBehavior& previousStepBehavior) const noexcept;
 };
 
+struct ThunderAutoModeStepTrajectoryBehaviorTreeNode {
+  ThunderAutoModeStepTrajectoryBehavior behavior;
+  std::vector<ThunderAutoModeStepTrajectoryBehaviorTreeNode> childrenVec;
+  std::map<int, ThunderAutoModeStepTrajectoryBehaviorTreeNode> childrenMap;
+};
+
 /**
  * Represents a step in a ThunderAuto mode.
  */
@@ -86,8 +98,12 @@ struct ThunderAutoModeStep {
   virtual ThunderAutoModeStepTrajectoryBehavior getTrajectoryBehavior(
       std::optional<frc::Pose2d> previousStepEndPose,
       const std::map<std::string, ThunderAutoTrajectorySkeleton>& trajectories) const noexcept {
-    return ThunderAutoModeStepTrajectoryBehavior{};
+    return getTrajectoryBehaviorTree(previousStepEndPose, trajectories).behavior;
   }
+
+  virtual ThunderAutoModeStepTrajectoryBehaviorTreeNode getTrajectoryBehaviorTree(
+      std::optional<frc::Pose2d> previousStepEndPose,
+      const std::map<std::string, ThunderAutoTrajectorySkeleton>& trajectories) const noexcept = 0;
 
  protected:
   ThunderAutoModeStep();
@@ -124,6 +140,14 @@ struct ThunderAutoModeActionStep final : public ThunderAutoModeStep {
     bool actionNamesMatch = (actionName == other.actionName);
     return actionNamesMatch;
   }
+
+  ThunderAutoModeStepTrajectoryBehaviorTreeNode getTrajectoryBehaviorTree(
+      std::optional<frc::Pose2d> previousStepEndPose,
+      const std::map<std::string, ThunderAutoTrajectorySkeleton>& trajectories) const noexcept override {
+    ThunderAutoModeStepTrajectoryBehaviorTreeNode treeNode;
+    treeNode.behavior.startPose = treeNode.behavior.endPose = previousStepEndPose;
+    return treeNode;
+  }
 };
 
 /**
@@ -151,6 +175,14 @@ struct ThunderAutoModeTrajectoryStep final : public ThunderAutoModeStep {
   ThunderAutoModeStepTrajectoryBehavior getTrajectoryBehavior(
       std::optional<frc::Pose2d> previousStepEndPose,
       const std::map<std::string, ThunderAutoTrajectorySkeleton>& trajectories) const noexcept override;
+
+  ThunderAutoModeStepTrajectoryBehaviorTreeNode getTrajectoryBehaviorTree(
+      std::optional<frc::Pose2d> previousStepEndPose,
+      const std::map<std::string, ThunderAutoTrajectorySkeleton>& trajectories) const noexcept override {
+    ThunderAutoModeStepTrajectoryBehaviorTreeNode treeNode;
+    treeNode.behavior = getTrajectoryBehavior(previousStepEndPose, trajectories);
+    return treeNode;
+  }
 };
 
 /**
@@ -182,7 +214,7 @@ struct ThunderAutoModeBoolBranchStep final : public ThunderAutoModeStep {
     return trueStepBranchesMatch && elseStepBranchesMatch && conditionNamesMatch;
   }
 
-  ThunderAutoModeStepTrajectoryBehavior getTrajectoryBehavior(
+  ThunderAutoModeStepTrajectoryBehaviorTreeNode getTrajectoryBehaviorTree(
       std::optional<frc::Pose2d> previousStepEndPose,
       const std::map<std::string, ThunderAutoTrajectorySkeleton>& trajectories) const noexcept override;
 };
@@ -217,7 +249,7 @@ struct ThunderAutoModeSwitchBranchStep final : public ThunderAutoModeStep {
     return caseBranchesMatch && defaultBranchesMatch && conditionNamesMatch;
   }
 
-  ThunderAutoModeStepTrajectoryBehavior getTrajectoryBehavior(
+  ThunderAutoModeStepTrajectoryBehaviorTreeNode getTrajectoryBehaviorTree(
       std::optional<frc::Pose2d> previousStepEndPose,
       const std::map<std::string, ThunderAutoTrajectorySkeleton>& trajectories) const noexcept override;
 };
@@ -369,6 +401,9 @@ struct ThunderAutoMode final {
   StepDirectory& findStepDirectoryAtPath(const ThunderAutoModeStepDirectoryPath& stepDirectoryPath);
 
   ThunderAutoModeStepTrajectoryBehavior getTrajectoryBehavior(
+      const std::map<std::string, ThunderAutoTrajectorySkeleton>& trajectories) const noexcept;
+
+  ThunderAutoModeStepTrajectoryBehaviorTreeNode getTrajectoryBehaviorTree(
       const std::map<std::string, ThunderAutoTrajectorySkeleton>& trajectories) const noexcept;
 };
 

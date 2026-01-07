@@ -168,6 +168,9 @@ TEST(ThunderAutoModeTests, VerifyContinuityGoodAutoMode) {
   ASSERT_FALSE(behavior.errorInfo);
   EXPECT_EQ(behavior.startPose, std::nullopt);
   EXPECT_EQ(behavior.endPose, frc::Pose2d(9_m, 10_m, 180_deg));
+  ASSERT_TRUE(behavior.trajectoryStepRange.has_value());
+  EXPECT_EQ(behavior.trajectoryStepRange->first, 1UL);
+  EXPECT_EQ(behavior.trajectoryStepRange->second, 4UL);
 }
 
 TEST(ThunderAutoModeTests, VerifyContinuityBadAutoMode) {
@@ -241,6 +244,9 @@ TEST(ThunderAutoModeTests, VerifyContinuityBadAutoMode) {
   ASSERT_TRUE(behavior.errorInfo.containsNonContinuousSequence);
   EXPECT_EQ(behavior.startPose, std::nullopt);
   EXPECT_EQ(behavior.endPose, std::nullopt);
+  ASSERT_TRUE(behavior.trajectoryStepRange.has_value());
+  EXPECT_EQ(behavior.trajectoryStepRange->first, 0UL);
+  EXPECT_EQ(behavior.trajectoryStepRange->second, 0UL);
 }
 
 static void VerifyThunderAutoModeStepPath(const ThunderAutoModeStepPath& actual,
