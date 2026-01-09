@@ -281,9 +281,23 @@ ThunderAutoModeStepTrajectoryBehaviorTreeNode ThunderAutoModeBoolBranchStep::get
 
   // If no trajectory gets run in either branch then the robot won't move from its last pose.
   if (!trueBranchBehavior.runsTrajectory) {
+    /**
+     * If this is the first step in the auto mode, then we assume that the branch which doesn't run a
+     * trajectory will start wherever the other branch ends.
+     */
+    if (!previousStepEndPose.has_value()) {
+      previousStepEndPose = elseBranchBehavior.endPose;
+    }
     trueBranchBehavior.startPose = trueBranchBehavior.endPose = previousStepEndPose;
   }
   if (!elseBranchBehavior.runsTrajectory) {
+    /**
+     * If this is the first step in the auto mode, then we assume that the branch which doesn't run a
+     * trajectory will start wherever the other branch ends.
+     */
+    if (!previousStepEndPose.has_value()) {
+      previousStepEndPose = trueBranchBehavior.endPose;
+    }
     elseBranchBehavior.startPose = elseBranchBehavior.endPose = previousStepEndPose;
   }
 
@@ -363,11 +377,38 @@ ThunderAutoModeStepTrajectoryBehaviorTreeNode ThunderAutoModeSwitchBranchStep::g
   combinedBehaviorTree.childrenVec.push_back(std::move(defaultBranchBehaviorTree));
   ThunderAutoModeStepTrajectoryBehavior& combinedBehavior = combinedBehaviorTree.behavior;
 
+  std::optional<frc::Pose2d> endPose = defaultBranchBehavior.endPose;
+  bool endPoseFound = endPose.has_value();
+
   for (const auto& [value, branch] : caseBranches) {
     combinedBehaviorTree.childrenMap[value] =
         GetStepSequenceTrajectoryBehaviorTree(previousStepEndPose, branch, trajectories);
 
     ThunderAutoModeStepTrajectoryBehavior& branchBehavior = combinedBehaviorTree.childrenMap[value].behavior;
+    if (branchBehavior.runsTrajectory) {
+      if (!endPoseFound) {
+        endPose = branchBehavior.endPose;
+        endPoseFound = true;
+      } else if (endPose != branchBehavior.endPose) {
+        endPose = std::nullopt;
+      }
+    }
+  }
+
+  /**
+   * If this is the first step in the auto mode, then we assume that branches which don't run trajectories
+   * will start wherever the other branches end.
+   */
+  if (!previousStepEndPose.has_value()) {
+    previousStepEndPose = endPose;
+    combinedBehavior.endPose = endPose;
+    if (!defaultBranchBehavior.runsTrajectory) {
+      defaultBranchBehavior.endPose = endPose;
+    }
+  }
+
+  for (auto& [value, branchBehaviorTree] : combinedBehaviorTree.childrenMap) {
+    ThunderAutoModeStepTrajectoryBehavior& branchBehavior = branchBehaviorTree.behavior;
 
     combinedBehavior.runsTrajectory |= branchBehavior.runsTrajectory;
 
