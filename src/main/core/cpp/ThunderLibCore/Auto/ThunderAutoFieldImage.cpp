@@ -5,6 +5,9 @@
 namespace thunder::core {
 
 static const Rect s_imageFieldBounds[]{
+    // 2026
+    Rect(0.1019332161, 0.1113063855, 1.0 - 0.1019332161, 1 - 0.1113063855),
+
     // 2025
     Rect(0.0795935557, 0.1139555361, 1.0 - 0.0795935557, 1.0 - 0.1139555361),
 
@@ -22,6 +25,9 @@ static const Rect s_imageFieldBounds[]{
 };
 
 static const Measurement2d s_fieldSizes[]{
+    // 2026
+    Measurement2d(16.541179_m, 8.081963_m),
+
     // 2025
     Measurement2d(17.548249_m, 8.077200_m),
 
@@ -47,6 +53,8 @@ const char* ThunderAutoBuiltinFieldImageToString(ThunderAutoBuiltinFieldImage bu
       return "2024";
     case FIELD_2025:
       return "2025";
+    case FIELD_2026:
+      return "2026";
     default:
       ThunderLibCoreUnreachable("Invalid Field Image Type");
   }
@@ -61,6 +69,8 @@ ThunderAutoBuiltinFieldImage StringToThunderAutoBuiltinFieldImage(std::string_vi
     return ThunderAutoBuiltinFieldImage::FIELD_2024;
   } else if (str == "2025") {
     return ThunderAutoBuiltinFieldImage::FIELD_2025;
+  } else if (str == "2026") {
+    return ThunderAutoBuiltinFieldImage::FIELD_2026;
   }
   return ThunderAutoBuiltinFieldImage::INVALID;
 }

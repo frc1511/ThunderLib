@@ -15,12 +15,13 @@ enum class ThunderAutoFieldImageType {
 };
 
 enum class ThunderAutoBuiltinFieldImage : size_t {
+  FIELD_2026,
   FIELD_2025,
   FIELD_2024,
   FIELD_2023,
   FIELD_2022,
-  LATEST = FIELD_2025,
   _COUNT,
+  LATEST = FIELD_2026,
   INVALID = _COUNT,
 };
 
