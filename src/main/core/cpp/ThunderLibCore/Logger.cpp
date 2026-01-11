@@ -11,6 +11,7 @@ namespace thunder::core {
 
 static const std::string kThunderLibCoreLoggerName = "ThunderLibCore";
 
+
 static std::mutex s_loggerMutex;
 static std::shared_ptr<spdlog::logger> s_thunderLibLogger;
 
@@ -127,7 +128,7 @@ void CleanupLogsDirectory(const std::filesystem::path& logsDir, size_t maxFiles)
     if (path.extension() != ".log")
       continue;
 
-    std::string stem = path.stem();
+    std::string stem = path.stem().string();
 
     /**
      * Make sure the name fits the Name_YYYY-MM-DD_HH-MM-SS.log format. If it runs into an error at any point,

@@ -19,11 +19,11 @@ constexpr T Lerp(T lower, T upper, double t) {
   return lower + (upper - lower) * t;
 }
 
-constexpr bool FloatEquals(float a, float b, float epsilon = 1e-6f) {
+inline bool FloatEquals(float a, float b, float epsilon = 1e-6f) {
   return std::abs(a - b) < epsilon;
 }
 
-constexpr bool DoubleEquals(double a, double b, double epsilon = 1e-6) {
+inline bool DoubleEquals(double a, double b, double epsilon = 1e-6) {
   return std::abs(a - b) < epsilon;
 }
 

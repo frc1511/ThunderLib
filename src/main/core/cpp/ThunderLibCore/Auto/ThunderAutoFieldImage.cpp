@@ -163,7 +163,7 @@ void ThunderAutoFieldImage::toJson(const std::filesystem::path& projectDirectory
       imageString = ThunderAutoBuiltinFieldImageToString(builtinImage());
       break;
     case CUSTOM: {
-      imageString = customImagePath();
+      imageString = customImagePath().string();
 
       std::string projectDirectoryStr = projectDirectory.string();
       if (imageString.starts_with(projectDirectoryStr)) {
