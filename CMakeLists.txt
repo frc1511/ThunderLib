@@ -70,6 +70,9 @@ option(BUILD_TESTS "Build tests" ON)
 option(BUILD_SHARED "Build shared libraries" OFF)
 
 option(BUILD_WITH_ASSERTIONS "Build with assertions" OFF) # ON for debug builds
+option(DOWNLOAD_WPILIB_BINARIES "Download prebuilt WPILib libraries" OFF) # ON for release builds
+set(DOWNLOAD_WPILIB_BINARIES_ARCH "" CACHE STRING "Architecture of WPILib binaries to download")
+set(DOWNLOAD_WPILIB_VERSION "2026.1.1" CACHE STRING "Version of WPILib repo/binaries to download")
 
 ###
 ### Platform
@@ -78,12 +81,15 @@ option(BUILD_WITH_ASSERTIONS "Build with assertions" OFF) # ON for debug builds
 if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
   set(THUNDERLIB_WINDOWS ON)
   list(APPEND THUNDERLIB_DEF_LIST "THUNDERLIB_WINDOWS=1")
+  set(DOWNLOAD_WPILIB_BINARIES_OS "windows")
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
   set(THUNDERLIB_MACOS ON)
   list(APPEND THUNDERLIB_DEF_LIST "THUNDERLIB_MACOS=1")
+  set(DOWNLOAD_WPILIB_BINARIES_OS "osx")
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
   set(THUNDERLIB_LINUX ON)
   list(APPEND THUNDERLIB_DEF_LIST "THUNDERLIB_LINUX=1")
+  set(DOWNLOAD_WPILIB_BINARIES_OS "linux")
 else()
   message(FATAL_ERROR "Unknown platform: ${CMAKE_SYSTEM_NAME}")
 endif()
@@ -120,6 +126,8 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
   set(THUNDERLIB_DEBUG ON)
   list(APPEND THUNDERLIB_DEF_LIST "THUNDERLIB_DEBUG")
   set(BUILD_WITH_ASSERTIONS ON)
+elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
+  set(DOWNLOAD_WPILIB ON)
 endif()
 
 if(BUILD_WITH_ASSERTIONS)
@@ -173,32 +181,107 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE ${LIB_SOURCES})
 ### Link WPILib libraries
 ###
 
-include(FetchContent)
-FetchContent_Declare(
-  allwpilib
-  GIT_REPOSITORY https://github.com/wpilibsuite/allwpilib.git
-  GIT_TAG v2026.0.0-alpha-1 # TODO: Update to 2026 release tag when available
-  GIT_SHALLOW TRUE
-)
+if(DOWNLOAD_WPILIB) 
+  if(NOT DOWNLOAD_WPILIB_BINARIES_ARCH)
+    # Check architecture.
+    if(THUNDERLIB_MACOS)
+      set(DOWNLOAD_WPILIB_BINARIES_ARCH "universal")
+    else()
+      if(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|AMD64|amd64")
+        set(DOWNLOAD_WPILIB_BINARIES_ARCH "x86-64")
+      elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64|ARM64|arm64")
+        set(DOWNLOAD_WPILIB_BINARIES_ARCH "arm64")
+      else()
+        message(FATAL_ERROR "No pre-built wpilib binaries available for target architecture '${CMAKE_SYSTEM_PROCESSOR}'")
+      endif()
+    endif()
+  endif()
 
-set(BUILD_SHARED_LIBS ${BUILD_SHARED} CACHE BOOL "" FORCE)
-set(WITH_JAVA OFF CACHE BOOL "" FORCE)
-set(WITH_DOCS OFF CACHE BOOL "" FORCE)
-set(WITH_CSCORE OFF CACHE BOOL "" FORCE)
-set(WITH_NTCORE ON CACHE BOOL "" FORCE)
-set(WITH_WPICAL OFF CACHE BOOL "" FORCE)
-set(WITH_WPIMATH ON CACHE BOOL "" FORCE)
-set(WITH_WPILIB OFF CACHE BOOL "" FORCE)
-set(WITH_EXAMPLES OFF CACHE BOOL "" FORCE)
-set(WITH_TESTS OFF CACHE BOOL "" FORCE)
-set(WITH_GUI OFF CACHE BOOL "" FORCE)
-set(WITH_SIMULATION_MODULES OFF CACHE BOOL "" FORCE)
-set(WITH_PROTOBUF ON CACHE BOOL "" FORCE)
-set(NO_WERROR ON CACHE BOOL "" FORCE)
 
-FetchContent_MakeAvailable(allwpilib)
+  set(WPILIB_DOWNLOAD_DIR "${CMAKE_CURRENT_BINARY_DIR}/wpilib_${DOWNLOAD_WPILIB_VERSION}")
+  string(REPLACE "." "_" WPILIB_DOWNLOAD_DIR ${WPILIB_DOWNLOAD_DIR})
 
-target_link_libraries(${CMAKE_PROJECT_NAME} PUBLIC wpiutil wpimath ntcore)
+  function(download_zip LIB_NAME LIB_URL LIB_DEST)
+    message(STATUS "Downloading ${LIB_URL}")
+    file(DOWNLOAD ${LIB_URL} ${LIB_DEST})
+    message(STATUS "Downloaded ${LIB_NAME}")
+  endfunction()
+
+  function(extract_zip LIB_NAME ZIP_DIR LIB_DEST)
+    message(STATUS "Extracting ${ZIP_DIR}")
+    file(ARCHIVE_EXTRACT INPUT "${ZIP_DIR}" DESTINATION "${LIB_DEST}")
+    message(STATUS "Extracted ${LIB_NAME}")
+  endfunction()
+
+  function(download_extract_lib LIB_NAME)
+    set(LIB_URL "https://frcmaven.wpi.edu/artifactory/release/edu/wpi/first/${LIB_NAME}/${LIB_NAME}-cpp/${DOWNLOAD_WPILIB_VERSION}/${LIB_NAME}-cpp-${DOWNLOAD_WPILIB_VERSION}-${DOWNLOAD_WPILIB_BINARIES_OS}${DOWNLOAD_WPILIB_BINARIES_ARCH}static.zip")
+    set(LIB_DEST "${WPILIB_DOWNLOAD_DIR}/${LIB_NAME}")
+
+    download_zip(${LIB_NAME} ${LIB_URL} "${LIB_DEST}.zip")
+    extract_zip(${LIB_NAME} "${LIB_DEST}.zip" ${LIB_DEST})
+  endfunction()
+
+  function(download_extract_headers LIB_NAME)
+    set(INC_URL "https://frcmaven.wpi.edu/artifactory/release/edu/wpi/first/${LIB_NAME}/${LIB_NAME}-cpp/${DOWNLOAD_WPILIB_VERSION}/${LIB_NAME}-cpp-${DOWNLOAD_WPILIB_VERSION}-headers.zip")
+    set(INC_DEST "${WPILIB_DOWNLOAD_DIR}/${LIB_NAME}_include")
+
+    download_zip(${LIB_NAME} ${INC_URL} "${INC_DEST}.zip")
+    extract_zip(${LIB_NAME} "${INC_DEST}.zip" ${INC_DEST})
+  endfunction()
+
+  set(WPILIB_MODULES "wpiutil;wpimath;wpinet;ntcore")
+  foreach(MODULE ${WPILIB_MODULES})
+    set(MODULE_LIB_DIR "${WPILIB_DOWNLOAD_DIR}/${MODULE}/${DOWNLOAD_WPILIB_BINARIES_OS}/${DOWNLOAD_WPILIB_BINARIES_ARCH}/static")
+    if(THUNDERLIB_WINDOWS)
+      set(MODULE_LIB_NAME "${MODULE}.lib")
+    else()
+      set(MODULE_LIB_NAME "lib${MODULE}.a")
+    endif()
+    if(NOT EXISTS "${MODULE_LIB_DIR}/${MODULE_LIB_NAME}")
+      download_extract_lib(${MODULE})
+    endif()
+    
+    if(NOT EXISTS "${WPILIB_DOWNLOAD_DIR}/${MODULE}_include")
+      download_extract_headers(${MODULE})
+    endif()
+
+    target_link_directories(${CMAKE_PROJECT_NAME} PUBLIC "${MODULE_LIB_DIR}")
+    target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC "${WPILIB_DOWNLOAD_DIR}/${MODULE}_include")
+
+    message(STATUS "Linking directory: ${MODULE_LIB_DIR}")
+    message(STATUS "Include directory: ${WPILIB_DOWNLOAD_DIR}/${MODULE}_include")
+
+    target_link_libraries(${CMAKE_PROJECT_NAME} PUBLIC ${MODULE})
+  endforeach()
+
+else()
+  include(FetchContent)
+  FetchContent_Declare(
+    allwpilib
+    GIT_REPOSITORY https://github.com/wpilibsuite/allwpilib.git
+    GIT_TAG v${DOWNLOAD_WPILIB_VERSION}
+    GIT_SHALLOW TRUE
+  )
+
+  set(BUILD_SHARED_LIBS ${BUILD_SHARED} CACHE BOOL "" FORCE)
+  set(WITH_JAVA OFF CACHE BOOL "" FORCE)
+  set(WITH_DOCS OFF CACHE BOOL "" FORCE)
+  set(WITH_CSCORE OFF CACHE BOOL "" FORCE)
+  set(WITH_NTCORE ON CACHE BOOL "" FORCE)
+  set(WITH_WPICAL OFF CACHE BOOL "" FORCE)
+  set(WITH_WPIMATH ON CACHE BOOL "" FORCE)
+  set(WITH_WPILIB OFF CACHE BOOL "" FORCE)
+  set(WITH_EXAMPLES OFF CACHE BOOL "" FORCE)
+  set(WITH_TESTS OFF CACHE BOOL "" FORCE)
+  set(WITH_GUI OFF CACHE BOOL "" FORCE)
+  set(WITH_SIMULATION_MODULES OFF CACHE BOOL "" FORCE)
+  set(WITH_PROTOBUF ON CACHE BOOL "" FORCE)
+  set(NO_WERROR ON CACHE BOOL "" FORCE)
+
+  FetchContent_MakeAvailable(allwpilib)
+
+  target_link_libraries(${CMAKE_PROJECT_NAME} PUBLIC wpiutil wpimath ntcore)
+endif()
 
 ###
 ### Build+Link spdlog
@@ -223,6 +306,15 @@ endif()
 
 target_link_libraries(spdlog PUBLIC wpiutil) # has fmtlib
 
+if (DOWNLOAD_WPILIB)
+  target_include_directories(spdlog PUBLIC "${WPILIB_DOWNLOAD_DIR}/wpiutil_include")
+  message(STATUS "spdlog include directory: ${WPILIB_DOWNLOAD_DIR}/wpiutil_include")
+endif()
+
+if(MSVC)
+  target_compile_options(spdlog PUBLIC /utf-8)
+endif()
+
 target_link_libraries(${CMAKE_PROJECT_NAME} PUBLIC spdlog)
 
 ###
@@ -231,6 +323,8 @@ target_link_libraries(${CMAKE_PROJECT_NAME} PUBLIC spdlog)
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
   target_compile_options(${CMAKE_PROJECT_NAME} PRIVATE -Wall -Wextra)# -Werror -Wpedantic)
+elseif(MSVC)
+  target_compile_options(${CMAKE_PROJECT_NAME} PUBLIC /Zc:preprocessor /utf-8)
 endif()
 
 ###
