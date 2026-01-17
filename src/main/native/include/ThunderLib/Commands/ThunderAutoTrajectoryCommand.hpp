@@ -24,7 +24,7 @@ class ThunderAutoTrajectoryCommand : public frc2::CommandHelper<frc2::Command, T
    * Constructs a ThunderAutoTrajectoryCommand.
    *
    * @param trajectoryName The name of the trajectory to follow.
-   * @param project The ThunderAutoProject that contains the trajectory.
+   * @param project The ThunderAutoProject that contains the trajectory and any referenced actions.
    * @param properties The TrajectoryRunnerProperties to use for following the trajectory.
    */
   ThunderAutoTrajectoryCommand(const std::string& trajectoryName,
@@ -47,7 +47,8 @@ class ThunderAutoTrajectoryCommand : public frc2::CommandHelper<frc2::Command, T
 
   frc::Timer m_timer;
 
-  std::optional<frc::DriverStation::Alliance> m_alliance;  // Checked during initialization, not updated afterward
+  std::optional<frc::DriverStation::Alliance>
+      m_alliance;  // Checked during initialization, not updated afterward
 
   enum class ExecutionState {
     START_ACTIONS,
@@ -105,9 +106,9 @@ class ThunderAutoTrajectoryCommand : public frc2::CommandHelper<frc2::Command, T
                                              FieldSymmetry fieldSymmetry);
 
   static frc::Pose2d flipPoseForAlliance(const frc::Pose2d& originalPose,
-                                                std::optional<frc::DriverStation::Alliance> alliance,
-                                                FieldSymmetry fieldSymmetry,
-                                                FieldDimensions fieldDimensions);
+                                         std::optional<frc::DriverStation::Alliance> alliance,
+                                         FieldSymmetry fieldSymmetry,
+                                         FieldDimensions fieldDimensions);
 };
 
 }  // namespace thunder

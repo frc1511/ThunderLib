@@ -22,12 +22,17 @@ import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 
+/**
+ * A command that follows a ThunderAuto Trajectory using the specified
+ * ThunderTrajectoryRunnerProperties.
+ */
 public class ThunderAutoTrajectoryCommand extends Command {
   /**
    * Constructs a ThunderAutoTrajectoryCommand.
    *
    * @param trajectoryName The name of the trajectory to follow.
-   * @param project        The ThunderAutoProject that contains the trajectory.
+   * @param project        The ThunderAutoProject that contains the trajectory and
+   *                       any referenced actions.
    * @param properties     The ThunderTrajectoryRunnerProperties to use for
    *                       following the trajectory.
    */
@@ -177,7 +182,7 @@ public class ThunderAutoTrajectoryCommand extends Command {
     return m_executionState == ExecutionState.FINISHED;
   }
 
-  private boolean m_hasTrajectory;
+  private boolean m_hasTrajectory = false;
   private ThunderAutoTrajectory m_trajectory;
   private ThunderAutoProject m_project;
   private ThunderTrajectoryRunnerProperties m_runnerProperties;
@@ -226,7 +231,7 @@ public class ThunderAutoTrajectoryCommand extends Command {
   private Iterator<PositionedActionCommand> m_nextAction;
   private Optional<PositionedActionCommand> m_currentAction = Optional.empty();
 
-  private HashSet<PositionedActionCommand> m_runningActions;
+  private HashSet<PositionedActionCommand> m_runningActions = new HashSet<>();
 
   private void beginStartAction() {
     m_executionState = ExecutionState.START_ACTION;
@@ -330,7 +335,7 @@ public class ThunderAutoTrajectoryCommand extends Command {
     FieldDimensions fieldDimensions = m_project.getFieldDimensions();
 
     Pose2d currentPose = m_runnerProperties.getPoseSupplier().get();
-    Pose2d targetPose = flipPoseForAlliance(currentPose, m_alliance, fieldSymmetry, fieldDimensions);
+    Pose2d targetPose = flipPoseForAlliance(state.getPose(), m_alliance, fieldSymmetry, fieldDimensions);
     CanonicalAngle heading = flipAngleForAlliance(new CanonicalAngle(state.getHeading()), m_alliance, fieldSymmetry);
 
     ChassisSpeeds velocities = m_runnerProperties.getHolonomicDriveController().calculate(

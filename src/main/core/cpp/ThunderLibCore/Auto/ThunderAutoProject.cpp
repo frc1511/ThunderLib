@@ -370,6 +370,7 @@ ThunderAutoProjectState::ThunderAutoProjectState(const ThunderAutoProjectState& 
       trajectories(other.trajectories),
       autoModes(other.autoModes),
       waypointLinks(other.waypointLinks),
+      trajectoryEndBehaviorLinks(other.trajectoryEndBehaviorLinks),
       editorState(other.editorState) {}
 
 ThunderAutoProjectState& ThunderAutoProjectState::operator=(const ThunderAutoProjectState& other) noexcept {
@@ -382,6 +383,7 @@ ThunderAutoProjectState& ThunderAutoProjectState::operator=(const ThunderAutoPro
   trajectories = other.trajectories;
   autoModes = other.autoModes;
   waypointLinks = other.waypointLinks;
+  trajectoryEndBehaviorLinks = other.trajectoryEndBehaviorLinks;
   editorState = other.editorState;
   return *this;
 }
@@ -439,10 +441,15 @@ void ThunderAutoProjectState::fromJsonCurrentVersion(const wpi::json& json) {
   json.at("actions").get_to(m_actions);
 
   json.at("waypoint_links").get_to(waypointLinks);
+  if (json.contains("trajectory_end_behavior_links")) {
+    json.at("trajectory_end_behavior_links").get_to(trajectoryEndBehaviorLinks);
+  }
+
   json.at("editor_state").get_to(editorState);
 
   validateActionsAndTrajectories();
   validateWaypointLinks();
+  validateTrajectoryEndBehaviorLinks();
 }
 
 void ThunderAutoProjectState::validateActionsAndTrajectories() {
@@ -595,6 +602,24 @@ void ThunderAutoProjectState::validateWaypointLinks() {
             "Trajectory '{}' contains reference to non-existent waypoint link '{}' at waypoint ({}, {})",
             name, linkName, pos.x(), pos.y());
       }
+    }
+  }
+}
+
+void ThunderAutoProjectState::validateTrajectoryEndBehaviorLinks() {
+  for (const auto& [name, skeleton] : trajectories) {
+    const std::string& startBehaviorLinkName = skeleton.startBehaviorLinkName();
+    if (!startBehaviorLinkName.empty() && !trajectoryEndBehaviorLinks.contains(startBehaviorLinkName)) {
+      throw RuntimeError::Construct(
+          "Trajectory '{}' contains reference to non-existent trajectory start behavior link '{}'", name,
+          startBehaviorLinkName);
+    }
+
+    const std::string& endBehaviorLinkName = skeleton.endBehaviorLinkName();
+    if (!endBehaviorLinkName.empty() && !trajectoryEndBehaviorLinks.contains(endBehaviorLinkName)) {
+      throw RuntimeError::Construct(
+          "Trajectory '{}' contains reference to non-existent trajectory end behavior link '{}'", name,
+          endBehaviorLinkName);
     }
   }
 }
@@ -895,7 +920,7 @@ void ThunderAutoProjectState::trajectorySelect(const std::string& trajectoryName
   trajectoryEditorState.currentTrajectoryName = trajectoryName;
 }
 
-ThunderAutoTrajectorySkeleton& ThunderAutoProjectState::currentTrajectory() {
+const std::string& ThunderAutoProjectState::currentTrajectoryName() const {
   if (editorState.view != ThunderAutoEditorState::View::TRAJECTORY) {
     throw LogicError::Construct("Cannot get current trajectory: not in trajectory editor view");
   }
@@ -904,6 +929,11 @@ ThunderAutoTrajectorySkeleton& ThunderAutoProjectState::currentTrajectory() {
   if (trajectoryName.empty()) {
     throw LogicError::Construct("Cannot get current trajectory: no trajectory selected");
   }
+  return trajectoryName;
+}
+
+ThunderAutoTrajectorySkeleton& ThunderAutoProjectState::currentTrajectory() {
+  const std::string& trajectoryName = currentTrajectoryName();
 
   auto skeletonIt = trajectories.find(trajectoryName);
   if (skeletonIt == trajectories.end()) {
@@ -915,14 +945,7 @@ ThunderAutoTrajectorySkeleton& ThunderAutoProjectState::currentTrajectory() {
 }
 
 const ThunderAutoTrajectorySkeleton& ThunderAutoProjectState::currentTrajectory() const {
-  if (editorState.view != ThunderAutoEditorState::View::TRAJECTORY) {
-    throw LogicError::Construct("Cannot get current trajectory: not in trajectory editor view");
-  }
-
-  const std::string& trajectoryName = editorState.trajectoryEditorState.currentTrajectoryName;
-  if (trajectoryName.empty()) {
-    throw LogicError::Construct("Cannot get current trajectory: no trajectory selected");
-  }
+  const std::string& trajectoryName = currentTrajectoryName();
 
   auto skeletonIt = trajectories.find(trajectoryName);
   if (skeletonIt == trajectories.end()) {
@@ -1048,6 +1071,7 @@ bool ThunderAutoProjectState::currentTrajectoryDeleteSelectedItem() {
     case WAYPOINT:
       skeleton.removePoint(selectionIndex);  // Bounds checking is handled by skeleton.
       numItems = skeleton.numPoints();
+      currentTrajectoryUpdateEndBehaviorFromLinks();
       break;
     case ACTION: {
       ThunderAutoPositionedTrajectoryItemList<ThunderAutoTrajectoryAction>& actions = skeleton.actions();
@@ -1154,38 +1178,127 @@ bool ThunderAutoProjectState::currentTrajectoryIncrementSelectedItemIndex(bool f
   return false;
 }
 
-void ThunderAutoProjectState::trajectoryUpdateLinkedWaypointsFromSelected() {
+void ThunderAutoProjectState::trajectoryUpdateAllLinkedWaypointPositionsFromSelectedWaypoint() {
   // This can be done more efficiently if we store more information about links. Not a big deal right now
   // because trajectories aren't very long.
 
-  const ThunderAutoTrajectorySkeletonWaypoint& selectedPoint = currentTrajectorySelectedWaypoint();
-  if (!selectedPoint.isLinked())
-    return;
+  ThunderAutoTrajectorySkeleton& selectedSkeleton = currentTrajectory();
 
-  const std::string_view selectedPointLinkName = selectedPoint.linkName();
+  if (editorState.trajectoryEditorState.trajectorySelection !=
+      ThunderAutoTrajectoryEditorState::TrajectorySelection::WAYPOINT) {
+    throw LogicError::Construct("Cannot get selected waypoint: no waypoint selected");
+  }
 
-  for (auto& [name, skeleton] : trajectories) {
-    const bool isCurrentTrajectory = (name == editorState.trajectoryEditorState.currentTrajectoryName);
+  ThunderAutoTrajectorySkeletonWaypoint& selectedPoint =
+      selectedSkeleton.getPoint(editorState.trajectoryEditorState.selectionIndex);
+  const size_t selectedPointIndex = editorState.trajectoryEditorState.selectionIndex;
+  const Point2d selectedPointPosition = selectedPoint.position();
 
-    size_t pointIndex = 0;
-    for (auto pointIt = skeleton.begin(); pointIt != skeleton.cend(); pointIt++, pointIndex++) {
-      if (isCurrentTrajectory && pointIndex == editorState.trajectoryEditorState.selectionIndex)
-        continue;
+  // Waypoint links
 
-      ThunderAutoTrajectorySkeletonWaypoint& point = *pointIt;
+  if (selectedPoint.isLinked()) {
+    const std::string_view selectedPointLinkName = selectedPoint.linkName();
 
-      const bool arePointsLinked = point.linkName() == selectedPointLinkName;
-      if (arePointsLinked) {
-        point.setPosition(selectedPoint.position());
+    for (auto& [name, skeleton] : trajectories) {
+      const bool isCurrentTrajectory = (name == editorState.trajectoryEditorState.currentTrajectoryName);
+
+      size_t pointIndex = 0;
+      for (auto pointIt = skeleton.begin(); pointIt != skeleton.cend(); pointIt++, pointIndex++) {
+        if (isCurrentTrajectory && pointIndex == selectedPointIndex)
+          continue;
+
+        ThunderAutoTrajectorySkeletonWaypoint& point = *pointIt;
+
+        const bool arePointsLinked = point.linkName() == selectedPointLinkName;
+        if (arePointsLinked) {
+          point.setPosition(selectedPointPosition);
+        }
+      }
+    }
+  }
+
+  ThunderLibCoreAssert(selectedSkeleton.numPoints() >= 2);
+
+  // Trajectory start/end behavior links
+
+  if (selectedPointIndex == 0 && selectedSkeleton.hasStartBehaviorLink()) {
+    const std::string_view linkName = selectedSkeleton.startBehaviorLinkName();
+
+    for (auto& [name, skeleton] : trajectories) {
+      const bool isCurrentTrajectory = (name == editorState.trajectoryEditorState.currentTrajectoryName);
+
+      if (!isCurrentTrajectory && skeleton.startBehaviorLinkName() == linkName) {
+        skeleton.front().setPosition(selectedPointPosition);
+      }
+      if (skeleton.endBehaviorLinkName() == linkName) {
+        skeleton.back().setPosition(selectedPointPosition);
+      }
+    }
+  } else if (selectedPointIndex == selectedSkeleton.numPoints() - 1 &&
+             selectedSkeleton.hasEndBehaviorLink()) {
+    const std::string_view linkName = selectedSkeleton.endBehaviorLinkName();
+
+    for (auto& [name, skeleton] : trajectories) {
+      const bool isCurrentTrajectory = (name == editorState.trajectoryEditorState.currentTrajectoryName);
+
+      if (skeleton.startBehaviorLinkName() == linkName) {
+        skeleton.front().setPosition(selectedPointPosition);
+      }
+      if (!isCurrentTrajectory && skeleton.endBehaviorLinkName() == linkName) {
+        skeleton.back().setPosition(selectedPointPosition);
       }
     }
   }
 }
 
-void ThunderAutoProjectState::trajectoryUpdateSelectedWaypointFromLink() {
+void ThunderAutoProjectState::trajectoryUpdateAllLinkedTrajectoryEndBehaviorsFromCurrentTrajectoryEndBehavior(
+    bool updateFromStartBehavior,
+    bool updateFromEndBehavior) {
+  const ThunderAutoTrajectorySkeleton& selectedSkeleton = currentTrajectory();
+
+  if (updateFromStartBehavior && selectedSkeleton.hasStartBehaviorLink()) {
+    const std::string_view linkName = selectedSkeleton.startBehaviorLinkName();
+    const Point2d linkPosition = selectedSkeleton.front().position();
+    const CanonicalAngle linkRotation = selectedSkeleton.startRotation();
+
+    for (auto& [name, skeleton] : trajectories) {
+      const bool isCurrentTrajectory = (name == editorState.trajectoryEditorState.currentTrajectoryName);
+
+      if (!isCurrentTrajectory && skeleton.startBehaviorLinkName() == linkName) {
+        skeleton.front().setPosition(linkPosition);
+        skeleton.setStartRotation(linkRotation);
+      }
+      if (skeleton.endBehaviorLinkName() == linkName) {
+        skeleton.back().setPosition(linkPosition);
+        skeleton.setEndRotation(linkRotation);
+      }
+    }
+  }
+
+  if (updateFromEndBehavior && selectedSkeleton.hasEndBehaviorLink()) {
+    const std::string_view linkName = selectedSkeleton.endBehaviorLinkName();
+    const Point2d linkPosition = selectedSkeleton.back().position();
+    const CanonicalAngle linkRotation = selectedSkeleton.endRotation();
+
+    for (auto& [name, skeleton] : trajectories) {
+      const bool isCurrentTrajectory = (name == editorState.trajectoryEditorState.currentTrajectoryName);
+
+      if (skeleton.startBehaviorLinkName() == linkName) {
+        skeleton.front().setPosition(linkPosition);
+        skeleton.setStartRotation(linkRotation);
+      }
+      if (!isCurrentTrajectory && skeleton.endBehaviorLinkName() == linkName) {
+        skeleton.back().setPosition(linkPosition);
+        skeleton.setEndRotation(linkRotation);
+      }
+    }
+  }
+}
+
+bool ThunderAutoProjectState::currentTrajectoryUpdateSelectedWaypointFromLink() {
   ThunderAutoTrajectorySkeletonWaypoint& selectedPoint = currentTrajectorySelectedWaypoint();
   if (!selectedPoint.isLinked())
-    return;
+    return false;
 
   const std::string_view selectedPointLinkName = selectedPoint.linkName();
 
@@ -1202,10 +1315,61 @@ void ThunderAutoProjectState::trajectoryUpdateSelectedWaypointFromLink() {
       const bool arePointsLinked = point.linkName() == selectedPointLinkName;
       if (arePointsLinked) {
         selectedPoint.setPosition(point.position());
-        return;
+        return true;
       }
     }
   }
+  return false;
+}
+
+bool ThunderAutoProjectState::currentTrajectoryUpdateEndBehaviorFromLinks() {
+  ThunderAutoTrajectorySkeleton& selectedSkeleton = currentTrajectory();
+
+  bool updated = false;
+
+  // Update front
+  if (selectedSkeleton.hasStartBehaviorLink()) {
+    const std::string_view linkName = selectedSkeleton.startBehaviorLinkName();
+
+    for (const auto& [name, skeleton] : trajectories) {
+      const bool isCurrentTrajectory = (name == editorState.trajectoryEditorState.currentTrajectoryName);
+
+      if (!isCurrentTrajectory && skeleton.startBehaviorLinkName() == linkName) {
+        selectedSkeleton.front().setPosition(skeleton.front().position());
+        selectedSkeleton.setStartRotation(skeleton.startRotation());
+        updated = true;
+        break;
+      } else if (skeleton.endBehaviorLinkName() == linkName) {
+        selectedSkeleton.front().setPosition(skeleton.back().position());
+        selectedSkeleton.setStartRotation(skeleton.endRotation());
+        updated = true;
+        break;
+      }
+    }
+  }
+
+  // Update back
+  if (selectedSkeleton.hasEndBehaviorLink()) {
+    const std::string_view linkName = selectedSkeleton.endBehaviorLinkName();
+
+    for (const auto& [name, skeleton] : trajectories) {
+      const bool isCurrentTrajectory = (name == editorState.trajectoryEditorState.currentTrajectoryName);
+
+      if (skeleton.startBehaviorLinkName() == linkName) {
+        selectedSkeleton.back().setPosition(skeleton.front().position());
+        selectedSkeleton.setEndRotation(skeleton.startRotation());
+        updated = true;
+        break;
+      } else if (!isCurrentTrajectory && skeleton.endBehaviorLinkName() == linkName) {
+        selectedSkeleton.back().setPosition(skeleton.back().position());
+        selectedSkeleton.setEndRotation(skeleton.endRotation());
+        updated = true;
+        break;
+      }
+    }
+  }
+
+  return updated;
 }
 
 void ThunderAutoProjectState::trajectoryDelete(const std::string& trajectoryName) {
@@ -1608,9 +1772,13 @@ void ThunderAutoProjectState::autoModeDuplicate(const std::string& oldAutoModeNa
 
 static void to_json(wpi::json& json, const ThunderAutoProjectState& state) noexcept {
   json = wpi::json{
-      {"trajectories", state.trajectories},    {"auto_modes", state.autoModes},
-      {"actions_order", state.actionsOrder},   {"actions", state.actions},
-      {"waypoint_links", state.waypointLinks}, {"editor_state", state.editorState},
+      {"trajectories", state.trajectories},
+      {"auto_modes", state.autoModes},
+      {"actions_order", state.actionsOrder},
+      {"actions", state.actions},
+      {"waypoint_links", state.waypointLinks},
+      {"trajectory_end_behavior_links", state.trajectoryEndBehaviorLinks},
+      {"editor_state", state.editorState},
   };
 }
 

@@ -27,11 +27,10 @@ jobject Pose2dConstruct(JNIEnv* env, jdouble xMeters, jdouble yMeters, jobject R
 bool LoadChassisSpeedsClass(JNIEnv* env);
 void UnloadChassisSpeedsClass(JNIEnv* env);
 
-jobject ChassisSpeedsConstruct(
-    JNIEnv* env,
-    jdouble vxMetersPerSecond,
-    jdouble vyMetersPerSecond,
-    jdouble omegaRadiansPerSecond);
+jobject ChassisSpeedsConstruct(JNIEnv* env,
+                               jdouble vxMetersPerSecond,
+                               jdouble vyMetersPerSecond,
+                               jdouble omegaRadiansPerSecond);
 
 // edu.wpi.first.math.Pair
 

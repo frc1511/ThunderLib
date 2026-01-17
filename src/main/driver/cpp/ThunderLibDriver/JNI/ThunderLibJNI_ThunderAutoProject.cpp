@@ -19,10 +19,9 @@ jlong Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject_1construct(JNIEn
  * Method:    ThunderAutoProject_constructWithPath
  * Signature: (Ljava/lang/String;)J
  */
-jlong Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject_1constructWithPath(
-    JNIEnv* env,
-    jclass,
-    jstring projectPathJStr) {
+jlong Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject_1constructWithPath(JNIEnv* env,
+                                                                                   jclass,
+                                                                                   jstring projectPathJStr) {
   std::string projectPath = JStringToStdString(env, projectPathJStr);
   driver::ThunderAutoProject* project = new driver::ThunderAutoProject(projectPath);
   return reinterpret_cast<jlong>(project);
@@ -34,8 +33,8 @@ jlong Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject_1constructWithPa
  * Signature: (J)V
  */
 void Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject_1delete(JNIEnv* env,
-                                                                           jclass,
-                                                                           jlong projectHandle) {
+                                                                       jclass,
+                                                                       jlong projectHandle) {
   if (!projectHandle)
     return;
 
@@ -49,9 +48,9 @@ void Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject_1delete(JNIEnv* e
  * Signature: (JLjava/lang/String;)Z
  */
 jboolean Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject_1load(JNIEnv* env,
-                                                                             jclass,
-                                                                             jlong projectHandle,
-                                                                             jstring projectPathJStr) {
+                                                                         jclass,
+                                                                         jlong projectHandle,
+                                                                         jstring projectPathJStr) {
   if (!projectHandle)
     return false;
 
@@ -82,8 +81,8 @@ jboolean Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject_1discoverAndL
  * Signature: (J)Z
  */
 jboolean Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject_1isLoaded(JNIEnv* env,
-                                                                                 jclass,
-                                                                                 jlong projectHandle) {
+                                                                             jclass,
+                                                                             jlong projectHandle) {
   if (!projectHandle)
     return false;
 
@@ -97,8 +96,8 @@ jboolean Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject_1isLoaded(JNI
  * Signature: (J)Ljava/lang/String;
  */
 jstring Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject_1getName(JNIEnv* env,
-                                                                               jclass,
-                                                                               jlong projectHandle) {
+                                                                           jclass,
+                                                                           jlong projectHandle) {
   if (!projectHandle)
     return env->NewStringUTF("");
 
@@ -113,9 +112,9 @@ jstring Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject_1getName(JNIEn
  * Signature: (JLjava/lang/String;)Z
  */
 jboolean Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject_1hasAction(JNIEnv* env,
-                                                                                  jclass,
-                                                                                  jlong projectHandle,
-                                                                                  jstring actionNameJStr) {
+                                                                              jclass,
+                                                                              jlong projectHandle,
+                                                                              jstring actionNameJStr) {
   if (!projectHandle)
     return false;
 
@@ -129,11 +128,10 @@ jboolean Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject_1hasAction(JN
  * Method:    ThunderAutoProject_isActionCommand
  * Signature: (JLjava/lang/String;)Z
  */
-jboolean Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject_1isActionCommand(
-    JNIEnv* env,
-    jclass,
-    jlong projectHandle,
-    jstring actionNameJStr) {
+jboolean Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject_1isActionCommand(JNIEnv* env,
+                                                                                    jclass,
+                                                                                    jlong projectHandle,
+                                                                                    jstring actionNameJStr) {
   if (!projectHandle)
     return false;
 
@@ -153,11 +151,10 @@ jboolean Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject_1isActionComm
  * Method:    ThunderAutoProject_isActionGroup
  * Signature: (JLjava/lang/String;)Z
  */
-jboolean Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject_1isActionGroup(
-    JNIEnv* env,
-    jclass,
-    jlong projectHandle,
-    jstring actionNameJStr) {
+jboolean Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject_1isActionGroup(JNIEnv* env,
+                                                                                  jclass,
+                                                                                  jlong projectHandle,
+                                                                                  jstring actionNameJStr) {
   if (!projectHandle)
     return false;
 
@@ -179,11 +176,10 @@ jboolean Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject_1isActionGrou
  * Method:    ThunderAutoProject_getActionGroup
  * Signature: (JLjava/lang/String;)Ljava/util/ArrayList;
  */
-jobject Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject_1getActionGroup(
-    JNIEnv* env,
-    jclass,
-    jlong projectHandle,
-    jstring actionNameJStr) {
+jobject Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject_1getActionGroup(JNIEnv* env,
+                                                                                  jclass,
+                                                                                  jlong projectHandle,
+                                                                                  jstring actionNameJStr) {
   jobject arrayList = ArrayListConstruct(env);
   if (!projectHandle)
     return arrayList;
@@ -261,11 +257,10 @@ jboolean Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject_1isConcurrent
  * Method:    ThunderAutoProject_getTrajectory
  * Signature: (JLjava/lang/String;)J
  */
-jlong Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject_1getTrajectory(
-    JNIEnv* env,
-    jclass,
-    jlong projectHandle,
-    jstring trajectoryNameJStr) {
+jlong Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject_1getTrajectory(JNIEnv* env,
+                                                                               jclass,
+                                                                               jlong projectHandle,
+                                                                               jstring trajectoryNameJStr) {
   if (!projectHandle)
     return 0;
 
@@ -299,10 +294,9 @@ jboolean Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject_1hasTrajector
  * Method:    ThunderAutoProject_getTrajectoryNames
  * Signature: (J)Ljava/util/HashSet;
  */
-jobject Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject_1getTrajectoryNames(
-    JNIEnv* env,
-    jclass,
-    jlong projectHandle) {
+jobject Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject_1getTrajectoryNames(JNIEnv* env,
+                                                                                      jclass,
+                                                                                      jlong projectHandle) {
   jobject hashSet = HashSetConstruct(env);
   if (!projectHandle)
     return hashSet;
@@ -324,9 +318,9 @@ jobject Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject_1getTrajectory
  * Signature: (JLjava/lang/String;)J
  */
 jlong Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject_1getAutoMode(JNIEnv* env,
-                                                                                 jclass,
-                                                                                 jlong projectHandle,
-                                                                                 jstring autoModeNameJStr) {
+                                                                             jclass,
+                                                                             jlong projectHandle,
+                                                                             jstring autoModeNameJStr) {
   if (!projectHandle)
     return 0;
 
@@ -341,11 +335,10 @@ jlong Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject_1getAutoMode(JNI
  * Method:    ThunderAutoProject_hasAutoMode
  * Signature: (JLjava/lang/String;)Z
  */
-jboolean Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject_1hasAutoMode(
-    JNIEnv* env,
-    jclass,
-    jlong projectHandle,
-    jstring autoModeNameJStr) {
+jboolean Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject_1hasAutoMode(JNIEnv* env,
+                                                                                jclass,
+                                                                                jlong projectHandle,
+                                                                                jstring autoModeNameJStr) {
   if (!projectHandle)
     return false;
 
@@ -360,8 +353,8 @@ jboolean Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject_1hasAutoMode(
  * Signature: (J)Ljava/util/HashSet;
  */
 jobject Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject_1getAutoModeNames(JNIEnv* env,
-                                                                                        jclass,
-                                                                                        jlong projectHandle) {
+                                                                                    jclass,
+                                                                                    jlong projectHandle) {
   jobject hashSet = HashSetConstruct(env);
   if (!projectHandle)
     return hashSet;
@@ -381,8 +374,9 @@ jobject Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject_1getAutoModeNa
  * Method:    ThunderAutoProject_getFieldSymmetry
  * Signature: (J)Lcom/thunder/lib/trajectory/FieldSymmetry;
  */
-jobject Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject_1getFieldSymmetry
-  (JNIEnv * env, jclass, jlong projectHandle) {
+jobject Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject_1getFieldSymmetry(JNIEnv* env,
+                                                                                    jclass,
+                                                                                    jlong projectHandle) {
   if (!projectHandle)
     return 0;
 
@@ -396,10 +390,9 @@ jobject Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject_1getFieldSymme
  * Method:    ThunderAutoProject_getFieldDimensions
  * Signature: (J)Lcom/thunder/lib/trajectory/FieldDimensions;
  */
-jobject Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject_1getFieldDimensions(
-    JNIEnv* env,
-    jclass,
-    jlong projectHandle) {
+jobject Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject_1getFieldDimensions(JNIEnv* env,
+                                                                                      jclass,
+                                                                                      jlong projectHandle) {
   jdouble width = 0.0, length = 0.0;
 
   if (projectHandle) {
@@ -418,11 +411,10 @@ jobject Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject_1getFieldDimen
  * Method:    ThunderAutoProject_setRemoteUpdatesEnabled
  * Signature: (JZ)V
  */
-void Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject_1setRemoteUpdatesEnabled(
-    JNIEnv* env,
-    jclass,
-    jlong projectHandle,
-    jboolean enabled) {
+void Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject_1setRemoteUpdatesEnabled(JNIEnv* env,
+                                                                                        jclass,
+                                                                                        jlong projectHandle,
+                                                                                        jboolean enabled) {
   if (!projectHandle)
     return;
 
@@ -436,8 +428,8 @@ void Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject_1setRemoteUpdates
  * Signature: (J)V
  */
 void Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject_1enableRemoteUpdates(JNIEnv* env,
-                                                                                        jclass,
-                                                                                        jlong projectHandle) {
+                                                                                    jclass,
+                                                                                    jlong projectHandle) {
   if (!projectHandle)
     return;
 
@@ -450,10 +442,9 @@ void Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject_1enableRemoteUpda
  * Method:    ThunderAutoProject_disableRemoteUpdates
  * Signature: (J)V
  */
-void Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject_1disableRemoteUpdates(
-    JNIEnv* env,
-    jclass,
-    jlong projectHandle) {
+void Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject_1disableRemoteUpdates(JNIEnv* env,
+                                                                                     jclass,
+                                                                                     jlong projectHandle) {
   if (!projectHandle)
     return;
 

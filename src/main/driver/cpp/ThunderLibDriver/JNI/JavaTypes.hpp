@@ -69,9 +69,34 @@ class RunnableWrapper {
   JNIEnv* m_env = nullptr;
   jobject m_runnable = nullptr;
 
+  jclass m_runnableClass = nullptr;
+  jmethodID m_runMethod = nullptr;
+
  public:
   RunnableWrapper(JNIEnv* env, jobject runnable);
   ~RunnableWrapper();
 
+  JNIEnv* getEnv() const { return m_env; }
   void run();
+};
+
+// java.util.function.Consumer<T>
+
+#define JAVA_UTIL_FUNCTION_CONSUMER_SIGNATURE "java/util/function/Consumer"
+
+// We don't need to make consumers right now, just accept existing ones.
+
+class ConsumerWrapper {
+  JNIEnv* m_env = nullptr;
+  jobject m_consumer = nullptr;
+
+  jclass m_consumerClass = nullptr;
+  jmethodID m_acceptMethod = nullptr;
+
+ public:
+  ConsumerWrapper(JNIEnv* env, jobject consumer);
+  ~ConsumerWrapper();
+
+  JNIEnv* getEnv() const { return m_env; }
+  void accept(jobject obj);
 };

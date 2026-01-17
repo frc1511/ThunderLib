@@ -31,10 +31,14 @@ static const Measurement2d s_fieldSizes[]{
     // 2025
     Measurement2d(17.548249_m, 8.077200_m),
 
-    // 2022-2024 (TODO: Measure these better!)
-    Measurement2d(16.54175_m, 8.0137_m),
-    Measurement2d(16.54175_m, 8.0137_m),
-    Measurement2d(16.54175_m, 8.0137_m),
+    // 2024
+    Measurement2d(16.542_m, 8.211_m),
+
+    // 2023
+    Measurement2d(16.542_m, 8.014_m),
+
+    // 2022
+    Measurement2d(16.459_m, 8.230_m),
 
     // INVALID
     Measurement2d(0.0_m, 0.0_m),

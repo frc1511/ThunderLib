@@ -20,6 +20,8 @@ bool LoadRotation2dClass(JNIEnv* env) {
 
   s_rotation2dClass = static_cast<jclass>(env->NewGlobalRef(rotation2dClass));
 
+  env->DeleteLocalRef(rotation2dClass);
+
   // new Rotation2d(double valueRadians)
   s_rotation2dConstructor = env->GetMethodID(s_rotation2dClass, "<init>", "(D)V");
   if (!s_rotation2dConstructor)
@@ -48,6 +50,8 @@ bool LoadPose2dClass(JNIEnv* env) {
 
   s_pose2dClass = static_cast<jclass>(env->NewGlobalRef(pose2dClass));
 
+  env->DeleteLocalRef(pose2dClass);
+
   // new Pose2d(double xMeters, double yMeters, Rotation2d rotation)
   s_pose2dConstructor = env->GetMethodID(s_pose2dClass, "<init>", "(DDL" WPIMATH_ROTATION2D_SIGNATURE ";)V");
   if (!s_pose2dConstructor)
@@ -75,6 +79,8 @@ bool LoadChassisSpeedsClass(JNIEnv* env) {
     return false;
 
   s_chassisSpeedsClass = static_cast<jclass>(env->NewGlobalRef(chassisSpeedsClass));
+
+  env->DeleteLocalRef(chassisSpeedsClass);
 
   // new ChassisSpeeds(double vxMetersPerSecond, double vyMetersPerSecond, double omegaRadiansPerSecond)
   s_chassisSpeedsConstructor = env->GetMethodID(s_chassisSpeedsClass, "<init>", "(DDD)V");
@@ -107,6 +113,8 @@ bool LoadPairClass(JNIEnv* env) {
     return false;
 
   s_pairClass = static_cast<jclass>(env->NewGlobalRef(pairClass));
+
+  env->DeleteLocalRef(pairClass);
 
   // new Pair(Object first, Object second)
   s_pairConstructor = env->GetMethodID(s_pairClass, "<init>",

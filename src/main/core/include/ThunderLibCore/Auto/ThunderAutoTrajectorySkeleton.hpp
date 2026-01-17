@@ -391,6 +391,9 @@ class ThunderAutoTrajectorySkeleton {
   CanonicalAngle m_startRotation;
   CanonicalAngle m_endRotation;
 
+  std::string m_startBehaviorLink = "";
+  std::string m_endBehaviorLink = "";
+
   ThunderAutoPositionedTrajectoryItemList<ThunderAutoTrajectoryRotation> m_rotations;
 
  public:
@@ -480,7 +483,19 @@ class ThunderAutoTrajectorySkeleton {
   ThunderAutoTrajectorySkeletonWaypoint& getPoint(size_t index);
   const ThunderAutoTrajectorySkeletonWaypoint& getPoint(size_t index) const;
 
+  // Behavior
+
   ThunderAutoTrajectoryBehavior getBehavior() const;
+
+  const std::string& startBehaviorLinkName() const noexcept { return m_startBehaviorLink; }
+  bool hasStartBehaviorLink() const noexcept { return !m_startBehaviorLink.empty(); }
+  void setStartBehaviorLinkName(const std::string& link) noexcept { m_startBehaviorLink = link; }
+  void clearStartBehaviorLink() noexcept { m_startBehaviorLink.clear(); }
+
+  const std::string& endBehaviorLinkName() const noexcept { return m_endBehaviorLink; }
+  bool hasEndBehaviorLink() const noexcept { return !m_endBehaviorLink.empty(); }
+  void setEndBehaviorLinkName(const std::string& link) noexcept { m_endBehaviorLink = link; }
+  void clearEndBehaviorLink() noexcept { m_endBehaviorLink.clear(); }
 
   // Actions
 

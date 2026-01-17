@@ -24,12 +24,21 @@ static jclass s_thunderAutoSendableChooserSelectionClass = nullptr;
 static jmethodID s_thunderAutoSendableChooserSelectionDefaultConstructor = nullptr;
 static jmethodID s_thunderAutoSendableChooserSelectionConstructor = nullptr;
 
+static jclass s_thunderAutoModeStepTypeClass = nullptr;
+static jfieldID s_thunderAutoModeStepTypeUnknownField = nullptr;
+static jfieldID s_thunderAutoModeStepTypeActionField = nullptr;
+static jfieldID s_thunderAutoModeStepTypeTrajectoryField = nullptr;
+static jfieldID s_thunderAutoModeStepTypeBranchBoolField = nullptr;
+static jfieldID s_thunderAutoModeStepTypeBranchSwitchField = nullptr;
+
 bool LoadThunderTrajectoryStateClass(JNIEnv* env) {
   jclass thunderTrajectoryStateClass = env->FindClass(THUNDERLIB_TRAJECTORYSTATE_SIGNATURE);
   if (!thunderTrajectoryStateClass)
     return false;
 
   s_thunderTrajectoryStateClass = static_cast<jclass>(env->NewGlobalRef(thunderTrajectoryStateClass));
+
+  env->DeleteLocalRef(thunderTrajectoryStateClass);
 
   // new ThunderTrajectoryState()
   s_thunderTrajectoryStateDefaultConstructor =
@@ -86,6 +95,8 @@ bool LoadFieldSymmetryClass(JNIEnv* env) {
 
   s_thunderAutoFieldSymmetryClass = static_cast<jclass>(env->NewGlobalRef(thunderAutoFieldSymmetryClass));
 
+  env->DeleteLocalRef(thunderAutoFieldSymmetryClass);
+
   // NONE
   s_thunderAutoFieldSymmetryNoneField = env->GetStaticFieldID(s_thunderAutoFieldSymmetryClass, "NONE",
                                                               "L" THUNDERLIB_FIELDSYMMETRY_SIGNATURE ";");
@@ -137,8 +148,9 @@ bool LoadFieldDimensionsClass(JNIEnv* env) {
   if (!thunderAutoFieldDimensionsClass)
     return false;
 
-  s_thudnerAutoFieldDimensionsClass =
-      static_cast<jclass>(env->NewGlobalRef(thunderAutoFieldDimensionsClass));
+  s_thudnerAutoFieldDimensionsClass = static_cast<jclass>(env->NewGlobalRef(thunderAutoFieldDimensionsClass));
+
+  env->DeleteLocalRef(thunderAutoFieldDimensionsClass);
 
   // new FieldDimensions(double lengthMeters, double widthMeters)
   s_thunderAutoFieldDimensionsConstructor =
@@ -158,9 +170,8 @@ void UnloadFieldDimensionsClass(JNIEnv* env) {
 }
 
 jobject FieldDimensionsConstruct(JNIEnv* env, jdouble lengthMeters, jdouble widthMeters) {
-  jobject dimensions =
-      env->NewObject(s_thudnerAutoFieldDimensionsClass, s_thunderAutoFieldDimensionsConstructor,
-                     lengthMeters, widthMeters);
+  jobject dimensions = env->NewObject(s_thudnerAutoFieldDimensionsClass,
+                                      s_thunderAutoFieldDimensionsConstructor, lengthMeters, widthMeters);
   return dimensions;
 }
 
@@ -172,6 +183,8 @@ bool LoadThunderAutoSendableChooser_ChooserSelection_TypeClass(JNIEnv* env) {
 
   s_thunderAutoSendableChooserSelectionTypeClass =
       static_cast<jclass>(env->NewGlobalRef(thunderAutoSendableChooserSelectionTypeClass));
+
+  env->DeleteLocalRef(thunderAutoSendableChooserSelectionTypeClass);
 
   // NONE
   s_thunderAutoSendableChooserSelectionTypeNoneField =
@@ -217,9 +230,9 @@ void UnloadThunderAutoSendableChooser_ChooserSelection_TypeClass(JNIEnv* env) {
 
 jobject ThunderAutoSendableChooser_ChooserSelection_TypeGet(
     JNIEnv* env,
-    thunder::driver::ThunderAutoSendableChooser::ChooserSelectionType type) {
+    thunder::driver::ThunderAutoSendableChooserSelectionType type) {
   switch (type) {
-    using enum thunder::driver::ThunderAutoSendableChooser::ChooserSelectionType;
+    using enum thunder::driver::ThunderAutoSendableChooserSelectionType;
     case AUTO_MODE:
       return env->GetStaticObjectField(s_thunderAutoSendableChooserSelectionTypeClass,
                                        s_thunderAutoSendableChooserSelectionTypeAutoModeField);
@@ -244,6 +257,8 @@ bool LoadThunderAutoSendableChooser_ChooserSelectionClass(JNIEnv* env) {
 
   s_thunderAutoSendableChooserSelectionClass =
       static_cast<jclass>(env->NewGlobalRef(thunderAutoSendableChooserSelectionClass));
+
+  env->DeleteLocalRef(thunderAutoSendableChooserSelectionClass);
 
   // new ChooserSelection()
   s_thunderAutoSendableChooserSelectionDefaultConstructor =
@@ -285,4 +300,94 @@ jobject ThunderAutoSendableChooser_ChooserSelectionConstruct(JNIEnv* env,
       env->NewObject(s_thunderAutoSendableChooserSelectionClass,
                      s_thunderAutoSendableChooserSelectionConstructor, type, projectName, itemName);
   return selection;
+}
+
+jobject ThunderAutoSendableChooser_ChooserSelectionConstruct(
+    JNIEnv* env,
+    const thunder::driver::ThunderAutoSendableChooserSelection& selection) {
+  jobject typeJObj = ThunderAutoSendableChooser_ChooserSelection_TypeGet(env, selection.type);
+  jstring projectNameJStr = env->NewStringUTF(selection.projectName.c_str());
+  jstring itemNameJStr = env->NewStringUTF(selection.itemName.c_str());
+
+  jobject selectionJObj =
+      ThunderAutoSendableChooser_ChooserSelectionConstruct(env, typeJObj, projectNameJStr, itemNameJStr);
+
+  env->DeleteLocalRef(typeJObj);
+  env->DeleteLocalRef(projectNameJStr);
+  env->DeleteLocalRef(itemNameJStr);
+
+  return selectionJObj;
+}
+
+bool LoadThunderAutoModeStep_TypeClass(JNIEnv* env) {
+  jclass thunderAutoModeStepTypeClass = env->FindClass(THUNDERLIB_THUNDERAUTOMODESTEP_TYPE_SIGNATURE);
+  if (!thunderAutoModeStepTypeClass)
+    return false;
+
+  s_thunderAutoModeStepTypeClass = static_cast<jclass>(env->NewGlobalRef(thunderAutoModeStepTypeClass));
+
+  env->DeleteLocalRef(thunderAutoModeStepTypeClass);
+
+  // UNKNOWN
+  s_thunderAutoModeStepTypeUnknownField = env->GetStaticFieldID(
+      s_thunderAutoModeStepTypeClass, "UNKNOWN", "L" THUNDERLIB_THUNDERAUTOMODESTEP_TYPE_SIGNATURE ";");
+  if (!s_thunderAutoModeStepTypeUnknownField)
+    return false;
+
+  // ACTION
+  s_thunderAutoModeStepTypeActionField = env->GetStaticFieldID(
+      s_thunderAutoModeStepTypeClass, "ACTION", "L" THUNDERLIB_THUNDERAUTOMODESTEP_TYPE_SIGNATURE ";");
+  if (!s_thunderAutoModeStepTypeActionField)
+    return false;
+
+  // TRAJECTORY
+  s_thunderAutoModeStepTypeTrajectoryField = env->GetStaticFieldID(
+      s_thunderAutoModeStepTypeClass, "TRAJECTORY", "L" THUNDERLIB_THUNDERAUTOMODESTEP_TYPE_SIGNATURE ";");
+  if (!s_thunderAutoModeStepTypeTrajectoryField)
+    return false;
+
+  // BRANCH_BOOL
+  s_thunderAutoModeStepTypeBranchBoolField = env->GetStaticFieldID(
+      s_thunderAutoModeStepTypeClass, "BRANCH_BOOL", "L" THUNDERLIB_THUNDERAUTOMODESTEP_TYPE_SIGNATURE ";");
+  if (!s_thunderAutoModeStepTypeBranchBoolField)
+    return false;
+
+  // BRANCH_SWITCH
+  s_thunderAutoModeStepTypeBranchSwitchField = env->GetStaticFieldID(
+      s_thunderAutoModeStepTypeClass, "BRANCH_SWITCH", "L" THUNDERLIB_THUNDERAUTOMODESTEP_TYPE_SIGNATURE ";");
+  if (!s_thunderAutoModeStepTypeBranchSwitchField)
+    return false;
+
+  return true;
+}
+
+void UnloadThunderAutoModeStep_TypeClass(JNIEnv* env) {
+  if (s_thunderAutoModeStepTypeClass) {
+    env->DeleteGlobalRef(s_thunderAutoModeStepTypeClass);
+    s_thunderAutoModeStepTypeUnknownField = nullptr;
+    s_thunderAutoModeStepTypeActionField = nullptr;
+    s_thunderAutoModeStepTypeTrajectoryField = nullptr;
+    s_thunderAutoModeStepTypeBranchBoolField = nullptr;
+    s_thunderAutoModeStepTypeBranchSwitchField = nullptr;
+  }
+}
+
+jobject ThunderAutoModeStep_TypeGet(JNIEnv* env, thunder::driver::ThunderAutoModeStepType type) {
+  switch (type) {
+    using enum thunder::driver::ThunderAutoModeStepType;
+    case ACTION:
+      return env->GetStaticObjectField(s_thunderAutoModeStepTypeClass, s_thunderAutoModeStepTypeActionField);
+    case TRAJECTORY:
+      return env->GetStaticObjectField(s_thunderAutoModeStepTypeClass,
+                                       s_thunderAutoModeStepTypeTrajectoryField);
+    case BRANCH_BOOL:
+      return env->GetStaticObjectField(s_thunderAutoModeStepTypeClass,
+                                       s_thunderAutoModeStepTypeBranchBoolField);
+    case BRANCH_SWITCH:
+      return env->GetStaticObjectField(s_thunderAutoModeStepTypeClass,
+                                       s_thunderAutoModeStepTypeBranchSwitchField);
+    case UNKNOWN:
+    default:
+      return env->GetStaticObjectField(s_thunderAutoModeStepTypeClass, s_thunderAutoModeStepTypeUnknownField);
+  }
 }

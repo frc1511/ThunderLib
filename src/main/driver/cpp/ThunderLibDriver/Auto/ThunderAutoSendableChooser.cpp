@@ -1,17 +1,17 @@
 #include <ThunderLibDriver/Auto/ThunderAutoSendableChooser.hpp>
-#include <frc/smartdashboard/SmartDashboard.h>
 #include <vector>
 #include <string_view>
 
 namespace thunder::driver {
 
-ThunderAutoSendableChooser::ThunderAutoSendableChooser() noexcept {
-  m_defaultChoice = "Do Nothing";
-  m_choices[m_defaultChoice] = ChooserSelection{};
-}
+ThunderAutoSendableChooser::ThunderAutoSendableChooser(AddChooserSelectionFunc addChooserSelectionFunc,
+                                                       PublishChooserFunc publishChooserFunc) noexcept
+    : m_addChooserSelectionFunc(addChooserSelectionFunc), m_publishChooserFunc(publishChooserFunc) {}
 
-ThunderAutoSendableChooser::ThunderAutoSendableChooser(std::string_view smartDashboardKey) noexcept
-    : ThunderAutoSendableChooser() {
+ThunderAutoSendableChooser::ThunderAutoSendableChooser(AddChooserSelectionFunc addChooserSelectionFunc,
+                                                       PublishChooserFunc publishChooserFunc,
+                                                       std::string_view smartDashboardKey) noexcept
+    : ThunderAutoSendableChooser(addChooserSelectionFunc, publishChooserFunc) {
   publish(smartDashboardKey);
 }
 
@@ -24,14 +24,19 @@ ThunderAutoSendableChooser::~ThunderAutoSendableChooser() noexcept {
 }
 
 void ThunderAutoSendableChooser::publish(std::string_view smartDashboardKey) noexcept {
-  frc::SmartDashboard::PutData(smartDashboardKey, this);
   m_isPublished = true;
   m_smartDashboardKey = smartDashboardKey;
+
+  if (m_publishChooserFunc) {
+    m_publishChooserFunc(m_smartDashboardKey);
+  }
 }
 
 void ThunderAutoSendableChooser::republishIfNecessary() noexcept {
   if (m_isPublished) {
-    frc::SmartDashboard::PutData(m_smartDashboardKey, this);
+    if (m_publishChooserFunc) {
+      m_publishChooserFunc(m_smartDashboardKey);
+    }
   }
 }
 
@@ -113,7 +118,7 @@ bool ThunderAutoSendableChooser::addTrajectoryFromProject(const std::string& pro
   ProjectSource& source = it->second;
   source.addedTrajectories.insert(trajectoryName);
 
-  bool result = addItem(projectName, trajectoryName, ChooserSelectionType::TRAJECTORY);
+  bool result = addItem(projectName, trajectoryName, ThunderAutoSendableChooserSelectionType::TRAJECTORY);
   if (result) {
     republishIfNecessary();
   }
@@ -130,7 +135,7 @@ bool ThunderAutoSendableChooser::addAutoModeFromProject(const std::string& proje
   ProjectSource& source = it->second;
   source.addedAutoModes.insert(autoModeName);
 
-  bool result = addItem(projectName, autoModeName, ChooserSelectionType::AUTO_MODE);
+  bool result = addItem(projectName, autoModeName, ThunderAutoSendableChooserSelectionType::AUTO_MODE);
   if (result) {
     republishIfNecessary();
   }
@@ -142,35 +147,19 @@ bool ThunderAutoSendableChooser::addCustomCommand(const std::string& name) noexc
     return false;
   }
 
-  bool result = addItem("", name, ChooserSelectionType::CUSTOM_COMMAND);
+  bool result = addItem("", name, ThunderAutoSendableChooserSelectionType::CUSTOM_COMMAND);
   if (result) {
     republishIfNecessary();
   }
   return result;
 }
 
-ThunderAutoSendableChooser::ChooserSelection ThunderAutoSendableChooser::getSelected() const noexcept {
-  // frc::SendableChooser<T>::GetSelected()
-
-  std::lock_guard<wpi::mutex> lock(m_mutex);
-
-  std::string selected = m_haveSelected ? m_selected : m_defaultChoice;
-
-  if (selected.empty()) {
-    return ChooserSelection{};
-  }
-
-  auto it = m_choices.find(selected);
-  if (it == m_choices.end()) {
-    return ChooserSelection{};
-  }
-  return it->second;
-}
-
 bool ThunderAutoSendableChooser::addItem(const std::string& projectName,
                                          const std::string& itemName,
-                                         ChooserSelectionType type) noexcept {
-  std::lock_guard<wpi::mutex> lock(m_mutex);
+                                         ThunderAutoSendableChooserSelectionType type) noexcept {
+  if (itemName == "Do Nothing") {  // Reserved
+    return false;
+  }
 
   auto it = m_choices.find(itemName);
   if (it != m_choices.end()) {
@@ -180,18 +169,16 @@ bool ThunderAutoSendableChooser::addItem(const std::string& projectName,
     }
   }
 
-  ChooserSelection selection;
-  selection.type = ChooserSelectionType::TRAJECTORY;
+  ThunderAutoSendableChooserSelection selection;
+  selection.type = type;
   selection.projectName = projectName;
   selection.itemName = itemName;
-  m_choices.emplace(itemName, selection);
+  if (m_addChooserSelectionFunc) {
+    m_addChooserSelectionFunc(selection);
+  }
+  m_choices[itemName] = selection;
 
   return true;
-}
-
-void ThunderAutoSendableChooser::removeItem(const std::string& itemName) noexcept {
-  std::lock_guard<wpi::mutex> lock(m_mutex);
-  m_choices.erase(itemName);
 }
 
 void ThunderAutoSendableChooser::projectWasUpdated(
@@ -209,12 +196,12 @@ void ThunderAutoSendableChooser::projectWasUpdated(
 
   for (const auto& trajectoryName : removedTrajectories) {
     source.addedTrajectories.erase(trajectoryName);
-    removeItem(trajectoryName);
+    // removeItem(trajectoryName);
   }
 
   for (const auto& autoModeName : removedAutoModes) {
     source.addedAutoModes.erase(autoModeName);
-    removeItem(autoModeName);
+    // removeItem(autoModeName);
   }
 
   if (source.addAllTrajectories) {
@@ -234,56 +221,6 @@ void ThunderAutoSendableChooser::projectWasUpdated(
   }
 
   republishIfNecessary();
-}
-
-void ThunderAutoSendableChooser::InitSendable(wpi::SendableBuilder& builder) {
-  // frc::SendableChooser<T>::InitSendable(builder)
-
-  builder.SetSmartDashboardType("String Chooser");
-  builder.PublishConstInteger(kInstance, m_instance);
-  builder.AddStringArrayProperty(
-      kOptions,
-      [=, this] {
-        std::lock_guard<wpi::mutex> lock(m_mutex);
-        std::vector<std::string> keys;
-        for (const auto& choice : m_choices) {
-          keys.emplace_back(choice.first);
-        }
-        return keys;
-      },
-      nullptr);
-  builder.AddSmallStringProperty(
-      kDefault, [=, this](wpi::SmallVectorImpl<char>&) -> std::string_view { return m_defaultChoice; },
-      nullptr);
-  builder.AddSmallStringProperty(
-      kActive,
-      [=, this](wpi::SmallVectorImpl<char>& buf) -> std::string_view {
-        std::lock_guard<wpi::mutex> lock(m_mutex);
-        if (m_haveSelected) {
-          buf.assign(m_selected.begin(), m_selected.end());
-          return {buf.data(), buf.size()};
-        } else {
-          return m_defaultChoice;
-        }
-      },
-      nullptr);
-  builder.AddStringProperty(kSelected, nullptr, [=, this](std::string_view val) {
-    ChooserSelection choice{};
-    std::function<void(ChooserSelection)> listener;
-    {
-      std::lock_guard<wpi::mutex> lock(m_mutex);
-      m_haveSelected = true;
-      m_selected = val;
-      if (m_previousVal != val && m_listener) {
-        choice = m_choices[std::string(val)];
-        listener = m_listener;
-      }
-      m_previousVal = val;
-    }
-    if (listener) {
-      listener(choice);
-    }
-  });
 }
 
 }  // namespace thunder::driver

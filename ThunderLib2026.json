@@ -2,7 +2,7 @@
     "fileName": "ThunderLib2026.json",
     "name": "ThunderLib",
     "version": "${version}",
-    "frcYear": "2026beta",
+    "frcYear": "2026",
     "uuid": "e5b81076-0ebf-42de-b028-41b49cacbcbe",
     "mavenUrls": [
         "https://frc1511.github.io/thunderlib/repo"

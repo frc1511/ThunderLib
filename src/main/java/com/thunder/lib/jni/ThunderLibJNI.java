@@ -4,7 +4,9 @@ import java.lang.Runnable;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 
+import com.thunder.lib.auto.ThunderAutoModeStep;
 import com.thunder.lib.auto.ThunderAutoSendableChooser;
 import com.thunder.lib.trajectory.FieldDimensions;
 import com.thunder.lib.trajectory.FieldSymmetry;
@@ -124,9 +126,14 @@ public class ThunderLibJNI {
    * ThunderAutoSendableChooser JNI methods
    */
 
-  public static native long ThunderAutoSendableChooser_construct();
+  public static native long ThunderAutoSendableChooser_construct(
+      Consumer<ThunderAutoSendableChooser.ChooserSelection> addChoiceToChooser,
+      Consumer<String> publishChooser);
 
-  public static native long ThunderAutoSendableChooser_constructWithSmartDashboardKey(String smartDashboardKey);
+  public static native long ThunderAutoSendableChooser_constructWithSmartDashboardKey(
+      Consumer<ThunderAutoSendableChooser.ChooserSelection> addChoiceToChooser,
+      Consumer<String> publishChooser,
+      String smartDashboardKey);
 
   public static native void ThunderAutoSendableChooser_delete(long handle);
 
@@ -147,7 +154,8 @@ public class ThunderLibJNI {
   public static native boolean ThunderAutoSendableChooser_addAutoModeFromProject(long handle, String projectName,
       String autoModeName);
 
-  public static native ThunderAutoSendableChooser.ChooserSelection ThunderAutoSendableChooser_getSelected(long handle);
+  // public static native ThunderAutoSendableChooser.ChooserSelection
+  // ThunderAutoSendableChooser_getSelected(long handle);
 
   /**
    * ThunderAutoTrajectory JNI Methods
@@ -174,4 +182,30 @@ public class ThunderLibJNI {
   public static native ArrayList<Double> ThunderAutoTrajectory_getActionTimes(long handle);
 
   public static native HashSet<String> ThunderAutoTrajectory_getActionsAtTime(long handle, double timeSeconds);
+
+  /**
+   * ThunderAutoModeStep JNI Methods
+   */
+  public static native void ThunderAutoModeStep_delete(long handle);
+
+  public static native ThunderAutoModeStep.Type ThunderAutoModeStep_getType(long handle);
+
+  public static native String ThunderAutoModeStep_getItemName(long handle);
+
+  /**
+   * ThunderAutoMode JNI Methods
+   */
+  public static native void ThunderAutoMode_delete(long handle);
+
+  public static native long ThunderAutoMode_getFirstStep(long handle);
+
+  public static native long ThunderAutoMode_getNextStep(long handle, long previousStepHandle);
+
+  public static native long ThunderAutoMode_getFirstStepOfBoolBranch(long handle, long branchStepHandle,
+      boolean booleanCondition);
+
+  public static native long ThunderAutoMode_getFirstStepOfSwitchBranch(long handle, long branchStepHandle,
+      int switchCondition);
+
+  public static native boolean ThunderAutoMode_isRunnable(long handle, long projectHandle);
 }

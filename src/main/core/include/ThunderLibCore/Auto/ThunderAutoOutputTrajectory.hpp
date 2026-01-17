@@ -179,7 +179,7 @@ struct ThunderAutoCSVExportProperties {
   bool componentVelocities = false;      // vx, vy
   bool heading = false;                  // heading
   bool rotation = true;                  // rotation
-  bool angularVelocity = true;           // angular_velocity
+  bool angularVelocity = false;          // angular_velocity
   bool actionsBitField = true;           // action
   bool distance = false;                 // distance
   bool curvature = false;                // curvature

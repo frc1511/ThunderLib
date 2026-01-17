@@ -51,31 +51,6 @@ struct ThunderAutoModeStepTrajectoryBehavior {
    * none do.
    */
   std::optional<std::pair<size_t, size_t>> trajectoryStepRange;
-
-  /**
-   * Start steps may have conditional start poses, but must end at a single end pose.
-   */
-  bool isValidStartStep() const noexcept;
-
-  /**
-   * Middle steps must have a single start and end pose.
-   */
-  bool isValidMiddleStep() const noexcept;
-
-  /**
-   * End steps must start at a single start pose, but may have conditional end poses.
-   */
-  bool isValidEndStep() const noexcept;
-
-  /**
-   * Returns true if this step can follow the given previous step in an auto mode (essentially, if this step's
-   * start pose matches the previous step's end pose).
-   *
-   * @param previousStepBehavior The trajectory behavior of the previous step.
-   *
-   * @return True or false.
-   */
-  bool canFollow(const ThunderAutoModeStepTrajectoryBehavior& previousStepBehavior) const noexcept;
 };
 
 struct ThunderAutoModeStepTrajectoryBehaviorTreeNode {
@@ -298,12 +273,7 @@ class ThunderAutoModeStepDirectoryPath {
   std::span<const Node> path() const noexcept { return m_path; }
   std::span<Node> path() noexcept { return m_path; }
 
-  std::span<const Node> parentPath() const noexcept {
-    if (m_path.size() == 0) {
-      return {};
-    }
-    return std::span<const Node>(m_path.data(), m_path.size() - 1);
-  }
+  ThunderAutoModeStepDirectoryPath parentPath() const noexcept;
 
   bool hasParentPath(const ThunderAutoModeStepDirectoryPath& path) const noexcept;
   bool hasParentPath(const ThunderAutoModeStepPath& path) const noexcept;

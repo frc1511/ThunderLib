@@ -23,7 +23,7 @@ struct TrajectoryRunnerProperties {
   GetPoseFunc getPose;
 
   /**
-   * Resets the robot's pose to the specified pose (optional).
+   * Resets the robot's pose to the specified pose (and PID controllers too!) (optional).
    *
    * If not provided (nullptr), the robot's pose will not be reset at the start of the trajectory.
    */
@@ -38,6 +38,9 @@ struct TrajectoryRunnerProperties {
 
   /**
    * Holonomic drive controller to use for following the trajectory (required).
+   *
+   * @note ThunderLib will NOT reset the controller's x, y, or theta PID controllers; the user should do that
+   * in the resetPose function if desired.
    */
   std::shared_ptr<frc::HolonomicDriveController> controller;
 

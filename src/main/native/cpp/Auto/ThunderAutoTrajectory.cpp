@@ -94,6 +94,10 @@ driver::ThunderAutoTrajectory* ThunderAutoTrajectory::getHandle() noexcept {
   return m_handle;
 }
 
+const driver::ThunderAutoTrajectory* ThunderAutoTrajectory::getHandle() const noexcept {
+  return m_handle;
+}
+
 TrajectoryState ThunderAutoTrajectory::convertState(
     const driver::ThunderAutoTrajectoryState& driverState) noexcept {
   TrajectoryState state;

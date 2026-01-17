@@ -297,7 +297,7 @@ public class ThunderAutoProject {
     if (autoModeHandle == 0) {
       return Optional.empty();
     } else {
-      return Optional.of(new ThunderAutoMode(autoModeHandle, this));
+      return Optional.of(new ThunderAutoMode(autoModeHandle));
     }
   }
 

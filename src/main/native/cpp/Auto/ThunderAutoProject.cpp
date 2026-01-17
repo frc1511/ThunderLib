@@ -138,7 +138,6 @@ ThunderAutoProject::SwitchConditionFunc ThunderAutoProject::getSwitchCondition(
 std::unique_ptr<ThunderAutoTrajectory> ThunderAutoProject::getTrajectory(
     const std::string& trajectoryName) const noexcept {
   driver::ThunderAutoTrajectory* trajectoryHandle = m_handle->getTrajectory(trajectoryName);
-  // return std::make_unique<ThunderAutoTrajectory>(trajectoryHandle);
   ThunderAutoTrajectory* trajectory = new ThunderAutoTrajectory(trajectoryHandle);
   return std::unique_ptr<ThunderAutoTrajectory>(trajectory);
 }
@@ -202,6 +201,10 @@ bool ThunderAutoProject::unregisterRemoteUpdateSubscriber(RemoteUpdateSubscriber
 }
 
 driver::ThunderAutoProject* ThunderAutoProject::getHandle() noexcept {
+  return m_handle;
+}
+
+const driver::ThunderAutoProject* ThunderAutoProject::getHandle() const noexcept {
   return m_handle;
 }
 

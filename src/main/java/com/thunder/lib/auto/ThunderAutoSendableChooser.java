@@ -4,9 +4,13 @@ import java.lang.ref.Cleaner;
 import java.util.HashMap;
 import java.util.Optional;
 
+import com.thunder.lib.commands.ThunderAutoModeCommand;
+import com.thunder.lib.commands.ThunderAutoTrajectoryCommand;
 import com.thunder.lib.jni.ThunderLibJNI;
 import com.thunder.lib.trajectory.ThunderTrajectoryRunnerProperties;
 
+import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 
@@ -23,8 +27,11 @@ public class ThunderAutoSendableChooser {
    * until publish() is called.
    */
   public ThunderAutoSendableChooser() {
-    m_handle = ThunderLibJNI.ThunderAutoSendableChooser_construct();
+    m_handle = ThunderLibJNI.ThunderAutoSendableChooser_construct(
+        (ChooserSelection selection) -> addChooserSelection(selection),
+        (String smartDashboardKey) -> publishChooser(smartDashboardKey));
     m_cleaner.register(this, new ThunderAutoSendableChooserCleanup(m_handle));
+    m_chooser.setDefaultOption("Do Nothing", new ChooserSelection());
   }
 
   /**
@@ -35,8 +42,12 @@ public class ThunderAutoSendableChooser {
    *                          under.
    */
   public ThunderAutoSendableChooser(String smartDashboardKey) {
-    m_handle = ThunderLibJNI.ThunderAutoSendableChooser_constructWithSmartDashboardKey(smartDashboardKey);
+    m_handle = ThunderLibJNI.ThunderAutoSendableChooser_constructWithSmartDashboardKey(
+        (ChooserSelection selection) -> addChooserSelection(selection),
+        (String key) -> publishChooser(key),
+        smartDashboardKey);
     m_cleaner.register(this, new ThunderAutoSendableChooserCleanup(m_handle));
+    m_chooser.setDefaultOption("Do Nothing", new ChooserSelection());
   }
 
   /**
@@ -48,9 +59,12 @@ public class ThunderAutoSendableChooser {
    *                    trajectory commands.
    */
   public ThunderAutoSendableChooser(ThunderTrajectoryRunnerProperties runnerProps) {
-    m_handle = ThunderLibJNI.ThunderAutoSendableChooser_construct();
+    m_handle = ThunderLibJNI.ThunderAutoSendableChooser_construct(
+        (ChooserSelection selection) -> addChooserSelection(selection),
+        (String smartDashboardKey) -> publishChooser(smartDashboardKey));
     m_cleaner.register(this, new ThunderAutoSendableChooserCleanup(m_handle));
     m_runnerProps = Optional.of(runnerProps);
+    m_chooser.setDefaultOption("Do Nothing", new ChooserSelection());
   }
 
   /**
@@ -64,9 +78,13 @@ public class ThunderAutoSendableChooser {
    *                          trajectory commands.
    */
   public ThunderAutoSendableChooser(String smartDashboardKey, ThunderTrajectoryRunnerProperties runnerProps) {
-    m_handle = ThunderLibJNI.ThunderAutoSendableChooser_constructWithSmartDashboardKey(smartDashboardKey);
+    m_handle = ThunderLibJNI.ThunderAutoSendableChooser_constructWithSmartDashboardKey(
+        (ChooserSelection selection) -> addChooserSelection(selection),
+        (String key) -> publishChooser(key),
+        smartDashboardKey);
     m_cleaner.register(this, new ThunderAutoSendableChooserCleanup(m_handle));
     m_runnerProps = Optional.of(runnerProps);
+    m_chooser.setDefaultOption("Do Nothing", new ChooserSelection());
   }
 
   /**
@@ -207,21 +225,14 @@ public class ThunderAutoSendableChooser {
       if (m_customCommands.containsKey(selection.itemName)) {
         return m_customCommands.get(selection.itemName);
       }
-    } else if (selection.type != ChooserSelection.Type.NONE) {
+    } else if (selection.type != ChooserSelection.Type.NONE && m_runnerProps.isPresent()) {
       if (m_includedProjects.containsKey(selection.projectName)) {
         ThunderAutoProject project = m_includedProjects.get(selection.projectName);
+
         if (selection.type == ChooserSelection.Type.AUTO_MODE) {
-          Optional<ThunderAutoMode> autoMode = project.getAutoMode(selection.itemName);
-          if (autoMode.isPresent()) {
-            // TODO: Construct ThunderAutoModeCommand from autoMode, m_runnerProps, and
-            // project
-          }
+          return new ThunderAutoModeCommand(selection.itemName, project, m_runnerProps.get());
         } else if (selection.type == ChooserSelection.Type.TRAJECTORY) {
-          Optional<ThunderAutoTrajectory> trajectory = project.getTrajectory(selection.itemName);
-          if (trajectory.isPresent() && m_runnerProps.isPresent()) {
-            // TODO: Construct ThunderAutoTrajectoryCommand from trajectory, m_runnerProps,
-            // and project
-          }
+          return new ThunderAutoTrajectoryCommand(selection.itemName, project, m_runnerProps.get());
         }
       }
     }
@@ -284,9 +295,9 @@ public class ThunderAutoSendableChooser {
     /**
      * Constructor
      * 
-     * @param type The type of item selected
+     * @param type        The type of item selected
      * @param projectName The name of the project the selected item belongs to
-     * @param itemName The name of the selected item
+     * @param itemName    The name of the selected item
      */
     public ChooserSelection(Type type, String projectName, String itemName) {
       this.type = type;
@@ -301,7 +312,7 @@ public class ThunderAutoSendableChooser {
    * @return The selected item.
    */
   public ChooserSelection getSelected() {
-    return ThunderLibJNI.ThunderAutoSendableChooser_getSelected(m_handle);
+    return m_chooser.getSelected();
   }
 
   /**
@@ -313,7 +324,17 @@ public class ThunderAutoSendableChooser {
     return m_handle;
   }
 
+  private void addChooserSelection(ChooserSelection selection) {
+    m_chooser.addOption(selection.itemName, selection);
+  }
+
+  private void publishChooser(String smartDashboardKey) {
+    SmartDashboard.putData(smartDashboardKey, m_chooser);
+    SmartDashboard.updateValues();
+  }
+
   private long m_handle = 0;
+  private SendableChooser<ChooserSelection> m_chooser = new SendableChooser<>();
 
   private Optional<ThunderTrajectoryRunnerProperties> m_runnerProps = Optional.empty();
   private HashMap<String, ThunderAutoProject> m_includedProjects = new HashMap<>();

@@ -11,7 +11,7 @@ public enum FieldSymmetry {
   NONE,
 
   /**
-   * Rotated 180 degrees, like 2022 and 2025.
+   * Rotated 180 degrees, like 2022, 2025, and 2026.
    * 
    * On red, both X and Y coordinates are inverted. Rotations are flipped by 180.
    */

@@ -1,5 +1,8 @@
 #include "JavaTypes.hpp"
 #include <cstdarg>
+#include <ThunderLibDriver/Logger.hpp>
+
+using thunder::ThunderLibLogger;
 
 static jclass s_integerClass = nullptr;
 static jmethodID s_integerConstructor = nullptr;
@@ -25,6 +28,8 @@ bool LoadIntegerClass(JNIEnv* env) {
     return false;
 
   s_integerClass = static_cast<jclass>(env->NewGlobalRef(integerClass));
+
+  env->DeleteLocalRef(integerClass);
 
   // new Integer(int value)
   s_integerConstructor = env->GetMethodID(s_integerClass, "<init>", "(I)V");
@@ -54,6 +59,8 @@ bool LoadDoubleClass(JNIEnv* env) {
 
   s_doubleClass = static_cast<jclass>(env->NewGlobalRef(doubleClass));
 
+  env->DeleteLocalRef(doubleClass);
+
   // new Double(double value)
   s_doubleConstructor = env->GetMethodID(s_doubleClass, "<init>", "(D)V");
   if (!s_doubleConstructor)
@@ -81,6 +88,8 @@ bool LoadArrayListClass(JNIEnv* env) {
     return false;
 
   s_arrayListClass = static_cast<jclass>(env->NewGlobalRef(arrayListClass));
+
+  env->DeleteLocalRef(arrayListClass);
 
   // new ArrayList<>()
   s_arrayListConstructor = env->GetMethodID(s_arrayListClass, "<init>", "()V");
@@ -121,6 +130,8 @@ bool LoadHashSetClass(JNIEnv* env) {
 
   s_hashSetClass = static_cast<jclass>(env->NewGlobalRef(hashSetClass));
 
+  env->DeleteLocalRef(hashSetClass);
+
   // new HashSet<>()
   s_hashSetConstructor = env->GetMethodID(s_hashSetClass, "<init>", "()V");
   if (!s_hashSetConstructor)
@@ -160,6 +171,8 @@ bool LoadHashMapClass(JNIEnv* env) {
 
   s_hashMapClass = static_cast<jclass>(env->NewGlobalRef(hashMapClass));
 
+  env->DeleteLocalRef(hashMapClass);
+
   // new HashMap<>()
   s_hashMapConstructor = env->GetMethodID(s_hashMapClass, "<init>", "()V");
   if (!s_hashMapConstructor)
@@ -167,8 +180,8 @@ bool LoadHashMapClass(JNIEnv* env) {
 
   // Object put(Object key, Object value)
   s_hashMapPutMethod = env->GetMethodID(s_hashMapClass, "put",
-                                       "(L" JAVA_LANG_OBJECT_SIGNATURE ";L" JAVA_LANG_OBJECT_SIGNATURE ";)L"
-                                       JAVA_LANG_OBJECT_SIGNATURE ";");
+                                        "(L" JAVA_LANG_OBJECT_SIGNATURE ";L" JAVA_LANG_OBJECT_SIGNATURE
+                                        ";)L" JAVA_LANG_OBJECT_SIGNATURE ";");
   if (!s_hashMapPutMethod)
     return false;
 
@@ -197,25 +210,77 @@ jobject HashMapPut(JNIEnv* env, jobject hashMap, jobject key, jobject value) {
 RunnableWrapper::RunnableWrapper(JNIEnv* env, jobject runnable) {
   m_env = env;
   m_runnable = env->NewGlobalRef(runnable);
+
+  jclass runnableClass = m_env->GetObjectClass(m_runnable);
+  m_runnableClass = static_cast<jclass>(m_env->NewGlobalRef(runnableClass));
+  if (!m_runnableClass) {
+    ThunderLibLogger::Error("[JNI RunnableWrapper] Failed to get Runnable class");
+    return;
+  }
+
+  m_env->DeleteLocalRef(runnableClass);
+
+  m_runMethod = m_env->GetMethodID(m_runnableClass, "run", "()V");
+  if (!m_runMethod) {
+    ThunderLibLogger::Error("[JNI RunnableWrapper] Failed to get Runnable.run() method ID");
+  }
 }
 
 RunnableWrapper::~RunnableWrapper() {
-  if (m_env && m_runnable) {
-    m_env->DeleteGlobalRef(m_runnable);
-    m_runnable = nullptr;
+  if (m_env) {
+    if (m_runnable) {
+      m_env->DeleteGlobalRef(m_runnable);
+      m_runnable = nullptr;
+    }
+    if (m_runnableClass) {
+      m_env->DeleteGlobalRef(m_runnableClass);
+      m_runnableClass = nullptr;
+    }
   }
 }
 
 void RunnableWrapper::run() {
-  if (!m_env || !m_runnable)
+  if (!m_env || !m_runnable || !m_runMethod)
     return;
 
-  jclass runnableClass = m_env->GetObjectClass(m_runnable);
-  jmethodID runMethod = m_env->GetMethodID(runnableClass, "run", "()V");
+  m_env->CallVoidMethod(m_runnable, m_runMethod);
+}
 
-  if (runMethod) {
-    m_env->CallVoidMethod(m_runnable, runMethod);
+ConsumerWrapper::ConsumerWrapper(JNIEnv* env, jobject consumer) {
+  m_env = env;
+  m_consumer = env->NewGlobalRef(consumer);
+
+  jclass consumerClass = m_env->GetObjectClass(m_consumer);
+  m_consumerClass = static_cast<jclass>(m_env->NewGlobalRef(consumerClass));
+  if (!m_consumerClass) {
+    ThunderLibLogger::Error("[JNI ConsumerWrapper] Failed to get Consumer class");
+    return;
   }
 
-  m_env->DeleteLocalRef(runnableClass);
+  m_env->DeleteLocalRef(consumerClass);
+
+  m_acceptMethod = m_env->GetMethodID(m_consumerClass, "accept", "(L" JAVA_LANG_OBJECT_SIGNATURE ";)V");
+  if (!m_acceptMethod) {
+    ThunderLibLogger::Error("[JNI ConsumerWrapper] Failed to get Consumer.accept() method ID");
+  }
+}
+
+ConsumerWrapper::~ConsumerWrapper() {
+  if (m_env) {
+    if (m_consumer) {
+      m_env->DeleteGlobalRef(m_consumer);
+      m_consumer = nullptr;
+    }
+    if (m_consumerClass) {
+      m_env->DeleteGlobalRef(m_consumerClass);
+      m_consumerClass = nullptr;
+    }
+  }
+}
+
+void ConsumerWrapper::accept(jobject obj) {
+  if (!m_env || !m_consumer || !m_acceptMethod)
+    return;
+
+  m_env->CallVoidMethod(m_consumer, m_acceptMethod, obj);
 }

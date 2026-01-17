@@ -1,17 +1,32 @@
 #pragma once
 
 #include <ThunderLibDriver/Auto/ThunderAutoProject.hpp>
-#include <frc/smartdashboard/SendableChooserBase.h>
-#include <wpi/sendable/SendableBuilder.h>
 #include <string>
 #include <unordered_map>
 
 namespace thunder::driver {
 
-class ThunderAutoSendableChooser : private frc::SendableChooserBase {
+  enum class ThunderAutoSendableChooserSelectionType {
+    NONE,
+    AUTO_MODE,
+    TRAJECTORY,
+    CUSTOM_COMMAND,
+  };
+
+  struct ThunderAutoSendableChooserSelection {
+    ThunderAutoSendableChooserSelectionType type = ThunderAutoSendableChooserSelectionType::NONE;
+    std::string projectName;
+    std::string itemName;
+  };
+
+class ThunderAutoSendableChooser {
  public:
-  ThunderAutoSendableChooser() noexcept;
-  explicit ThunderAutoSendableChooser(std::string_view smartDashboardKey) noexcept;
+  // We cannot use frc::SendableChooser directly, so we need a function to add choices to the actual chooser.
+  using AddChooserSelectionFunc = std::function<void(const ThunderAutoSendableChooserSelection&)>;
+  using PublishChooserFunc = std::function<void(const std::string& key)>;
+
+  ThunderAutoSendableChooser(AddChooserSelectionFunc addChooserSelectionFunc, PublishChooserFunc publishChooserFunc) noexcept;
+  ThunderAutoSendableChooser(AddChooserSelectionFunc addChooserSelectionFunc, PublishChooserFunc publishChooserFunc, std::string_view smartDashboardKey) noexcept;
 
   ~ThunderAutoSendableChooser() noexcept;
 
@@ -29,27 +44,12 @@ class ThunderAutoSendableChooser : private frc::SendableChooserBase {
 
   bool addCustomCommand(const std::string& name) noexcept;
 
-  enum class ChooserSelectionType {
-    NONE,
-    AUTO_MODE,
-    TRAJECTORY,
-    CUSTOM_COMMAND,
-  };
-
-  struct ChooserSelection {
-    ChooserSelectionType type = ChooserSelectionType::NONE;
-    std::string projectName;
-    std::string itemName;
-  };
-
-  ChooserSelection getSelected() const noexcept;
-
  private:
   bool addItem(const std::string& projectName,
                const std::string& itemName,
-               ChooserSelectionType type) noexcept;
+               ThunderAutoSendableChooserSelectionType type) noexcept;
 
-  void removeItem(const std::string& itemName) noexcept;
+  // void removeItem(const std::string& itemName) noexcept;
 
   void republishIfNecessary() noexcept;
 
@@ -60,8 +60,10 @@ class ThunderAutoSendableChooser : private frc::SendableChooserBase {
                          const std::unordered_set<std::string>& removedAutoModes) noexcept;
 
  private:
-  std::function<void(ChooserSelection)> m_listener;
-  std::unordered_map<std::string, ChooserSelection> m_choices;
+  AddChooserSelectionFunc m_addChooserSelectionFunc;
+  PublishChooserFunc m_publishChooserFunc;
+
+  std::unordered_map<std::string, ThunderAutoSendableChooserSelection> m_choices;
 
   std::string m_smartDashboardKey;
   bool m_isPublished = false;
@@ -76,9 +78,6 @@ class ThunderAutoSendableChooser : private frc::SendableChooserBase {
   };
 
   std::unordered_map<std::string, ProjectSource> m_projectSources;
-
- private:
-  void InitSendable(wpi::SendableBuilder& builder);
 };
 
 }  // namespace thunder::driver

@@ -944,6 +944,16 @@ void to_json(wpi::json& json, const ThunderAutoTrajectorySkeleton& trajectory) {
   if (!actions.empty()) {
     json["actions"] = actions;
   }
+
+  const std::string& startBehaviorLink = trajectory.startBehaviorLinkName();
+  if (!startBehaviorLink.empty()) {
+    json["start_behavior_link"] = startBehaviorLink;
+  }
+
+  const std::string& endBehaviorLink = trajectory.endBehaviorLinkName();
+  if (!endBehaviorLink.empty()) {
+    json["end_behavior_link"] = endBehaviorLink;
+  }
 }
 
 void ThunderAutoTrajectorySkeleton::fromJson(const wpi::json& json) {
@@ -955,6 +965,14 @@ void ThunderAutoTrajectorySkeleton::fromJson(const wpi::json& json) {
   json.at("end_rotation").get_to(endRotation);
   setStartRotation(startRotation);
   setEndRotation(endRotation);
+
+  if (json.contains("start_behavior_link")) {
+    json.at("start_behavior_link").get_to(m_startBehaviorLink);
+  }
+
+  if (json.contains("end_behavior_link")) {
+    json.at("end_behavior_link").get_to(m_endBehaviorLink);
+  }
 
   if (json.contains("rotations")) {
     json.at("rotations").get_to(m_rotations);

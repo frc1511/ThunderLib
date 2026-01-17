@@ -1,5 +1,6 @@
 #include <ThunderLibCore/Auto/ThunderAutoMode.hpp>
 #include <ThunderLibCore/Error.hpp>
+#include <ThunderLibCore/Math.hpp>
 #include <fmt/format.h>
 #include <random>
 #include <queue>
@@ -19,47 +20,6 @@ const char* ThunderAutoModeStepTypeToString(ThunderAutoModeStepType type) noexce
     default:
       return "Unknown";
   }
-}
-
-bool ThunderAutoModeStepTrajectoryBehavior::isValidStartStep() const noexcept {
-  if (!runsTrajectory)
-    return true;
-  if (errorInfo)
-    return false;
-
-  return endPose.has_value();
-}
-
-bool ThunderAutoModeStepTrajectoryBehavior::isValidMiddleStep() const noexcept {
-  if (!runsTrajectory)
-    return true;
-  if (errorInfo)
-    return false;
-
-  return startPose.has_value() && endPose.has_value();
-}
-
-bool ThunderAutoModeStepTrajectoryBehavior::isValidEndStep() const noexcept {
-  if (!runsTrajectory)
-    return true;
-  if (errorInfo)
-    return false;
-
-  return startPose.has_value();
-}
-
-bool ThunderAutoModeStepTrajectoryBehavior::canFollow(
-    const ThunderAutoModeStepTrajectoryBehavior& previousStepBehavior) const noexcept {
-  if (!runsTrajectory || !previousStepBehavior.runsTrajectory)
-    return true;
-
-  if (errorInfo || previousStepBehavior.errorInfo)
-    return false;
-
-  if (!startPose.has_value() || !previousStepBehavior.endPose.has_value())
-    return false;
-
-  return (startPose.value() == previousStepBehavior.endPose.value());
 }
 
 ThunderAutoModeStep::ThunderAutoModeStep() {
@@ -179,7 +139,7 @@ static ThunderAutoModeStepTrajectoryBehaviorTreeNode GetStepSequenceTrajectoryBe
     if (stepBehavior.startPose.has_value()) {
       if (previouslyRanTrajectory || previousStepEndPose.has_value()) {
         // Check continuity between steps.
-        if (behavior.endPose != stepBehavior.startPose.value()) {
+        if (!Pose2dEquals(behavior.endPose, stepBehavior.startPose.value())) {
           behavior.errorInfo.containsNonContinuousSequence = true;
           behavior.startPose = behavior.endPose = std::nullopt;
           continue;
@@ -302,12 +262,12 @@ ThunderAutoModeStepTrajectoryBehaviorTreeNode ThunderAutoModeBoolBranchStep::get
   }
 
   if (trueBranchBehavior.startPose.has_value() && elseBranchBehavior.startPose.has_value() &&
-      (trueBranchBehavior.startPose.value() == elseBranchBehavior.startPose.value())) {
+      Pose2dEquals(trueBranchBehavior.startPose.value(), elseBranchBehavior.startPose.value())) {
     combinedBehavior.startPose = trueBranchBehavior.startPose;
   }
 
   if (trueBranchBehavior.endPose.has_value() && elseBranchBehavior.endPose.has_value() &&
-      (trueBranchBehavior.endPose.value() == elseBranchBehavior.endPose.value())) {
+      Pose2dEquals(trueBranchBehavior.endPose.value(), elseBranchBehavior.endPose.value())) {
     combinedBehavior.endPose = trueBranchBehavior.endPose;
   }
 
@@ -389,7 +349,7 @@ ThunderAutoModeStepTrajectoryBehaviorTreeNode ThunderAutoModeSwitchBranchStep::g
       if (!endPoseFound) {
         endPose = branchBehavior.endPose;
         endPoseFound = true;
-      } else if (endPose != branchBehavior.endPose) {
+      } else if (!Pose2dEquals(endPose, branchBehavior.endPose)) {
         endPose = std::nullopt;
       }
     }
@@ -429,15 +389,24 @@ ThunderAutoModeStepTrajectoryBehaviorTreeNode ThunderAutoModeSwitchBranchStep::g
       branchBehavior.startPose = branchBehavior.endPose = previousStepEndPose;
     }
 
-    if (combinedBehavior.startPose != branchBehavior.startPose) {
+    if (!Pose2dEquals(combinedBehavior.startPose, branchBehavior.startPose)) {
       combinedBehavior.startPose = std::nullopt;
     }
-    if (combinedBehavior.endPose != branchBehavior.endPose) {
+    if (!Pose2dEquals(combinedBehavior.endPose, branchBehavior.endPose)) {
       combinedBehavior.endPose = std::nullopt;
     }
   }
 
   return combinedBehaviorTree;
+}
+
+ThunderAutoModeStepDirectoryPath ThunderAutoModeStepDirectoryPath::parentPath() const noexcept {
+  if (depth() == 0) {
+    return ThunderAutoModeStepDirectoryPath{};
+  }
+
+  std::vector<Node> path(m_path.begin(), std::prev(m_path.end()));
+  return ThunderAutoModeStepDirectoryPath{std::move(path)};
 }
 
 bool ThunderAutoModeStepDirectoryPath::hasParentPath(

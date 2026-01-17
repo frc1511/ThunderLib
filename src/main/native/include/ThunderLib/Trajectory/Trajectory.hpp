@@ -18,7 +18,7 @@ namespace thunder {
  */
 enum FieldSymmetry {
   NONE,
-  ROTATIONAL,    // Rotated 180 degrees, like 2022 and 2025.
+  ROTATIONAL,    // Rotated 180 degrees, like 2022, 2025, and 2026.
   REFLECTIONAL,  // Mirrored across the center line, like 2023 and 2024.
 };
 

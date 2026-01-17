@@ -20,11 +20,14 @@ public class ThunderTrajectoryRunnerProperties {
    * Constructor for ThunderTrajectoryRunnerProperties.
    * 
    * @param getPose                  Function that returns the current robot pose.
-   * @param resetPose                Function that resets the robot pose.
+   * @param resetPose                Function that resets the robot pose (and PID
+   *                                 controllers too!)
    * @param setSpeeds                Function that controls the robot chassis
    *                                 speeds (robot-centric).
    * @param holonomicDriveController The holonomic drive controller for trajectory
-   *                                 following.
+   *                                 following. ThunderLib will NOT reset its x,
+   *                                 y, or theta PID controllers; the user should
+   *                                 do that in the resetPose function if desired.
    */
   public ThunderTrajectoryRunnerProperties(
       Supplier<Pose2d> getPose,

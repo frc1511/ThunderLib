@@ -313,6 +313,7 @@ class ThunderAutoProject final {
   bool unregisterRemoteUpdateSubscriber(RemoteUpdateSubscriberID id) noexcept;
 
   driver::ThunderAutoProject* getHandle() noexcept;
+  const driver::ThunderAutoProject* getHandle() const noexcept;
 
  private:
   driver::ThunderAutoProject* m_handle;

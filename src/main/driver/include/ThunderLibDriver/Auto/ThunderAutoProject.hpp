@@ -16,6 +16,7 @@
 #include <mutex>
 #include <cstddef>
 #include <optional>
+#include <chrono>
 
 namespace thunder::driver {
 
@@ -55,6 +56,8 @@ class ThunderAutoProject {
   bool hasTrajectory(const std::string& trajectoryName) const noexcept;
 
   std::unordered_set<std::string> getTrajectoryNames() const noexcept;
+
+  std::map<std::string, core::ThunderAutoTrajectorySkeleton> getTrajectorySkeletons() const noexcept;
 
   // Ownership of returned pointer is transferred to caller.
   [[nodiscard]]
@@ -104,18 +107,24 @@ class ThunderAutoProject {
   nt::NetworkTableInstance m_networkTableInstance;
   std::shared_ptr<nt::NetworkTable> m_thunderAutoNetworkTable;
   NT_Listener m_ntRemoteUpdateListenerId = 0;
+  std::shared_ptr<nt::NetworkTable> m_fmsInfoNetworkTable;
 
   bool m_remoteUpdatesEnabled = true;
   std::unordered_map<size_t, RemoteUpdateCallbackFunc> m_remoteUpdateSubscribers;
   size_t m_nextRemoteUpdateSubscriberId = 1;
 
+  std::mutex m_remoteUpdateMutex;
+
   std::unique_ptr<core::ThunderAutoProject> m_project;
   core::ThunderAutoProjectStateDataHashes m_stateHashes;
   mutable std::mutex m_projectMutex;
 
+  std::map<std::string, core::ThunderAutoTrajectorySkeleton> m_trajectorySkeletons;
   std::unordered_map<std::string, std::shared_ptr<core::ThunderAutoOutputTrajectory>> m_trajectories;
-  // // TODO: auto modes
-  mutable std::mutex m_trajectoriesMutex;
+  std::unordered_map<std::string, std::shared_ptr<core::ThunderAutoMode>> m_autoModes;
+  mutable std::mutex m_trajectoriesAndAutoModesMutex;
+
+  std::chrono::steady_clock::time_point m_initializeTimestamp;
 };
 
 }  // namespace thunder::driver

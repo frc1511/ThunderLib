@@ -1,16 +1,25 @@
 #include <ThunderLib/Auto/ThunderAutoSendableChooser.hpp>
 #include <ThunderLibDriver/Auto/ThunderAutoSendableChooser.hpp>
 #include <ThunderLib/Commands/ThunderAutoTrajectoryCommand.hpp>
+#include <ThunderLib/Commands/ThunderAutoModeCommand.hpp>
 #include <frc2/command/Commands.h>
+#include <frc/smartdashboard/SmartDashboard.h>
+#include <functional>
 
 namespace thunder {
 
 ThunderAutoSendableChooser::ThunderAutoSendableChooser() noexcept {
-  m_handle = new driver::ThunderAutoSendableChooser();
+  m_handle = new driver::ThunderAutoSendableChooser(
+      std::bind(&ThunderAutoSendableChooser::addChooserSelection, this, std::placeholders::_1),
+      std::bind(&ThunderAutoSendableChooser::publishChooser, this, std::placeholders::_1));
+  m_chooser.SetDefaultOption("Do Nothing", ThunderAutoSendableChooserSelection{});
 }
 
 ThunderAutoSendableChooser::ThunderAutoSendableChooser(std::string_view smartDashboardKey) noexcept {
-  m_handle = new driver::ThunderAutoSendableChooser(smartDashboardKey);
+  m_handle = new driver::ThunderAutoSendableChooser(
+      std::bind(&ThunderAutoSendableChooser::addChooserSelection, this, std::placeholders::_1),
+      std::bind(&ThunderAutoSendableChooser::publishChooser, this, std::placeholders::_1), smartDashboardKey);
+  m_chooser.SetDefaultOption("Do Nothing", ThunderAutoSendableChooserSelection{});
 }
 
 ThunderAutoSendableChooser::ThunderAutoSendableChooser(const TrajectoryRunnerProperties& runnerProps) noexcept
@@ -77,9 +86,9 @@ bool ThunderAutoSendableChooser::addAutoModeFromProject(const std::string& proje
 }
 
 frc2::CommandPtr ThunderAutoSendableChooser::getSelectedCommand() const noexcept {
-  const ChooserSelection selection = getSelected();
+  const ThunderAutoSendableChooserSelection selection = getSelected();
 
-  using enum ChooserSelectionType;
+  using enum ThunderAutoSendableChooserSelectionType;
   if (selection.type == CUSTOM_COMMAND) {
     auto it = m_customCommands.find(selection.itemName);
     if (it != m_customCommands.end()) {
@@ -100,10 +109,8 @@ frc2::CommandPtr ThunderAutoSendableChooser::getSelectedCommand() const noexcept
       std::shared_ptr<ThunderAutoProject> project = projectIt->second;
 
       if (selection.type == AUTO_MODE) {
-        std::unique_ptr<ThunderAutoMode> autoMode = project->getAutoMode(selection.itemName);
-        (void)autoMode;
-        // TODO: Construct ThunderAutoModeCommand from autoMode, m_runnerProps, and project
-
+        ThunderAutoModeCommand autoModeCommand(selection.itemName, project, m_runnerProps.value());
+        return std::move(autoModeCommand).ToPtr();
       } else if (selection.type == TRAJECTORY) {
         ThunderAutoTrajectoryCommand trajectoryCommand(selection.itemName, project, m_runnerProps.value());
         return std::move(trajectoryCommand).ToPtr();
@@ -114,22 +121,35 @@ frc2::CommandPtr ThunderAutoSendableChooser::getSelectedCommand() const noexcept
   return frc2::cmd::None();
 }
 
-ThunderAutoSendableChooser::ChooserSelection ThunderAutoSendableChooser::getSelected() const noexcept {
-  ChooserSelection selection;
-
-  // Convert selection from driver type
-  {
-    driver::ThunderAutoSendableChooser::ChooserSelection driverSelection = m_handle->getSelected();
-    selection.type = static_cast<ChooserSelectionType>(driverSelection.type);
-    selection.projectName = driverSelection.projectName;
-    selection.itemName = driverSelection.itemName;
-  }
-
-  return selection;
+ThunderAutoSendableChooserSelection ThunderAutoSendableChooser::getSelected() const noexcept {
+  return m_chooser.GetSelected();
 }
 
 driver::ThunderAutoSendableChooser* ThunderAutoSendableChooser::getHandle() noexcept {
   return m_handle;
+}
+
+const driver::ThunderAutoSendableChooser* ThunderAutoSendableChooser::getHandle() const noexcept {
+  return m_handle;
+}
+
+void ThunderAutoSendableChooser::addChooserSelection(
+    const driver::ThunderAutoSendableChooserSelection& selection) noexcept {
+  m_chooser.AddOption(selection.itemName, convertChooserSelection(selection));
+}
+
+void ThunderAutoSendableChooser::publishChooser(const std::string& key) noexcept {
+  frc::SmartDashboard::PutData(key, &m_chooser);
+  frc::SmartDashboard::UpdateValues();
+}
+
+ThunderAutoSendableChooserSelection ThunderAutoSendableChooser::convertChooserSelection(
+    const driver::ThunderAutoSendableChooserSelection& driverSelection) noexcept {
+  ThunderAutoSendableChooserSelection selection;
+  selection.type = static_cast<ThunderAutoSendableChooserSelectionType>(driverSelection.type);
+  selection.projectName = driverSelection.projectName;
+  selection.itemName = driverSelection.itemName;
+  return selection;
 }
 
 }  // namespace thunder

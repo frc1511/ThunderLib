@@ -40,18 +40,39 @@ jobject FieldDimensionsConstruct(JNIEnv* env, jdouble lengthMeters, jdouble widt
 
 // com.thunder.lib.auto.ThunderAutoSendableChooser$ChooserSelection$Type
 
-#define THUNDERLIB_THUNDERAUTOSENDABLECHOOSER_CHOOSERSELECTION_TYPE_SIGNATURE "com/thunder/lib/auto/ThunderAutoSendableChooser$ChooserSelection$Type"
+#define THUNDERLIB_THUNDERAUTOSENDABLECHOOSER_CHOOSERSELECTION_TYPE_SIGNATURE \
+  "com/thunder/lib/auto/ThunderAutoSendableChooser$ChooserSelection$Type"
 
 bool LoadThunderAutoSendableChooser_ChooserSelection_TypeClass(JNIEnv* env);
 void UnloadThunderAutoSendableChooser_ChooserSelection_TypeClass(JNIEnv* env);
 
-jobject ThunderAutoSendableChooser_ChooserSelection_TypeGet(JNIEnv* env, thunder::driver::ThunderAutoSendableChooser::ChooserSelectionType type);
+jobject ThunderAutoSendableChooser_ChooserSelection_TypeGet(
+    JNIEnv* env,
+    thunder::driver::ThunderAutoSendableChooserSelectionType type);
 
-#define THUNDERLIB_THUNDERAUTOSENDABLECHOOSER_CHOOSERSELECTION_SIGNATURE "com/thunder/lib/auto/ThunderAutoSendableChooser$ChooserSelection"
+// com.thunder.lib.auto.ThunderAutoSendableChooser$ChooserSelection
+
+#define THUNDERLIB_THUNDERAUTOSENDABLECHOOSER_CHOOSERSELECTION_SIGNATURE \
+  "com/thunder/lib/auto/ThunderAutoSendableChooser$ChooserSelection"
 
 bool LoadThunderAutoSendableChooser_ChooserSelectionClass(JNIEnv* env);
 void UnloadThunderAutoSendableChooser_ChooserSelectionClass(JNIEnv* env);
 
 jobject ThunderAutoSendableChooser_ChooserSelectionConstruct(JNIEnv* env);
-jobject ThunderAutoSendableChooser_ChooserSelectionConstruct(JNIEnv* env, jobject type, jstring projectName, jstring itemName);
+jobject ThunderAutoSendableChooser_ChooserSelectionConstruct(JNIEnv* env,
+                                                             jobject type,
+                                                             jstring projectName,
+                                                             jstring itemName);
 
+jobject ThunderAutoSendableChooser_ChooserSelectionConstruct(
+    JNIEnv* env,
+    const thunder::driver::ThunderAutoSendableChooserSelection& selection);
+
+// com.thunder.lib.auto.ThunderAutoModeStep$Type
+
+#define THUNDERLIB_THUNDERAUTOMODESTEP_TYPE_SIGNATURE "com/thunder/lib/auto/ThunderAutoModeStep$Type"
+
+bool LoadThunderAutoModeStep_TypeClass(JNIEnv* env);
+void UnloadThunderAutoModeStep_TypeClass(JNIEnv* env);
+
+jobject ThunderAutoModeStep_TypeGet(JNIEnv* env, thunder::driver::ThunderAutoModeStepType type);

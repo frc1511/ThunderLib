@@ -90,6 +90,7 @@ class ThunderAutoTrajectory final : public thunder::Trajectory {
   const std::multimap<units::second_t, std::string>& getActions() const noexcept;
 
   driver::ThunderAutoTrajectory* getHandle() noexcept;
+  const driver::ThunderAutoTrajectory* getHandle() const noexcept;
 
  private:
   friend class ThunderAutoProject;

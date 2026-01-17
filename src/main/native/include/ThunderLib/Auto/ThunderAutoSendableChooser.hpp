@@ -2,6 +2,7 @@
 
 #include <ThunderLib/Auto/ThunderAutoProject.hpp>
 #include <ThunderLib/Trajectory/TrajectoryRunnerProperties.hpp>
+#include <frc/smartdashboard/SendableChooser.h>
 #include <frc2/command/CommandPtr.h>
 #include <frc2/command/Command.h>
 #include <string_view>
@@ -15,8 +16,23 @@ namespace thunder {
 namespace driver {
 
 class ThunderAutoSendableChooser;
+struct ThunderAutoSendableChooserSelection;
 
 }  // namespace driver
+
+  enum class ThunderAutoSendableChooserSelectionType {
+    NONE,
+    AUTO_MODE,
+    TRAJECTORY,
+    CUSTOM_COMMAND,
+  };
+
+  struct ThunderAutoSendableChooserSelection {
+    ThunderAutoSendableChooserSelectionType type = ThunderAutoSendableChooserSelectionType::NONE;
+    std::string projectName;
+    std::string itemName;
+  };
+
 
 /**
  * A wrapper around frc::SendableChooser to handle ThunderAuto trajectory, auto mode, and command selections.
@@ -153,28 +169,24 @@ class ThunderAutoSendableChooser final {
    */
   frc2::CommandPtr getSelectedCommand() const noexcept;
 
-  enum class ChooserSelectionType {
-    NONE,
-    AUTO_MODE,
-    TRAJECTORY,
-    CUSTOM_COMMAND,
-  };
-
-  struct ChooserSelection {
-    ChooserSelectionType type = ChooserSelectionType::NONE;
-    std::string projectName;
-    std::string itemName;
-  };
-
   /**
    * Get the currently selected item from the chooser.
    */
-  ChooserSelection getSelected() const noexcept;
+  ThunderAutoSendableChooserSelection getSelected() const noexcept;
 
   driver::ThunderAutoSendableChooser* getHandle() noexcept;
+  const driver::ThunderAutoSendableChooser* getHandle() const noexcept;
+
+  private:
+  // Callbacks
+  void addChooserSelection(const driver::ThunderAutoSendableChooserSelection& selection) noexcept;
+  void publishChooser(const std::string& key) noexcept;
+
+  static ThunderAutoSendableChooserSelection convertChooserSelection(const driver::ThunderAutoSendableChooserSelection& driverSelection) noexcept;
 
  private:
   driver::ThunderAutoSendableChooser* m_handle = nullptr;
+  frc::SendableChooser<ThunderAutoSendableChooserSelection> m_chooser;
 
   std::optional<TrajectoryRunnerProperties> m_runnerProps;
   std::unordered_map<std::string, std::shared_ptr<ThunderAutoProject>> m_includedProjects;

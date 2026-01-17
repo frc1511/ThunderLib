@@ -7,24 +7,65 @@ using namespace thunder::driver;
 /*
  * Class:     com_thunder_lib_jni_ThunderLibJNI
  * Method:    ThunderAutoSendableChooser_construct
- * Signature: ()J
+ * Signature: (Ljava/util/function/Consumer;Ljava/util/function/Consumer;)J
  */
-jlong Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoSendableChooser_1construct(JNIEnv* env, jclass) {
-  ThunderAutoSendableChooser* chooser = new ThunderAutoSendableChooser();
+jlong Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoSendableChooser_1construct(
+    JNIEnv* env,
+    jclass,
+    jobject addChooserSelectionConsumer,
+    jobject publishChooserConsumer) {
+  auto rawAddChooserSelection = std::make_shared<ConsumerWrapper>(env, addChooserSelectionConsumer);
+  auto rawPublishChooser = std::make_shared<ConsumerWrapper>(env, publishChooserConsumer);
+
+  auto addChooserSelection = [rawAddChooserSelection](const ThunderAutoSendableChooserSelection& selection) {
+    JNIEnv* env = rawAddChooserSelection->getEnv();
+    jobject jSelection = ThunderAutoSendableChooser_ChooserSelectionConstruct(env, selection);
+    rawAddChooserSelection->accept(jSelection);
+    env->DeleteLocalRef(jSelection);
+  };
+
+  auto publishChooser = [rawPublishChooser](const std::string& smartDashboardKey) {
+    JNIEnv* env = rawPublishChooser->getEnv();
+    jstring jSmartDashboardKey = env->NewStringUTF(smartDashboardKey.c_str());
+    rawPublishChooser->accept(jSmartDashboardKey);
+    env->DeleteLocalRef(jSmartDashboardKey);
+  };
+
+  ThunderAutoSendableChooser* chooser = new ThunderAutoSendableChooser(addChooserSelection, publishChooser);
   return reinterpret_cast<jlong>(chooser);
 }
 
 /*
  * Class:     com_thunder_lib_jni_ThunderLibJNI
  * Method:    ThunderAutoSendableChooser_constructWithSmartDashboardKey
- * Signature: (Ljava/lang/String;)J
+ * Signature: (Ljava/util/function/Consumer;Ljava/util/function/Consumer;Ljava/lang/String;)J
  */
 jlong Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoSendableChooser_1constructWithSmartDashboardKey(
     JNIEnv* env,
     jclass,
+    jobject addChooserSelectionConsumer,
+    jobject publishChooserConsumer,
     jstring smartDashboardKeyJStr) {
+  auto rawAddChooserSelection = std::make_shared<ConsumerWrapper>(env, addChooserSelectionConsumer);
+  auto rawPublishChooser = std::make_shared<ConsumerWrapper>(env, publishChooserConsumer);
+
+  auto addChooserSelection = [rawAddChooserSelection](const ThunderAutoSendableChooserSelection& selection) {
+    JNIEnv* env = rawAddChooserSelection->getEnv();
+    jobject jSelection = ThunderAutoSendableChooser_ChooserSelectionConstruct(env, selection);
+    rawAddChooserSelection->accept(jSelection);
+    env->DeleteLocalRef(jSelection);
+  };
+
+  auto publishChooser = [rawPublishChooser](const std::string& smartDashboardKey) {
+    JNIEnv* env = rawPublishChooser->getEnv();
+    jstring jSmartDashboardKey = env->NewStringUTF(smartDashboardKey.c_str());
+    rawPublishChooser->accept(jSmartDashboardKey);
+    env->DeleteLocalRef(jSmartDashboardKey);
+  };
+
   std::string smartDashboardKey = JStringToStdString(env, smartDashboardKeyJStr);
-  ThunderAutoSendableChooser* chooser = new ThunderAutoSendableChooser(smartDashboardKey);
+  ThunderAutoSendableChooser* chooser =
+      new ThunderAutoSendableChooser(addChooserSelection, publishChooser, smartDashboardKey);
   return reinterpret_cast<jlong>(chooser);
 }
 
@@ -173,34 +214,4 @@ jboolean Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoSendableChooser_1addA
   std::string projectName = JStringToStdString(env, projectNameJStr);
   std::string autoModeName = JStringToStdString(env, autoModeNameJStr);
   return chooser->addAutoModeFromProject(projectName, autoModeName);
-}
-
-/*
- * Class:     com_thunder_lib_jni_ThunderLibJNI
- * Method:    ThunderAutoSendableChooser_getSelected
- * Signature: (J)Lcom/thunder/lib/auto/ThunderAutoSendableChooser/ChooserSelection;
- */
-jobject Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoSendableChooser_1getSelected(JNIEnv* env,
-                                                                                       jclass,
-                                                                                       jlong chooserHandle) {
-  if (!chooserHandle) {
-    jobject selection = ThunderAutoSendableChooser_ChooserSelectionConstruct(env);
-    return selection;
-  }
-
-  ThunderAutoSendableChooser* chooser = reinterpret_cast<ThunderAutoSendableChooser*>(chooserHandle);
-  ThunderAutoSendableChooser::ChooserSelection selection = chooser->getSelected();
-
-  jobject typeJObj = ThunderAutoSendableChooser_ChooserSelection_TypeGet(env, selection.type);
-  jstring projectNameJStr = env->NewStringUTF(selection.projectName.c_str());
-  jstring itemNameJStr = env->NewStringUTF(selection.itemName.c_str());
-
-  jobject selectionJObj =
-      ThunderAutoSendableChooser_ChooserSelectionConstruct(env, typeJObj, projectNameJStr, itemNameJStr);
-
-  env->DeleteLocalRef(typeJObj);
-  env->DeleteLocalRef(projectNameJStr);
-  env->DeleteLocalRef(itemNameJStr);
-
-  return selectionJObj;
 }

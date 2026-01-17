@@ -24,10 +24,10 @@ class ThunderAutoTrajectory final {
 
   ThunderAutoTrajectoryState sample(units::second_t time) const noexcept;
 
-  virtual units::second_t getDuration() const noexcept;
+  units::second_t getDuration() const noexcept;
 
-  virtual ThunderAutoTrajectoryState getInitialState() const noexcept;
-  virtual ThunderAutoTrajectoryState getFinalState() const noexcept;
+  ThunderAutoTrajectoryState getInitialState() const noexcept;
+  ThunderAutoTrajectoryState getFinalState() const noexcept;
 
   const std::string& getStartAction() const noexcept;
   const std::string& getEndAction() const noexcept;
@@ -36,8 +36,8 @@ class ThunderAutoTrajectory final {
   const std::multimap<units::second_t, std::string>& getActions() const noexcept;
 
  private:
-   ThunderAutoTrajectoryState getState(size_t index) const noexcept;
-   ThunderAutoTrajectoryState toState(const core::ThunderAutoOutputTrajectoryPoint& point) const noexcept;
+  ThunderAutoTrajectoryState getState(size_t index) const noexcept;
+  ThunderAutoTrajectoryState toState(const core::ThunderAutoOutputTrajectoryPoint& point) const noexcept;
 
  private:
   std::shared_ptr<core::ThunderAutoOutputTrajectory> m_trajectory;

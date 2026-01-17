@@ -161,6 +161,7 @@ struct ThunderAutoProjectState {
   const std::vector<std::string>& actionsOrder = m_actionsOrder;
 
   std::unordered_set<std::string> waypointLinks;
+  std::unordered_set<std::string> trajectoryEndBehaviorLinks;
 
   ThunderAutoEditorState editorState;
 
@@ -189,7 +190,8 @@ struct ThunderAutoProjectState {
   bool operator==(const ThunderAutoProjectState& other) const noexcept {
     return trajectories == other.trajectories && autoModes == other.autoModes &&
            m_actions == other.m_actions && m_actionsOrder == other.m_actionsOrder &&
-           waypointLinks == other.waypointLinks && editorState == other.editorState;
+           waypointLinks == other.waypointLinks && trajectoryEndBehaviorLinks == other.trajectoryEndBehaviorLinks
+           && editorState == other.editorState;
   }
 
   void addAction(const std::string& actionName, const ThunderAutoAction& actionInfo) noexcept;
@@ -217,6 +219,8 @@ struct ThunderAutoProjectState {
    * @param trajectoryName The name of the trajectory to select.
    */
   void trajectorySelect(const std::string& trajectoryName);
+
+  const std::string& currentTrajectoryName() const;
 
   /**
    * Returns the currently selected trajectory as referenced by the editor state.
@@ -256,8 +260,10 @@ struct ThunderAutoProjectState {
   void currentTrajectoryToggleEditorLockedForSelectedItem();
   bool currentTrajectoryIncrementSelectedItemIndex(bool forwards = true);
 
-  void trajectoryUpdateLinkedWaypointsFromSelected();
-  void trajectoryUpdateSelectedWaypointFromLink();
+  void trajectoryUpdateAllLinkedWaypointPositionsFromSelectedWaypoint();
+  void trajectoryUpdateAllLinkedTrajectoryEndBehaviorsFromCurrentTrajectoryEndBehavior(bool updateFromStartBehavior, bool updateFromEndBehavior);
+  bool currentTrajectoryUpdateSelectedWaypointFromLink();
+  bool currentTrajectoryUpdateEndBehaviorFromLinks();
 
   void trajectoryDelete(const std::string& trajectoryName);
   void trajectoryRename(const std::string& oldTrajectoryName, const std::string& newTrajectoryName);
@@ -324,6 +330,7 @@ struct ThunderAutoProjectState {
   void validateActionsAndTrajectoriesInAutoModeStep(const std::unique_ptr<ThunderAutoModeStep>& step);
 
   void validateWaypointLinks();
+  void validateTrajectoryEndBehaviorLinks();
 
   void renameActionsInAutoModeStep(std::unique_ptr<ThunderAutoModeStep>& step,
                                    const std::string& oldName,

@@ -1,5 +1,9 @@
 #include "ThunderLibJNI.hpp"
 
+#include <ThunderLibDriver/Logger.hpp>
+
+using namespace thunder;
+
 std::string JStringToStdString(JNIEnv* env, jstring jStr) {
   if (!jStr)
     return "";
@@ -20,34 +24,76 @@ jint JNI_OnLoad(JavaVM* vm, void* reserved) {
   // Load all required classes
 
   do {
-    if (!LoadIntegerClass(env))
-      break;
-    if (!LoadDoubleClass(env))
-      break;
-    if (!LoadArrayListClass(env))
-      break;
-    if (!LoadHashSetClass(env))
-      break;
-    if (!LoadHashMapClass(env))
-      break;
+    // Java types
 
-    if (!LoadRotation2dClass(env))
+    if (!LoadIntegerClass(env)) {
+      ThunderLibLogger::Error("[JNI_OnLoad] Failed to load Integer class");
       break;
-    if (!LoadPose2dClass(env))
+    }
+    if (!LoadDoubleClass(env)) {
+      ThunderLibLogger::Error("[JNI_OnLoad] Failed to load Double class");
       break;
-    if (!LoadChassisSpeedsClass(env))
+    }
+    if (!LoadArrayListClass(env)) {
+      ThunderLibLogger::Error("[JNI_OnLoad] Failed to load ArrayList class");
       break;
-    if (!LoadPairClass(env))
+    }
+    if (!LoadHashSetClass(env)) {
+      ThunderLibLogger::Error("[JNI_OnLoad] Failed to load HashSet class");
       break;
+    }
+    if (!LoadHashMapClass(env)) {
+      ThunderLibLogger::Error("[JNI_OnLoad] Failed to load HashMap class");
+      break;
+    }
 
-    if (!LoadThunderTrajectoryStateClass(env))
+    // WPILib types
+
+    if (!LoadRotation2dClass(env)) {
+      ThunderLibLogger::Error("[JNI_OnLoad] Failed to load Rotation2d class");
       break;
-    if (!LoadFieldSymmetryClass(env))
+    }
+    if (!LoadPose2dClass(env)) {
+      ThunderLibLogger::Error("[JNI_OnLoad] Failed to load Pose2d class");
       break;
-    if (!LoadFieldDimensionsClass(env))
+    }
+    if (!LoadChassisSpeedsClass(env)) {
+      ThunderLibLogger::Error("[JNI_OnLoad] Failed to load ChassisSpeeds class");
       break;
-    if (!LoadThunderAutoSendableChooser_ChooserSelection_TypeClass(env))
+    }
+    if (!LoadPairClass(env)) {
+      ThunderLibLogger::Error("[JNI_OnLoad] Failed to load Pair class");
       break;
+    }
+
+    // ThunderLib types
+
+    if (!LoadThunderTrajectoryStateClass(env)) {
+      ThunderLibLogger::Error("[JNI_OnLoad] Failed to load ThunderTrajectoryState class");
+      break;
+    }
+    if (!LoadFieldSymmetryClass(env)) {
+      ThunderLibLogger::Error("[JNI_OnLoad] Failed to load FieldSymmetry class");
+      break;
+    }
+    if (!LoadFieldDimensionsClass(env)) {
+      ThunderLibLogger::Error("[JNI_OnLoad] Failed to load FieldDimensions class");
+      break;
+    }
+    if (!LoadThunderAutoSendableChooser_ChooserSelection_TypeClass(env)) {
+      ThunderLibLogger::Error(
+          "[JNI_OnLoad] Failed to load ThunderAutoSendableChooser_ChooserSelection_Type class");
+      break;
+    }
+    if (!LoadThunderAutoSendableChooser_ChooserSelectionClass(env)) {
+      ThunderLibLogger::Error(
+          "[JNI_OnLoad] Failed to load ThunderAutoSendableChooser_ChooserSelection class");
+      break;
+    }
+    if (!LoadThunderAutoModeStep_TypeClass(env)) {
+      ThunderLibLogger::Error("[JNI_OnLoad] Failed to load ThunderAutoModeStep_Type class");
+      break;
+    }
 
     return JNI_VERSION_1_6;
   } while (0);
@@ -75,4 +121,6 @@ void JNI_OnUnload(JavaVM* vm, void* reserved) {
   UnloadFieldSymmetryClass(env);
   UnloadFieldDimensionsClass(env);
   UnloadThunderAutoSendableChooser_ChooserSelection_TypeClass(env);
+  UnloadThunderAutoSendableChooser_ChooserSelectionClass(env);
+  UnloadThunderAutoModeStep_TypeClass(env);
 }
