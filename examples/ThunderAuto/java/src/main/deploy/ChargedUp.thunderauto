@@ -1,0 +1,520 @@
+{
+  "settings": {
+    "auto_export": false,
+    "auto_save": false,
+    "csv_export_props": {
+      "actions_bit_field": true,
+      "angular_velocity": true,
+      "centripetal_acceleration": false,
+      "component_velocities": false,
+      "curvature": false,
+      "distance": false,
+      "heading": false,
+      "linear_velocity": true,
+      "position": true,
+      "rotation": true,
+      "time": true
+    },
+    "drive_controller": 0,
+    "field": {
+      "img": "2023",
+      "img_type": 1
+    },
+    "robot_corner_radius": 0.2,
+    "robot_length": 0.800000011920929,
+    "robot_width": 0.800000011920929,
+    "version_major": 2026
+  },
+  "state": {
+    "actions": {
+      "ConeIntake_Start": {
+        "type": "command"
+      },
+      "ConeIntake_Stop": {
+        "type": "command"
+      },
+      "MoveArm_High": {
+        "type": "command"
+      },
+      "MoveArm_Low": {
+        "type": "command"
+      },
+      "MoveArm_Middle": {
+        "type": "command"
+      },
+      "NotifyDone": {
+        "type": "command"
+      },
+      "ScoreCone_High": {
+        "type": "command"
+      },
+      "ScoreCone_Middle": {
+        "type": "command"
+      },
+      "ScoreCube_High": {
+        "type": "command"
+      }
+    },
+    "actions_order": [
+      "ScoreCone_High",
+      "ScoreCube_High",
+      "ScoreCone_Middle",
+      "MoveArm_Low",
+      "MoveArm_Middle",
+      "MoveArm_High",
+      "ConeIntake_Start",
+      "ConeIntake_Stop",
+      "NotifyDone"
+    ],
+    "auto_modes": {
+      "Barrier_3GP": {
+        "steps": [
+          {
+            "action": "ScoreCube_High",
+            "type": "action"
+          },
+          {
+            "trajectory": "BarrierStart_To_GP1",
+            "type": "trajectory"
+          },
+          {
+            "condition": "HasGamePiece",
+            "else_branch": [
+              {
+                "trajectory": "GP1_To_GP2",
+                "type": "trajectory"
+              }
+            ],
+            "true_branch": [
+              {
+                "trajectory": "GP1_To_Grid",
+                "type": "trajectory"
+              },
+              {
+                "action": "ScoreCone_Middle",
+                "type": "action"
+              },
+              {
+                "trajectory": "Grid_To_GP2",
+                "type": "trajectory"
+              }
+            ],
+            "type": "branch_bool"
+          },
+          {
+            "condition": "HasGamePiece",
+            "true_branch": [
+              {
+                "trajectory": "GP2_To_Grid",
+                "type": "trajectory"
+              },
+              {
+                "action": "ScoreCone_High",
+                "type": "action"
+              }
+            ],
+            "type": "branch_bool"
+          },
+          {
+            "action": "NotifyDone",
+            "type": "action"
+          }
+        ]
+      }
+    },
+    "editor_state": {
+      "auto_mode_editor_state": {
+        "current_auto_mode_name": "Barrier_3GP"
+      },
+      "trajectory_editor_state": {
+        "current_trajectory_name": "Grid_To_GP2"
+      },
+      "view": 1
+    },
+    "trajectories": {
+      "BarrierStart_To_GP1": {
+        "actions": [
+          {
+            "item": {
+              "action": "MoveArm_Low",
+              "editor_locked": false
+            },
+            "position": 0.29026363006793077
+          },
+          {
+            "item": {
+              "action": "ConeIntake_Start",
+              "editor_locked": false
+            },
+            "position": 1.590166204154042
+          }
+        ],
+        "end_action": "ConeIntake_Stop",
+        "end_behavior_link": "Collect_GP1",
+        "end_rotation": -0.3129563640247029,
+        "points": [
+          {
+            "editor_locked": false,
+            "heading_weights": {
+              "incoming_weight": 1.0,
+              "outgoing_weight": 0.41274526715278625
+            },
+            "headings": {
+              "incoming_angle": -1.9960838449626481,
+              "outgoing_angle": 1.1455088086271452
+            },
+            "link": "",
+            "position": {
+              "x": 1.7543607950210571,
+              "y": 4.434673309326172
+            }
+          },
+          {
+            "editor_locked": false,
+            "heading_weights": {
+              "incoming_weight": 1.0,
+              "outgoing_weight": 0.5
+            },
+            "headings": {
+              "incoming_angle": 3.141592653589793,
+              "outgoing_angle": -0.0
+            },
+            "link": "",
+            "position": {
+              "x": 4.235558032989502,
+              "y": 4.7063469886779785
+            }
+          },
+          {
+            "editor_locked": false,
+            "heading_weights": {
+              "incoming_weight": 1.0,
+              "outgoing_weight": 1.0
+            },
+            "headings": {
+              "incoming_angle": 2.7663468644110125,
+              "outgoing_angle": -0.3752457891787808
+            },
+            "link": "",
+            "position": {
+              "x": 6.651991367340088,
+              "y": 4.698727607727051
+            }
+          }
+        ],
+        "rotations": [
+          {
+            "item": {
+              "angle": 3.141592653589793,
+              "editor_locked": false
+            },
+            "position": 0.7257834286531346
+          },
+          {
+            "item": {
+              "angle": 0.0,
+              "editor_locked": false
+            },
+            "position": 1.5409856512621585
+          }
+        ],
+        "settings": {
+          "max_angular_accel": 6.283185307179586,
+          "max_angular_velocity": 6.283185307179586,
+          "max_centripetal_accel": 19.6200008392334,
+          "max_linear_accel": 3.0,
+          "max_linear_velocity": 2.5
+        },
+        "start_behavior_link": "Grid_ScoreCube",
+        "start_rotation": 3.141592653589793
+      },
+      "GP1_To_GP2": {
+        "end_action": "ConeIntake_Stop",
+        "end_behavior_link": "Collect_GP2",
+        "end_rotation": -0.8983209873067701,
+        "points": [
+          {
+            "editor_locked": false,
+            "heading_weights": {
+              "incoming_weight": 1.0,
+              "outgoing_weight": 0.49223714023318993
+            },
+            "headings": {
+              "incoming_angle": 0.759857111207984,
+              "outgoing_angle": -2.381735542381809
+            },
+            "link": "",
+            "position": {
+              "x": 6.651991367340088,
+              "y": 4.698727607727051
+            }
+          },
+          {
+            "editor_locked": false,
+            "heading_weights": {
+              "incoming_weight": 0.7443742156028748,
+              "outgoing_weight": 1.0
+            },
+            "headings": {
+              "incoming_angle": 2.243271666283023,
+              "outgoing_angle": -0.8983209873067701
+            },
+            "link": "",
+            "position": {
+              "x": 6.768819332122803,
+              "y": 3.6971395015716553
+            }
+          }
+        ],
+        "settings": {
+          "max_angular_accel": 6.283185307179586,
+          "max_angular_velocity": 6.283185307179586,
+          "max_centripetal_accel": 19.6200008392334,
+          "max_linear_accel": 3.0,
+          "max_linear_velocity": 2.5
+        },
+        "start_action": "ConeIntake_Start",
+        "start_behavior_link": "Collect_GP1",
+        "start_rotation": -0.3129563640247029
+      },
+      "GP1_To_Grid": {
+        "actions": [
+          {
+            "item": {
+              "action": "MoveArm_Middle",
+              "editor_locked": false
+            },
+            "position": 1.4920685757246666
+          }
+        ],
+        "end_behavior_link": "Grid_ScoreCone",
+        "end_rotation": 3.141592653589793,
+        "points": [
+          {
+            "editor_locked": false,
+            "heading_weights": {
+              "incoming_weight": 0.9999999999999999,
+              "outgoing_weight": 1.0
+            },
+            "headings": {
+              "incoming_angle": -1.2246467991473532e-16,
+              "outgoing_angle": 3.141592653589793
+            },
+            "link": "",
+            "position": {
+              "x": 6.651991367340088,
+              "y": 4.698727607727051
+            }
+          },
+          {
+            "editor_locked": false,
+            "heading_weights": {
+              "incoming_weight": 0.5,
+              "outgoing_weight": 1.0
+            },
+            "headings": {
+              "incoming_angle": -0.0,
+              "outgoing_angle": 3.141592653589793
+            },
+            "link": "",
+            "position": {
+              "x": 4.235558032989502,
+              "y": 4.7063469886779785
+            }
+          },
+          {
+            "editor_locked": false,
+            "heading_weights": {
+              "incoming_weight": 0.4953777859636039,
+              "outgoing_weight": 0.9999999999999999
+            },
+            "headings": {
+              "incoming_angle": -0.6017689277456846,
+              "outgoing_angle": 2.5398237258441085
+            },
+            "link": "",
+            "position": {
+              "x": 1.728838562965393,
+              "y": 5.072023391723633
+            }
+          }
+        ],
+        "rotations": [
+          {
+            "item": {
+              "angle": 3.141592653589793,
+              "editor_locked": false
+            },
+            "position": 1.269844114628965
+          }
+        ],
+        "settings": {
+          "max_angular_accel": 6.283185307179586,
+          "max_angular_velocity": 6.283185307179586,
+          "max_centripetal_accel": 19.6200008392334,
+          "max_linear_accel": 3.0,
+          "max_linear_velocity": 2.5
+        },
+        "start_behavior_link": "Collect_GP1",
+        "start_rotation": -0.3129563640247029
+      },
+      "GP2_To_Grid": {
+        "actions": [
+          {
+            "item": {
+              "action": "MoveArm_High",
+              "editor_locked": false
+            },
+            "position": 0.736849456577851
+          }
+        ],
+        "end_behavior_link": "Grid_ScoreCone",
+        "end_rotation": 3.141592653589793,
+        "points": [
+          {
+            "editor_locked": false,
+            "heading_weights": {
+              "incoming_weight": 0.9999999999999999,
+              "outgoing_weight": 1.7605454391413646
+            },
+            "headings": {
+              "incoming_angle": -0.9341439173059297,
+              "outgoing_angle": 2.2074487362838635
+            },
+            "link": "",
+            "position": {
+              "x": 6.768819332122803,
+              "y": 3.6971395015716553
+            }
+          },
+          {
+            "editor_locked": false,
+            "heading_weights": {
+              "incoming_weight": 0.8665673458081623,
+              "outgoing_weight": 1.0
+            },
+            "headings": {
+              "incoming_angle": -0.7432018957583332,
+              "outgoing_angle": 2.3983907578314603
+            },
+            "link": "",
+            "position": {
+              "x": 1.728838562965393,
+              "y": 5.072023391723633
+            }
+          }
+        ],
+        "rotations": [
+          {
+            "item": {
+              "angle": 3.141592653589793,
+              "editor_locked": false
+            },
+            "position": 0.7067734787635178
+          }
+        ],
+        "settings": {
+          "max_angular_accel": 6.283185307179586,
+          "max_angular_velocity": 6.283185307179586,
+          "max_centripetal_accel": 19.6200008392334,
+          "max_linear_accel": 3.0,
+          "max_linear_velocity": 2.5
+        },
+        "start_behavior_link": "Collect_GP2",
+        "start_rotation": -0.8983209873067701
+      },
+      "Grid_To_GP2": {
+        "actions": [
+          {
+            "item": {
+              "action": "MoveArm_Low",
+              "editor_locked": false
+            },
+            "position": 0.1729320950815882
+          },
+          {
+            "item": {
+              "action": "ConeIntake_Start",
+              "editor_locked": false
+            },
+            "position": 0.8270723788865532
+          }
+        ],
+        "end_action": "ConeIntake_Stop",
+        "end_behavior_link": "Collect_GP2",
+        "end_rotation": -0.8983209873067701,
+        "points": [
+          {
+            "editor_locked": false,
+            "heading_weights": {
+              "incoming_weight": 1.0,
+              "outgoing_weight": 1.1176965175163505
+            },
+            "headings": {
+              "incoming_angle": 2.81656845300847,
+              "outgoing_angle": -0.32502420058132336
+            },
+            "link": "",
+            "position": {
+              "x": 1.728838562965393,
+              "y": 5.072023391723633
+            }
+          },
+          {
+            "editor_locked": false,
+            "heading_weights": {
+              "incoming_weight": 1.7605454921722412,
+              "outgoing_weight": 1.0
+            },
+            "headings": {
+              "incoming_angle": 2.2074487540910677,
+              "outgoing_angle": -0.9341438994987257
+            },
+            "link": "",
+            "position": {
+              "x": 6.768819332122803,
+              "y": 3.6971395015716553
+            }
+          }
+        ],
+        "rotations": [
+          {
+            "item": {
+              "angle": 3.141592653589793,
+              "editor_locked": false
+            },
+            "position": 0.30075319888935714
+          },
+          {
+            "item": {
+              "angle": -0.4938730365882157,
+              "editor_locked": false
+            },
+            "position": 0.7067720800425504
+          }
+        ],
+        "settings": {
+          "max_angular_accel": 6.283185307179586,
+          "max_angular_velocity": 6.283185307179586,
+          "max_centripetal_accel": 19.6200008392334,
+          "max_linear_accel": 3.0,
+          "max_linear_velocity": 2.5
+        },
+        "start_behavior_link": "Grid_ScoreCone",
+        "start_rotation": 3.141592653589793
+      }
+    },
+    "trajectory_end_behavior_links": [
+      "Collect_GP1",
+      "Grid_ScoreCone",
+      "Grid_ScoreCube",
+      "Collect_GP2"
+    ],
+    "waypoint_links": [
+    ]
+  },
+  "version": {
+    "major": 2026,
+    "minor": 0
+  }
+}

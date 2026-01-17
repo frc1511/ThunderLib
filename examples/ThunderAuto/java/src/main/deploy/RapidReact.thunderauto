@@ -1,0 +1,220 @@
+{
+  "settings": {
+    "auto_export": false,
+    "auto_save": false,
+    "csv_export_props": {
+      "actions_bit_field": true,
+      "angular_velocity": true,
+      "centripetal_acceleration": false,
+      "component_velocities": false,
+      "curvature": false,
+      "distance": false,
+      "heading": false,
+      "linear_velocity": true,
+      "position": true,
+      "rotation": true,
+      "time": true
+    },
+    "drive_controller": 0,
+    "field": {
+      "img": "2022",
+      "img_type": 1
+    },
+    "robot_corner_radius": 0.2,
+    "robot_length": 0.800000011920929,
+    "robot_width": 0.800000011920929,
+    "version_major": 2026
+  },
+  "state": {
+    "actions": {
+      "ShootAll": {
+        "type": "command"
+      },
+      "StartIntake": {
+        "type": "command"
+      },
+      "StopIntake": {
+        "type": "command"
+      }
+    },
+    "actions_order": [
+      "ShootAll",
+      "StartIntake",
+      "StopIntake"
+    ],
+    "auto_modes": {},
+    "editor_state": {
+      "auto_mode_editor_state": {
+        "current_auto_mode_name": ""
+      },
+      "trajectory_editor_state": {
+        "current_trajectory_name": "Full5Cargo"
+      },
+      "view": 1
+    },
+    "trajectories": {
+      "Full5Cargo": {
+        "actions": [
+          {
+            "item": {
+              "action": "StartIntake",
+              "editor_locked": false
+            },
+            "position": 0.5675842757571713
+          },
+          {
+            "item": {
+              "action": "StopIntake",
+              "editor_locked": false
+            },
+            "position": 1.898537599838833
+          },
+          {
+            "item": {
+              "action": "StartIntake",
+              "editor_locked": false
+            },
+            "position": 2.5210084124729155
+          },
+          {
+            "item": {
+              "action": "StopIntake",
+              "editor_locked": false
+            },
+            "position": 3.146551730431809
+          }
+        ],
+        "end_action": "ShootAll",
+        "end_rotation": 0.44635485344498654,
+        "points": [
+          {
+            "editor_locked": false,
+            "heading_weights": {
+              "incoming_weight": 1.0,
+              "outgoing_weight": 0.6970425248146057
+            },
+            "headings": {
+              "incoming_angle": 0.6087341766937341,
+              "outgoing_angle": -2.532858476896059
+            },
+            "link": "",
+            "position": {
+              "x": 8.575714111328125,
+              "y": 1.7598544359207153
+            }
+          },
+          {
+            "editor_locked": false,
+            "heading_weights": {
+              "incoming_weight": 0.6100090951500955,
+              "outgoing_weight": 2.4714312710172788
+            },
+            "headings": {
+              "incoming_angle": 1.448875477030865,
+              "outgoing_angle": 3.1298714202365496
+            },
+            "link": "",
+            "max_velocity_override": 0.0,
+            "position": {
+              "x": 7.619369983673096,
+              "y": 0.6494991779327393
+            },
+            "stop_rotation": -1.5707963267948966
+          },
+          {
+            "editor_locked": false,
+            "heading_weights": {
+              "incoming_weight": 3.906999349594116,
+              "outgoing_weight": 2.145336300454212
+            },
+            "headings": {
+              "incoming_angle": -2.653027562394405,
+              "outgoing_angle": -3.1072570134951163
+            },
+            "link": "",
+            "max_velocity_override": 0.0,
+            "position": {
+              "x": 5.992675304412842,
+              "y": 2.353712320327759
+            },
+            "stop_action": "ShootAll",
+            "stop_rotation": 0.6371208107528885
+          },
+          {
+            "editor_locked": false,
+            "heading_weights": {
+              "incoming_weight": 1.5557441564428542,
+              "outgoing_weight": 2.1060993883143753
+            },
+            "headings": {
+              "incoming_angle": 0.5049188839444139,
+              "outgoing_angle": 0.3871026340329676
+            },
+            "link": "",
+            "max_velocity_override": 0.0,
+            "position": {
+              "x": 1.2655390501022339,
+              "y": 1.3433425426483154
+            },
+            "stop_rotation": -2.373207084812237
+          },
+          {
+            "editor_locked": false,
+            "heading_weights": {
+              "incoming_weight": 1.7368959188461304,
+              "outgoing_weight": 1.0
+            },
+            "headings": {
+              "incoming_angle": -2.8469148443684205,
+              "outgoing_angle": 0.29467780922137254
+            },
+            "link": "",
+            "position": {
+              "x": 5.36438512802124,
+              "y": 2.8183562755584717
+            }
+          }
+        ],
+        "rotations": [
+          {
+            "item": {
+              "angle": 0.6207407006562344,
+              "editor_locked": false
+            },
+            "position": 1.6087173622913056
+          },
+          {
+            "item": {
+              "angle": 0.6240511749918278,
+              "editor_locked": false
+            },
+            "position": 1.7318502683084054
+          },
+          {
+            "item": {
+              "angle": -2.5901420769083243,
+              "editor_locked": false
+            },
+            "position": 2.7520664055159134
+          }
+        ],
+        "settings": {
+          "max_angular_accel": 4.71238898038469,
+          "max_angular_velocity": 4.71238898038469,
+          "max_centripetal_accel": 19.6200008392334,
+          "max_linear_accel": 3.0,
+          "max_linear_velocity": 3.0
+        },
+        "start_action": "ShootAll",
+        "start_rotation": -1.541121654874525
+      }
+    },
+    "waypoint_links": [
+      "CollectCargo1"
+    ]
+  },
+  "version": {
+    "major": 2026,
+    "minor": 0
+  }
+}
