@@ -1,0 +1,57 @@
+name: Build ThunderLib API Docs
+
+on:
+  workflow_dispatch:
+    inputs:
+
+jobs:
+  build-api:
+    name: "Build API Docs"
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v6
+
+      - name: Setup java
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: 17
+
+      - name: Build with Gradle
+        run: ./gradlew javadoc
+
+      - name: Get Doxygen theme
+        run: |
+          git clone -b v2.4.1 https://github.com/jothepro/doxygen-awesome-css.git
+
+      - name: Generate Doxygen docs
+        uses: mattnotmitt/doxygen-action@v1.12
+
+      - name: Move docs to api directory
+        run: |
+          mkdir -p _site/api
+          sudo mv build/docs/javadoc _site/api/java
+          sudo mv build/docs/cpp/html _site/api/cpp
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v4
+
+  deploy-pages:
+    name: "Deploy GitHub Pages"
+    runs-on: ubuntu-22.04
+    needs: build-api
+
+    permissions:
+      pages: write
+      id-token: write
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
