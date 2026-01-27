@@ -9,7 +9,7 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.units.measure.Angle;
 
 /**
- * Represents an angle in the range of (-π, π].
+ * Represents an angle in the range of (-pi, pi].
  * This class is similar to Rotation2d, but is designed to represent angles in a
  * more mathematically consistent way, avoiding issues with wrapping and
  * discontinuities.
