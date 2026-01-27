@@ -475,14 +475,14 @@ void ThunderAutoTrajectorySkeleton::reverseDirection() {
     size_t pointIndex = builtTrajectory->trajectoryPositionToPointIndex(position);
     ThunderLibCoreAssert(pointIndex < builtTrajectory->points.size());
     units::meter_t distance = builtTrajectory->points[pointIndex].distance;
-    rotations.emplace_back(originalTrajectoryDistance - distance, rotation.angle);
+    rotations.push_back(RotationAtCoordinate{originalTrajectoryDistance - distance, rotation.angle});
   }
 
   for (const auto& [position, action] : m_actions) {
     size_t pointIndex = builtTrajectory->trajectoryPositionToPointIndex(position);
     ThunderLibCoreAssert(pointIndex < builtTrajectory->points.size());
     units::meter_t distance = builtTrajectory->points[pointIndex].distance;
-    actions.emplace_back(originalTrajectoryDistance - distance, action.action);
+    actions.push_back(ActionAtCoordinate{originalTrajectoryDistance - distance, action.action});
   }
 
   m_rotations.clear();
@@ -1105,7 +1105,7 @@ void ThunderAutoTrajectorySkeleton::fromJsonPre2026(const wpi::json& json,
         unsigned actionBits = pointJson.at("actions").get<unsigned>();
         for (size_t bit = 0; bit < availableActions.size(); bit++) {
           if (actionBits & (1U << bit)) {
-            positionedActions.emplace_back(static_cast<double>(pointIndex), availableActions[bit]);
+            positionedActions.push_back(PositionedAction{static_cast<double>(pointIndex), availableActions[bit]});
           }
         }
       }

@@ -578,14 +578,14 @@ static std::map<ThunderAutoTrajectoryPosition, CanonicalAngle> GetAllRotationTar
     rotations.emplace(position, rot.second.angle);
   }
 
-  rotations.emplace(0.0, skeleton.startRotation());
+  rotations.emplace(ThunderAutoTrajectoryPosition(0.0), skeleton.startRotation());
   rotations.emplace(maxPosition, skeleton.endRotation());
 
   if (waypoints.size() > 2) {
     size_t waypointIndex = 1;
     for (auto it = std::next(waypoints.begin()); it != std::prev(waypoints.end()); ++it, ++waypointIndex) {
       if (it->isStopped()) {
-        rotations.emplace(static_cast<double>(waypointIndex), it->stopRotation());
+        rotations.emplace(ThunderAutoTrajectoryPosition(static_cast<double>(waypointIndex)), it->stopRotation());
       }
     }
   }
@@ -1043,7 +1043,7 @@ static std::multimap<ThunderAutoTrajectoryPosition, ThunderAutoTrajectoryAction>
   std::multimap<ThunderAutoTrajectoryPosition, ThunderAutoTrajectoryAction> actions = skeleton.actions();
 
   if (skeleton.hasStartAction()) {
-    actions.emplace(0.0, skeleton.startAction());
+    actions.emplace(ThunderAutoTrajectoryPosition(0.0), skeleton.startAction());
   }
 
   if (skeleton.points().size() > 2) {
@@ -1057,14 +1057,14 @@ static std::multimap<ThunderAutoTrajectoryPosition, ThunderAutoTrajectoryAction>
       if (waypoint.isStopped() && waypoint.hasStopAction()) {
         double position = static_cast<double>(waypointIndex);
         const std::string& stopActionName = waypoint.stopAction();
-        actions.emplace(position, stopActionName);
+        actions.emplace(ThunderAutoTrajectoryPosition(position), stopActionName);
       }
       waypointIndex++;
     }
   }
 
   if (skeleton.hasEndAction()) {
-    actions.emplace(static_cast<double>(skeleton.points().size() - 1), skeleton.endAction());
+    actions.emplace(ThunderAutoTrajectoryPosition(static_cast<double>(skeleton.points().size() - 1)), skeleton.endAction());
   }
 
   return actions;

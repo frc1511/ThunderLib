@@ -11,7 +11,6 @@ namespace thunder::core {
 
 static const std::string kThunderLibCoreLoggerName = "ThunderLibCore";
 
-
 static std::mutex s_loggerMutex;
 static std::shared_ptr<spdlog::logger> s_thunderLibLogger;
 
@@ -37,7 +36,7 @@ void ThunderLibCoreLogger::make(spdlog::sink_ptr sink) {
 }
 
 void ThunderLibCoreLogger::make(std::vector<spdlog::sink_ptr>::const_iterator begin,
-                            std::vector<spdlog::sink_ptr>::const_iterator end) {
+                                std::vector<spdlog::sink_ptr>::const_iterator end) {
   std::lock_guard<std::mutex> lock(s_loggerMutex);
   drop(kThunderLibCoreLoggerName);
   s_thunderLibLogger.reset();
@@ -61,7 +60,8 @@ void ThunderLibCoreLogger::makeStdoutLogger() {
   s_thunderLibLogger = spdlog::stdout_color_mt(kThunderLibCoreLoggerName);
 }
 
-std::filesystem::path MakeLogFilePath(const std::filesystem::path& logsDirectory, const std::string& name /*= ""*/) {
+std::filesystem::path MakeLogFilePath(const std::filesystem::path& logsDirectory,
+                                      const std::string& name /*= ""*/) {
   time_t now = std::time(nullptr);
   std::tm* localTime = std::localtime(&now);
 
@@ -176,7 +176,7 @@ void CleanupLogsDirectory(const std::filesystem::path& logsDir, size_t maxFiles)
       continue;
     }
 
-    logFiles.emplace_back(timestamp, path);
+    logFiles.push_back(LogFile{timestamp, path});
   }
 
   std::sort(logFiles.begin(), logFiles.end());

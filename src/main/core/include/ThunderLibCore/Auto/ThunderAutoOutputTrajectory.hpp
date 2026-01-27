@@ -38,6 +38,11 @@ struct ThunderAutoOutputTrajectorySegment {
     units::meter_t distance;
     Point2d position;
     units::curvature_t curvature{0.0};
+
+    SampledPoint() = default;
+    SampledPoint(units::meter_t dist, const Point2d& pos) : distance(dist), position(pos), curvature(0.0) {}
+    SampledPoint(units::meter_t dist, const Point2d& pos, units::curvature_t curv)
+        : distance(dist), position(pos), curvature(curv) {}
   };
 
   /**
