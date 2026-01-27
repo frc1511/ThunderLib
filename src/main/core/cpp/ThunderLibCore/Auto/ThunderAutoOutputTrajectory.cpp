@@ -490,8 +490,7 @@ static void AddWaypointMaxVelocityOverrideConstraints(
   auto waypointIt = waypoints.cbegin();
   auto segmentIt = segments.cbegin();
 
-  for (size_t waypointIndex = 0; waypointIndex < waypoints.size();
-       ++waypointIndex, ++waypointIt, ++segmentIt) {
+  for (size_t waypointIndex = 0; waypointIndex < waypoints.size(); ++waypointIndex, ++waypointIt) {
     bool isFirstWaypoint = (waypointIndex == 0);
     bool isLastWaypoint = (!isFirstWaypoint && (waypointIndex == waypoints.size() - 1));
 
@@ -499,7 +498,7 @@ static void AddWaypointMaxVelocityOverrideConstraints(
     if (isLastWaypoint) {
       outputPointIndex = maxVelocities.size() - 1;  // Last point in the trajectory.
     } else {
-      outputPointIndex = segmentIt->startIndex;
+      outputPointIndex = (segmentIt++)->startIndex;
     }
 
     if (waypointIt->hasMaxVelocityOverride()) {
@@ -999,12 +998,12 @@ static void CalculateHeadingsAndChassisSpeeds(ThunderAutoOutputTrajectory& outpu
   auto currentPointIt = output.points.begin();
   auto nextPointIt = std::next(currentPointIt);
 
-  for (; currentPointIt != output.points.end(); ++currentPointIt, ++nextPointIt) {
+  for (; currentPointIt != output.points.end(); ++currentPointIt) {
     if (nextPointIt == output.points.end()) {
       currentPointIt->heading = std::prev(currentPointIt)->heading;
     } else {
       // Calculate the heading based on the next point's position.
-      Displacement2d displacement = nextPointIt->position - currentPointIt->position;
+      Displacement2d displacement = (nextPointIt++)->position - currentPointIt->position;
       currentPointIt->heading = displacement.angle();
     }
 
