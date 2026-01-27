@@ -28,8 +28,7 @@ public class ThunderAutoSendableChooser {
    */
   public ThunderAutoSendableChooser() {
     m_handle = ThunderLibJNI.ThunderAutoSendableChooser_construct(
-        (ChooserSelection selection) -> addChooserSelection(selection),
-        (String smartDashboardKey) -> publishChooser(smartDashboardKey));
+        this::addChooserSelection, this::publishChooser);
     m_cleaner.register(this, new ThunderAutoSendableChooserCleanup(m_handle));
     m_chooser.setDefaultOption("Do Nothing", new ChooserSelection());
   }
@@ -43,9 +42,7 @@ public class ThunderAutoSendableChooser {
    */
   public ThunderAutoSendableChooser(String smartDashboardKey) {
     m_handle = ThunderLibJNI.ThunderAutoSendableChooser_constructWithSmartDashboardKey(
-        (ChooserSelection selection) -> addChooserSelection(selection),
-        (String key) -> publishChooser(key),
-        smartDashboardKey);
+        this::addChooserSelection, this::publishChooser, smartDashboardKey);
     m_cleaner.register(this, new ThunderAutoSendableChooserCleanup(m_handle));
     m_chooser.setDefaultOption("Do Nothing", new ChooserSelection());
   }
@@ -60,8 +57,7 @@ public class ThunderAutoSendableChooser {
    */
   public ThunderAutoSendableChooser(ThunderTrajectoryRunnerProperties runnerProps) {
     m_handle = ThunderLibJNI.ThunderAutoSendableChooser_construct(
-        (ChooserSelection selection) -> addChooserSelection(selection),
-        (String smartDashboardKey) -> publishChooser(smartDashboardKey));
+        this::addChooserSelection, this::publishChooser);
     m_cleaner.register(this, new ThunderAutoSendableChooserCleanup(m_handle));
     m_runnerProps = Optional.of(runnerProps);
     m_chooser.setDefaultOption("Do Nothing", new ChooserSelection());
@@ -79,9 +75,7 @@ public class ThunderAutoSendableChooser {
    */
   public ThunderAutoSendableChooser(String smartDashboardKey, ThunderTrajectoryRunnerProperties runnerProps) {
     m_handle = ThunderLibJNI.ThunderAutoSendableChooser_constructWithSmartDashboardKey(
-        (ChooserSelection selection) -> addChooserSelection(selection),
-        (String key) -> publishChooser(key),
-        smartDashboardKey);
+        this::addChooserSelection, this::publishChooser, smartDashboardKey);
     m_cleaner.register(this, new ThunderAutoSendableChooserCleanup(m_handle));
     m_runnerProps = Optional.of(runnerProps);
     m_chooser.setDefaultOption("Do Nothing", new ChooserSelection());

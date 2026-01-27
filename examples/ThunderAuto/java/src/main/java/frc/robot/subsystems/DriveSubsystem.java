@@ -70,6 +70,12 @@ public class DriveSubsystem extends SubsystemBase {
   private HolonomicDriveController holonomicDriveController = new HolonomicDriveController(
       xController, yController, thetaController);
 
+  private ThunderTrajectoryRunnerProperties trajectoryRunnerProperties = new ThunderTrajectoryRunnerProperties(
+      this::getCurrentPose,
+      this::setCurrentPose,
+      this::setChassisSpeeds,
+      holonomicDriveController);
+
   public DriveSubsystem() {
     gyro.reset();
   }
@@ -81,11 +87,7 @@ public class DriveSubsystem extends SubsystemBase {
    * @return The ThunderTrajectoryRunnerProperties for this drivetrain.
    */
   public ThunderTrajectoryRunnerProperties getTrajectoryRunnerProperties() {
-    return new ThunderTrajectoryRunnerProperties(
-        () -> getCurrentPose(),
-        (Pose2d pose) -> setCurrentPose(pose),
-        (ChassisSpeeds speeds) -> setChassisSpeeds(speeds),
-        holonomicDriveController);
+    return trajectoryRunnerProperties;
   }
 
   /**
