@@ -17,6 +17,7 @@ namespace thunder::driver {
 ThunderAutoProject::ThunderAutoProject() noexcept
     : m_networkTableInstance(nt::NetworkTableInstance::GetDefault()),
       m_thunderAutoNetworkTable(m_networkTableInstance.GetTable("ThunderAuto")),
+      m_thunderAutoTimestampsNetworkTable(m_thunderAutoNetworkTable->GetSubTable("Timestamps")),
       m_fmsInfoNetworkTable(m_networkTableInstance.GetTable("FMSInfo")) {
   m_initializeTimestamp = std::chrono::steady_clock::now();
 }
@@ -28,8 +29,8 @@ ThunderAutoProject::ThunderAutoProject(const std::filesystem::path& projectPath)
 
 ThunderAutoProject::~ThunderAutoProject() noexcept {
   // Deregister Network Tables listener.
-  if (m_thunderAutoNetworkTable && m_ntRemoteUpdateListenerId != 0) {
-    m_thunderAutoNetworkTable->RemoveListener(m_ntRemoteUpdateListenerId);
+  if (m_thunderAutoTimestampsNetworkTable && m_ntRemoteUpdateListenerId != 0) {
+    m_thunderAutoTimestampsNetworkTable->RemoveListener(m_ntRemoteUpdateListenerId);
     m_ntRemoteUpdateListenerId = 0;
   }
 }
@@ -78,8 +79,8 @@ bool ThunderAutoProject::load(const std::filesystem::path& projectPath) noexcept
 
   // Setup Network Tables listener.
 
-  m_ntRemoteUpdateListenerId = m_thunderAutoNetworkTable->AddListener(
-      getName(), nt::EventFlags::kValueRemote | nt::EventFlags::kTimeSync,
+  m_ntRemoteUpdateListenerId = m_thunderAutoTimestampsNetworkTable->AddListener(
+      getName(), nt::EventFlags::kValueRemote,
       [this](nt::NetworkTable* table, std::string_view key, const nt::Event& event) {
         remoteUpdateReceived(event);
       });
@@ -283,18 +284,19 @@ bool ThunderAutoProject::unregisterRemoteUpdateSubscriber(RemoteUpdateSubscriber
   return m_remoteUpdateSubscribers.erase(subscriberId) > 0;
 }
 
-void ThunderAutoProject::remoteUpdateReceived(const nt::Event& event) noexcept {
+void ThunderAutoProject::remoteUpdateReceived(const nt::Event& timestampChangedEvent) noexcept {
   if (!m_remoteUpdatesEnabled || !isLoaded())
     return;
 
-  const std::string remoteIP = event.GetConnectionInfo() ? event.GetConnectionInfo()->remote_ip : "UNKNOWN";
+  const nt::ConnectionInfo* connectionInfo = timestampChangedEvent.GetConnectionInfo();
+  const std::string remoteIP = connectionInfo ? connectionInfo->remote_ip : "unknown";
 
   auto now = std::chrono::steady_clock::now();
   auto timeSinceInit = now - m_initializeTimestamp;
   if (timeSinceInit < std::chrono::seconds(10)) {
     // An update may have already been published to NetworkTables before the robot program started, but we
-    // still get the notification. To avoid this issue, we ignore any remote updates received within 10 seconds
-    // of initialization.
+    // still get the notification. To avoid this issue, we ignore any remote updates received within 10
+    // seconds of initialization.
     ThunderLibLogger::Warn(
         "Remote update for project '{}' from '{}' skipped: received too soon after initialization", getName(),
         remoteIP);
@@ -310,7 +312,7 @@ void ThunderAutoProject::remoteUpdateReceived(const nt::Event& event) noexcept {
 
   {
     nt::Value controlWordValue = m_fmsInfoNetworkTable->GetValue("FMSControlData");
-    if (!controlWordValue.IsValid()) {
+    if (!controlWordValue.IsValid() || !controlWordValue.IsInteger()) {
       ThunderLibLogger::Warn(
           "Remote update for project '{}' from '{}' skipped: Could not get FMS control data", getName(),
           remoteIP);
@@ -332,15 +334,23 @@ void ThunderAutoProject::remoteUpdateReceived(const nt::Event& event) noexcept {
     }
   }
 
+  nt::Value stateValue = m_thunderAutoNetworkTable->GetValue(getName());
+  if (!stateValue.IsValid() || !stateValue.IsRaw()) {
+    ThunderLibLogger::Warn(
+        "Remote update for project '{}' from '{}' skipped: Could not get project state data", getName(),
+        remoteIP);
+    return;
+  }
+
   // Deserialize new state.
 
-  std::span<const uint8_t> eventData = event.GetValueEventData()->value.GetRaw();
+  std::span<const uint8_t> stateData = stateValue.GetRaw();
 
   core::ThunderAutoProjectState newState;
   core::ThunderAutoProjectStateDataHashes newHashes;
 
   try {
-    newHashes = core::DeserializeThunderAutoProjectStateFromTransmission(eventData, newState);
+    newHashes = core::DeserializeThunderAutoProjectStateFromTransmission(stateData, newState);
 
   } catch (const core::ThunderError& e) {
     ThunderLibLogger::Error("Remote update for project '{}' from '{}' failed: {}", getName(), remoteIP,

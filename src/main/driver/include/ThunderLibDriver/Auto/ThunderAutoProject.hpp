@@ -101,11 +101,12 @@ class ThunderAutoProject {
                              const std::unordered_set<std::string>& removedAutoModes) noexcept;
 
  private:
- static std::filesystem::path getDeployDirectoryPath() noexcept;
+  static std::filesystem::path getDeployDirectoryPath() noexcept;
 
  private:
   nt::NetworkTableInstance m_networkTableInstance;
   std::shared_ptr<nt::NetworkTable> m_thunderAutoNetworkTable;
+  std::shared_ptr<nt::NetworkTable> m_thunderAutoTimestampsNetworkTable;
   NT_Listener m_ntRemoteUpdateListenerId = 0;
   std::shared_ptr<nt::NetworkTable> m_fmsInfoNetworkTable;
 
