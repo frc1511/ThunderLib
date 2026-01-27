@@ -66,7 +66,7 @@ jobject HashMapPut(JNIEnv* env, jobject hashMap, jobject key, jobject value);
 // We don't need to make runnables right now, just run existing ones.
 
 class RunnableWrapper {
-  JNIEnv* m_env = nullptr;
+  JavaVM* m_jvm = nullptr;
   jobject m_runnable = nullptr;
 
   jclass m_runnableClass = nullptr;
@@ -76,8 +76,8 @@ class RunnableWrapper {
   RunnableWrapper(JNIEnv* env, jobject runnable);
   ~RunnableWrapper();
 
-  JNIEnv* getEnv() const { return m_env; }
-  void run();
+  // If nullptr, get env from JVM
+  void run(JNIEnv* env);
 };
 
 // java.util.function.Consumer<T>
@@ -87,7 +87,7 @@ class RunnableWrapper {
 // We don't need to make consumers right now, just accept existing ones.
 
 class ConsumerWrapper {
-  JNIEnv* m_env = nullptr;
+  JavaVM* m_jvm = nullptr;
   jobject m_consumer = nullptr;
 
   jclass m_consumerClass = nullptr;
@@ -97,6 +97,22 @@ class ConsumerWrapper {
   ConsumerWrapper(JNIEnv* env, jobject consumer);
   ~ConsumerWrapper();
 
+  // If nullptr, get env from JVM
+  void accept(JNIEnv* env, jobject obj);
+};
+
+class JVMScopedThread {
+  JavaVM* m_jvm = nullptr;
+  JNIEnv* m_env = nullptr;
+  bool m_wasPreviouslyAttached = false;
+  bool m_isAttached = false;
+
+ public:
+  JVMScopedThread(JavaVM* jvm);
+  ~JVMScopedThread();
+
+  bool isAttached() const { return m_isAttached; }
+  explicit operator bool() const { return m_isAttached; }
+
   JNIEnv* getEnv() const { return m_env; }
-  void accept(jobject obj);
 };

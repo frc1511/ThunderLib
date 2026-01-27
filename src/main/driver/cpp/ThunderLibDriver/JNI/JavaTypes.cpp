@@ -208,79 +208,138 @@ jobject HashMapPut(JNIEnv* env, jobject hashMap, jobject key, jobject value) {
 }
 
 RunnableWrapper::RunnableWrapper(JNIEnv* env, jobject runnable) {
-  m_env = env;
+  env->GetJavaVM(&m_jvm);
+
   m_runnable = env->NewGlobalRef(runnable);
 
-  jclass runnableClass = m_env->GetObjectClass(m_runnable);
-  m_runnableClass = static_cast<jclass>(m_env->NewGlobalRef(runnableClass));
+  jclass runnableClass = env->GetObjectClass(m_runnable);
+  m_runnableClass = static_cast<jclass>(env->NewGlobalRef(runnableClass));
   if (!m_runnableClass) {
     ThunderLibLogger::Error("[JNI RunnableWrapper] Failed to get Runnable class");
     return;
   }
 
-  m_env->DeleteLocalRef(runnableClass);
+  env->DeleteLocalRef(runnableClass);
 
-  m_runMethod = m_env->GetMethodID(m_runnableClass, "run", "()V");
+  m_runMethod = env->GetMethodID(m_runnableClass, "run", "()V");
   if (!m_runMethod) {
     ThunderLibLogger::Error("[JNI RunnableWrapper] Failed to get Runnable.run() method ID");
   }
 }
 
 RunnableWrapper::~RunnableWrapper() {
-  if (m_env) {
+  JVMScopedThread thr(m_jvm);
+  if (!thr)
+    return;
+
+  JNIEnv* env = thr.getEnv();
+  if (env) {
     if (m_runnable) {
-      m_env->DeleteGlobalRef(m_runnable);
+      env->DeleteGlobalRef(m_runnable);
       m_runnable = nullptr;
     }
     if (m_runnableClass) {
-      m_env->DeleteGlobalRef(m_runnableClass);
+      env->DeleteGlobalRef(m_runnableClass);
       m_runnableClass = nullptr;
     }
   }
 }
 
-void RunnableWrapper::run() {
-  if (!m_env || !m_runnable || !m_runMethod)
+void RunnableWrapper::run(JNIEnv* env) {
+  if (!m_runnable || !m_runMethod)
     return;
 
-  m_env->CallVoidMethod(m_runnable, m_runMethod);
+  if (env) {
+    env->CallVoidMethod(m_runnable, m_runMethod);
+  } else {
+    JVMScopedThread thr(m_jvm);
+    if (!thr)
+      return;
+    env = thr.getEnv();
+    env->CallVoidMethod(m_runnable, m_runMethod);
+  }
 }
 
 ConsumerWrapper::ConsumerWrapper(JNIEnv* env, jobject consumer) {
-  m_env = env;
+  env->GetJavaVM(&m_jvm);
+
   m_consumer = env->NewGlobalRef(consumer);
 
-  jclass consumerClass = m_env->GetObjectClass(m_consumer);
-  m_consumerClass = static_cast<jclass>(m_env->NewGlobalRef(consumerClass));
+  jclass consumerClass = env->GetObjectClass(m_consumer);
+  m_consumerClass = static_cast<jclass>(env->NewGlobalRef(consumerClass));
   if (!m_consumerClass) {
     ThunderLibLogger::Error("[JNI ConsumerWrapper] Failed to get Consumer class");
     return;
   }
 
-  m_env->DeleteLocalRef(consumerClass);
+  env->DeleteLocalRef(consumerClass);
 
-  m_acceptMethod = m_env->GetMethodID(m_consumerClass, "accept", "(L" JAVA_LANG_OBJECT_SIGNATURE ";)V");
+  m_acceptMethod = env->GetMethodID(m_consumerClass, "accept", "(L" JAVA_LANG_OBJECT_SIGNATURE ";)V");
   if (!m_acceptMethod) {
     ThunderLibLogger::Error("[JNI ConsumerWrapper] Failed to get Consumer.accept() method ID");
   }
 }
 
 ConsumerWrapper::~ConsumerWrapper() {
-  if (m_env) {
+  JVMScopedThread thr(m_jvm);
+  if (!thr)
+    return;
+
+  JNIEnv* env = thr.getEnv();
+  if (env) {
     if (m_consumer) {
-      m_env->DeleteGlobalRef(m_consumer);
+      env->DeleteGlobalRef(m_consumer);
       m_consumer = nullptr;
     }
     if (m_consumerClass) {
-      m_env->DeleteGlobalRef(m_consumerClass);
+      env->DeleteGlobalRef(m_consumerClass);
       m_consumerClass = nullptr;
     }
   }
 }
 
-void ConsumerWrapper::accept(jobject obj) {
-  if (!m_env || !m_consumer || !m_acceptMethod)
+void ConsumerWrapper::accept(JNIEnv* env, jobject obj) {
+  if (!m_consumer || !m_acceptMethod)
     return;
 
-  m_env->CallVoidMethod(m_consumer, m_acceptMethod, obj);
+  if (env) {
+    env->CallVoidMethod(m_consumer, m_acceptMethod, obj);
+  } else {
+    JVMScopedThread thr(m_jvm);
+    if (!thr)
+      return;
+    env = thr.getEnv();
+    env->CallVoidMethod(m_consumer, m_acceptMethod, obj);
+  }
+}
+
+JVMScopedThread::JVMScopedThread(JavaVM* jvm) : m_jvm(jvm) {
+  int status = m_jvm->GetEnv((void**)&m_env, JNI_VERSION_1_6);
+  if (status == JNI_EDETACHED) {
+    m_isAttached = (m_jvm->AttachCurrentThread((void**)&m_env, NULL) == 0);
+    if (!m_isAttached) {
+      ThunderLibLogger::Error("[JVMScopedThread] Failed to attach current thread to JVM");
+      return;
+    }
+  } else if (status == JNI_OK && m_env) {
+    m_wasPreviouslyAttached = true;
+    m_isAttached = true;
+
+  } else {
+    ThunderLibLogger::Error("[JVMScopedThread] GetEnv failed with error code: {}", status);
+    return;
+  }
+}
+
+JVMScopedThread::~JVMScopedThread() {
+  if (!m_isAttached || !m_env)
+    return;
+
+  if (m_env->ExceptionCheck()) {
+    m_env->ExceptionDescribe();
+  }
+
+  if (!m_wasPreviouslyAttached) {
+    m_jvm->DetachCurrentThread();
+  }
 }

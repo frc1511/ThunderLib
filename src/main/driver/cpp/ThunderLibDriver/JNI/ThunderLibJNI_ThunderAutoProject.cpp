@@ -484,7 +484,7 @@ jlong Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoProject_1registerRemoteU
   driver::ThunderAutoProject* project = reinterpret_cast<driver::ThunderAutoProject*>(projectHandle);
 
   auto callback = std::make_shared<RunnableWrapper>(env, onUpdateRunnable);
-  return project->registerRemoteUpdateSubscriber([callback]() { callback->run(); });
+  return project->registerRemoteUpdateSubscriber([callback]() { callback->run(nullptr); });
 }
 
 /*

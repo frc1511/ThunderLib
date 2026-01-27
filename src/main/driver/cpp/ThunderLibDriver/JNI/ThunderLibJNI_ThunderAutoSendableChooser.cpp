@@ -14,20 +14,32 @@ jlong Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoSendableChooser_1constru
     jclass,
     jobject addChooserSelectionConsumer,
     jobject publishChooserConsumer) {
+  JavaVM* jvm = nullptr;
+  env->GetJavaVM(&jvm);
+
   auto rawAddChooserSelection = std::make_shared<ConsumerWrapper>(env, addChooserSelectionConsumer);
   auto rawPublishChooser = std::make_shared<ConsumerWrapper>(env, publishChooserConsumer);
 
-  auto addChooserSelection = [rawAddChooserSelection](const ThunderAutoSendableChooserSelection& selection) {
-    JNIEnv* env = rawAddChooserSelection->getEnv();
+  auto addChooserSelection = [jvm,
+                              rawAddChooserSelection](const ThunderAutoSendableChooserSelection& selection) {
+    JVMScopedThread thr(jvm);
+    if (!thr)
+      return;
+
+    JNIEnv* env = thr.getEnv();
     jobject jSelection = ThunderAutoSendableChooser_ChooserSelectionConstruct(env, selection);
-    rawAddChooserSelection->accept(jSelection);
+    rawAddChooserSelection->accept(env, jSelection);
     env->DeleteLocalRef(jSelection);
   };
 
-  auto publishChooser = [rawPublishChooser](const std::string& smartDashboardKey) {
-    JNIEnv* env = rawPublishChooser->getEnv();
+  auto publishChooser = [jvm, rawPublishChooser](const std::string& smartDashboardKey) {
+    JVMScopedThread thr(jvm);
+    if (!thr)
+      return;
+
+    JNIEnv* env = thr.getEnv();
     jstring jSmartDashboardKey = env->NewStringUTF(smartDashboardKey.c_str());
-    rawPublishChooser->accept(jSmartDashboardKey);
+    rawPublishChooser->accept(env, jSmartDashboardKey);
     env->DeleteLocalRef(jSmartDashboardKey);
   };
 
@@ -46,20 +58,32 @@ jlong Java_com_thunder_lib_jni_ThunderLibJNI_ThunderAutoSendableChooser_1constru
     jobject addChooserSelectionConsumer,
     jobject publishChooserConsumer,
     jstring smartDashboardKeyJStr) {
+  JavaVM* jvm = nullptr;
+  env->GetJavaVM(&jvm);
+
   auto rawAddChooserSelection = std::make_shared<ConsumerWrapper>(env, addChooserSelectionConsumer);
   auto rawPublishChooser = std::make_shared<ConsumerWrapper>(env, publishChooserConsumer);
 
-  auto addChooserSelection = [rawAddChooserSelection](const ThunderAutoSendableChooserSelection& selection) {
-    JNIEnv* env = rawAddChooserSelection->getEnv();
+  auto addChooserSelection = [jvm,
+                              rawAddChooserSelection](const ThunderAutoSendableChooserSelection& selection) {
+    JVMScopedThread thr(jvm);
+    if (!thr)
+      return;
+
+    JNIEnv* env = thr.getEnv();
     jobject jSelection = ThunderAutoSendableChooser_ChooserSelectionConstruct(env, selection);
-    rawAddChooserSelection->accept(jSelection);
+    rawAddChooserSelection->accept(env, jSelection);
     env->DeleteLocalRef(jSelection);
   };
 
-  auto publishChooser = [rawPublishChooser](const std::string& smartDashboardKey) {
-    JNIEnv* env = rawPublishChooser->getEnv();
+  auto publishChooser = [jvm, rawPublishChooser](const std::string& smartDashboardKey) {
+    JVMScopedThread thr(jvm);
+    if (!thr)
+      return;
+
+    JNIEnv* env = thr.getEnv();
     jstring jSmartDashboardKey = env->NewStringUTF(smartDashboardKey.c_str());
-    rawPublishChooser->accept(jSmartDashboardKey);
+    rawPublishChooser->accept(env, jSmartDashboardKey);
     env->DeleteLocalRef(jSmartDashboardKey);
   };
 
