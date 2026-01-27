@@ -36,7 +36,7 @@ ThunderAutoTrajectoryCommand::ThunderAutoTrajectoryCommand(const std::string& tr
     for (const auto& [stopTime, actionName] : stopActions) {
       if (!actionName.empty()) {
         frc2::CommandPtr stopCommand = m_project->getActionCommand(actionName);
-        m_stopActionCommands.emplace_back(stopTime, std::move(stopCommand));
+        m_stopActionCommands.push_back(StopActionCommand{stopTime, std::move(stopCommand)});
       }
     }
   }
@@ -47,7 +47,7 @@ ThunderAutoTrajectoryCommand::ThunderAutoTrajectoryCommand(const std::string& tr
 
     for (const auto& [actionTime, actionName] : actions) {
       frc2::CommandPtr actionCommand = m_project->getActionCommand(actionName);
-      m_positionedActionCommands.emplace_back(actionTime, std::move(actionCommand));
+      m_positionedActionCommands.push_back(PositionedActionCommand{actionTime, std::move(actionCommand)});
     }
   }
 }

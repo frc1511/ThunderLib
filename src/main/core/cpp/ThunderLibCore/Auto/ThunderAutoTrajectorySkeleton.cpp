@@ -413,7 +413,7 @@ ThunderAutoTrajectoryBehavior ThunderAutoTrajectorySkeleton::getBehavior() const
   frc::Pose2d startPose{first.position().x, first.position().y, m_startRotation};
   frc::Pose2d endPose{last.position().x, last.position().y, m_endRotation};
 
-  return ThunderAutoTrajectoryBehavior{.startPose = startPose, .endPose = endPose};
+  return ThunderAutoTrajectoryBehavior(startPose, endPose);
 }
 
 ThunderAutoTrajectoryAction& ThunderAutoTrajectorySkeleton::getAction(size_t index) {
@@ -528,7 +528,7 @@ void ThunderAutoTrajectorySkeleton::reverseDirection() {
     ThunderAutoTrajectoryPosition rotationPosition =
         builtTrajectory->pointIndexToTrajectoryPosition(closestPointIndex);
 
-    ThunderAutoTrajectoryRotation newRotation{.angle = angle};
+    ThunderAutoTrajectoryRotation newRotation(angle);
 
     m_rotations.add(rotationPosition, newRotation);
   }
@@ -541,7 +541,7 @@ void ThunderAutoTrajectorySkeleton::reverseDirection() {
     ThunderAutoTrajectoryPosition actionPosition =
         builtTrajectory->pointIndexToTrajectoryPosition(closestPointIndex);
 
-    ThunderAutoTrajectoryAction newAction{.action = action};
+    ThunderAutoTrajectoryAction newAction(action);
 
     m_actions.add(actionPosition, newAction);
   }
@@ -1129,7 +1129,7 @@ void ThunderAutoTrajectorySkeleton::fromJsonPre2026(const wpi::json& json,
       } else if (waypointIndex == rotations.size() - 1) {
         setEndRotation(positionedRotation.angle);
       } else if (!doNotAdd) {
-        ThunderAutoTrajectoryRotation newRotation{.angle = positionedRotation.angle};
+        ThunderAutoTrajectoryRotation newRotation(positionedRotation.angle);
         m_rotations.add(positionedRotation.position, newRotation);
       }
     }
@@ -1141,7 +1141,7 @@ void ThunderAutoTrajectorySkeleton::fromJsonPre2026(const wpi::json& json,
       } else if (DoubleEquals(position, static_cast<double>(m_points.size() - 1)) && !hasEndAction()) {
         setEndAction(action);
       } else {
-        ThunderAutoTrajectoryAction newAction{.action = action};
+        ThunderAutoTrajectoryAction newAction(action);
         m_actions.add(position, newAction);
       }
     }

@@ -585,7 +585,8 @@ static std::map<ThunderAutoTrajectoryPosition, CanonicalAngle> GetAllRotationTar
     size_t waypointIndex = 1;
     for (auto it = std::next(waypoints.begin()); it != std::prev(waypoints.end()); ++it, ++waypointIndex) {
       if (it->isStopped()) {
-        rotations.emplace(ThunderAutoTrajectoryPosition(static_cast<double>(waypointIndex)), it->stopRotation());
+        rotations.emplace(ThunderAutoTrajectoryPosition(static_cast<double>(waypointIndex)),
+                          it->stopRotation());
       }
     }
   }
@@ -1043,7 +1044,7 @@ static std::multimap<ThunderAutoTrajectoryPosition, ThunderAutoTrajectoryAction>
   std::multimap<ThunderAutoTrajectoryPosition, ThunderAutoTrajectoryAction> actions = skeleton.actions();
 
   if (skeleton.hasStartAction()) {
-    actions.emplace(ThunderAutoTrajectoryPosition(0.0), skeleton.startAction());
+    actions.emplace(ThunderAutoTrajectoryPosition(0.0), ThunderAutoTrajectoryAction(skeleton.startAction()));
   }
 
   if (skeleton.points().size() > 2) {
@@ -1064,7 +1065,8 @@ static std::multimap<ThunderAutoTrajectoryPosition, ThunderAutoTrajectoryAction>
   }
 
   if (skeleton.hasEndAction()) {
-    actions.emplace(ThunderAutoTrajectoryPosition(static_cast<double>(skeleton.points().size() - 1)), skeleton.endAction());
+    actions.emplace(ThunderAutoTrajectoryPosition(static_cast<double>(skeleton.points().size() - 1)),
+                    skeleton.endAction());
   }
 
   return actions;

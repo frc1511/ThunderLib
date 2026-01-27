@@ -1039,7 +1039,7 @@ void ThunderAutoProjectState::currentTrajectoryInsertRotation(ThunderAutoTraject
 
   ThunderAutoPositionedTrajectoryItemList<ThunderAutoTrajectoryRotation>& rotations = skeleton.rotations();
 
-  ThunderAutoTrajectoryRotation newRotation{.angle = angle};
+  ThunderAutoTrajectoryRotation newRotation(angle);
   (void)rotations.add(position, newRotation);
 
   std::unique_ptr<ThunderAutoPartialOutputTrajectory> trajectoryPositionData =
@@ -1054,7 +1054,7 @@ void ThunderAutoProjectState::currentTrajectoryInsertAction(ThunderAutoTrajector
 
   ThunderAutoPositionedTrajectoryItemList<ThunderAutoTrajectoryAction>& actions = skeleton.actions();
 
-  ThunderAutoTrajectoryAction newAction{.action = action};
+  ThunderAutoTrajectoryAction newAction(action);
   (void)actions.add(position, newAction);
 }
 

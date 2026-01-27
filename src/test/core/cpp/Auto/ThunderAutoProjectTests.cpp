@@ -372,7 +372,7 @@ TEST(ThunderAutoProjectTests, LoadPre2026Project) {
         {
           EXPECT_FLOAT_EQ(actionIt->first, 1.0);  // position
 
-          ThunderAutoTrajectoryAction action = {.action = "Action1", .editorLocked = false};
+          ThunderAutoTrajectoryAction action("Action1", false);
           EXPECT_EQ(actionIt->second, action);  // action
         }
 
@@ -391,7 +391,7 @@ TEST(ThunderAutoProjectTests, LoadPre2026Project) {
         {
           EXPECT_FLOAT_EQ(rotationIt->first, 0.65);  // position
 
-          ThunderAutoTrajectoryRotation rotation = {.angle = CanonicalAngle(90_deg), .editorLocked = false};
+          ThunderAutoTrajectoryRotation rotation(CanonicalAngle(90_deg), false);
           EXPECT_EQ(rotationIt->second, rotation);  // angle
         }
 
@@ -484,14 +484,14 @@ TEST(ThunderAutoProjectTests, LoadPre2026Project) {
         {
           EXPECT_FLOAT_EQ(actionIt->first, 1.0);  // position
 
-          ThunderAutoTrajectoryAction action = {.action = "Action1", .editorLocked = false};
+          ThunderAutoTrajectoryAction action("Action1", false);
           EXPECT_EQ(actionIt->second, action);  // action
         }
         ++actionIt;
         {
           EXPECT_FLOAT_EQ(actionIt->first, 1.0);  // position
 
-          ThunderAutoTrajectoryAction action = {.action = "Action2", .editorLocked = false};
+          ThunderAutoTrajectoryAction action("Action2", false);
           EXPECT_EQ(actionIt->second, action);  // action
         }
 

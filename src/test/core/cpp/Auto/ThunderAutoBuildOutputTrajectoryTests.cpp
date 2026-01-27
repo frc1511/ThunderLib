@@ -27,7 +27,7 @@ TEST(ThunderAutoBuildOutputTrajectoryTests, BuildTrajectory) {
 
     trajectory.appendPoint(waypoint1);
 
-    trajectory.rotations().add(0.5, {.angle = 90_deg});
+    trajectory.rotations().add(0.5, ThunderAutoTrajectoryRotation(CanonicalAngle(90_deg)));
 
     ThunderAutoTrajectorySkeletonWaypoint waypoint2(
         Point2d(3_m, 1.5_m), 0_mps, ThunderAutoTrajectorySkeletonWaypoint::HeadingAngles(180_deg, 45_deg),
@@ -36,7 +36,7 @@ TEST(ThunderAutoBuildOutputTrajectoryTests, BuildTrajectory) {
     waypoint2.setStopAction("action1");
 
     trajectory.appendPoint(waypoint2);
-    trajectory.actions().add(1.25, {.action = "action3"});
+    trajectory.actions().add(1.25, ThunderAutoTrajectoryAction("action3"));
 
     ThunderAutoTrajectorySkeletonWaypoint waypoint3(
         Point2d(6.0_m, 1.5_m), CanonicalAngle(-45_deg),

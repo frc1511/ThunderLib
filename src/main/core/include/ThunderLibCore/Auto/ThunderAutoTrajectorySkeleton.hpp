@@ -357,6 +357,11 @@ struct ThunderAutoTrajectoryRotation {
   CanonicalAngle angle;
   bool editorLocked = false;
 
+  ThunderAutoTrajectoryRotation() = default;
+
+  explicit ThunderAutoTrajectoryRotation(CanonicalAngle angle, bool editorLocked = false)
+      : angle(angle), editorLocked(editorLocked) {}
+
   bool operator==(const ThunderAutoTrajectoryRotation& other) const = default;
 };
 
@@ -366,12 +371,22 @@ struct ThunderAutoTrajectoryAction {
 
   // std::optional<ThunderAutoTrajectoryPosition> zoneEndPosition;
 
+  ThunderAutoTrajectoryAction() = default;
+
+  explicit ThunderAutoTrajectoryAction(std::string action, bool editorLocked = false)
+      : action(std::move(action)), editorLocked(editorLocked) {}
+
   bool operator==(const ThunderAutoTrajectoryAction& other) const = default;
 };
 
 struct ThunderAutoTrajectoryBehavior {
   frc::Pose2d startPose;
   frc::Pose2d endPose;
+
+  ThunderAutoTrajectoryBehavior() = default;
+
+  ThunderAutoTrajectoryBehavior(frc::Pose2d startPose, frc::Pose2d endPose)
+      : startPose(startPose), endPose(endPose) {}
 
   bool operator==(const ThunderAutoTrajectoryBehavior& other) const = default;
 };
