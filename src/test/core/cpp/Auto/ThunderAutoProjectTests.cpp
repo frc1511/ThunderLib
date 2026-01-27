@@ -6,6 +6,8 @@ using namespace thunder::core;
 
 using ::testing::Contains;
 
+#define DEFAULT_TOLERANCE 1e-6
+
 static void CreateExampleProjectState(ThunderAutoProjectState& state) {
   // State
 
@@ -246,21 +248,21 @@ TEST(ThunderAutoProjectTests, LoadPre2026Project) {
     EXPECT_EQ(fieldImage.builtinImage(), ThunderAutoBuiltinFieldImage::FIELD_2025);
 
     Measurement2d fieldSize = fieldImage.fieldSize();
-    EXPECT_FLOAT_EQ(fieldSize.x(), 17.548249);
-    EXPECT_FLOAT_EQ(fieldSize.y(), 8.077200);
+    EXPECT_NEAR(fieldSize.x(), 17.548249, DEFAULT_TOLERANCE);
+    EXPECT_NEAR(fieldSize.y(), 8.077200, DEFAULT_TOLERANCE);
 
     Rect fieldBounds = fieldImage.imageFieldBounds();
-    EXPECT_FLOAT_EQ(fieldBounds.min.x, 0.0795935557);
-    EXPECT_FLOAT_EQ(fieldBounds.min.y, 0.1139555361);
-    EXPECT_FLOAT_EQ(fieldBounds.max.x, 1.0 - 0.0795935557);
-    EXPECT_FLOAT_EQ(fieldBounds.max.y, 1.0 - 0.1139555361);
+    EXPECT_NEAR(fieldBounds.min.x, 0.0795935557, DEFAULT_TOLERANCE);
+    EXPECT_NEAR(fieldBounds.min.y, 0.1139555361, DEFAULT_TOLERANCE);
+    EXPECT_NEAR(fieldBounds.max.x, 1.0 - 0.0795935557, DEFAULT_TOLERANCE);
+    EXPECT_NEAR(fieldBounds.max.y, 1.0 - 0.1139555361, DEFAULT_TOLERANCE);
   }
 
   EXPECT_EQ(settings.driveController, DriveControllerType::HOLONOMIC);
 
   Measurement2d robotSize = settings.robotSize;
-  EXPECT_FLOAT_EQ(robotSize.x(), 0.8);
-  EXPECT_FLOAT_EQ(robotSize.y(), 0.8);
+  EXPECT_NEAR(robotSize.x(), 0.8, DEFAULT_TOLERANCE);
+  EXPECT_NEAR(robotSize.y(), 0.8, DEFAULT_TOLERANCE);
 
   EXPECT_EQ(settings.autoSave, true);
   EXPECT_EQ(settings.autoCSVExport, false);
@@ -299,14 +301,14 @@ TEST(ThunderAutoProjectTests, LoadPre2026Project) {
       // Point 1
       {
         Point2d position = pointIt->position();
-        EXPECT_FLOAT_EQ(position.x(), 7.57);
-        EXPECT_FLOAT_EQ(position.y(), 7.0);
+        EXPECT_NEAR(position.x(), 7.57, DEFAULT_TOLERANCE);
+        EXPECT_NEAR(position.y(), 7.0, DEFAULT_TOLERANCE);
 
         ThunderAutoTrajectorySkeletonWaypoint::HeadingAngles headings = pointIt->headings();
         EXPECT_EQ(headings.outgoingAngle(), CanonicalAngle(180_deg));
 
         ThunderAutoTrajectorySkeletonWaypoint::HeadingWeights headingWeights = pointIt->headingWeights();
-        EXPECT_FLOAT_EQ(headingWeights.outgoingWeight(), 1.0);
+        EXPECT_NEAR(headingWeights.outgoingWeight(), 1.0, DEFAULT_TOLERANCE);
 
         EXPECT_FALSE(pointIt->isStopped());
 
@@ -320,16 +322,16 @@ TEST(ThunderAutoProjectTests, LoadPre2026Project) {
       // Point 2
       {
         Point2d position = pointIt->position();
-        EXPECT_FLOAT_EQ(position.x(), 3.5);
-        EXPECT_FLOAT_EQ(position.y(), 6.5);
+        EXPECT_NEAR(position.x(), 3.5, DEFAULT_TOLERANCE);
+        EXPECT_NEAR(position.y(), 6.5, DEFAULT_TOLERANCE);
 
         ThunderAutoTrajectorySkeletonWaypoint::HeadingAngles headings = pointIt->headings();
         EXPECT_EQ(headings.incomingAngle(), CanonicalAngle(25_deg));
         EXPECT_EQ(headings.outgoingAngle(), CanonicalAngle(205_deg));
 
         ThunderAutoTrajectorySkeletonWaypoint::HeadingWeights headingWeights = pointIt->headingWeights();
-        EXPECT_FLOAT_EQ(headingWeights.incomingWeight(), 1.5);
-        EXPECT_FLOAT_EQ(headingWeights.outgoingWeight(), 1.0);
+        EXPECT_NEAR(headingWeights.incomingWeight(), 1.5, DEFAULT_TOLERANCE);
+        EXPECT_NEAR(headingWeights.outgoingWeight(), 1.0, DEFAULT_TOLERANCE);
 
         EXPECT_FALSE(pointIt->isStopped());
 
@@ -343,14 +345,14 @@ TEST(ThunderAutoProjectTests, LoadPre2026Project) {
       // Point 3
       {
         Point2d position = pointIt->position();
-        EXPECT_FLOAT_EQ(position.x(), 2.0);
-        EXPECT_FLOAT_EQ(position.y(), 5.0);
+        EXPECT_NEAR(position.x(), 2.0, DEFAULT_TOLERANCE);
+        EXPECT_NEAR(position.y(), 5.0, DEFAULT_TOLERANCE);
 
         ThunderAutoTrajectorySkeletonWaypoint::HeadingAngles headings = pointIt->headings();
         EXPECT_EQ(headings.incomingAngle(), CanonicalAngle(60_deg));
 
         ThunderAutoTrajectorySkeletonWaypoint::HeadingWeights headingWeights = pointIt->headingWeights();
-        EXPECT_FLOAT_EQ(headingWeights.incomingWeight(), 1.0);
+        EXPECT_NEAR(headingWeights.incomingWeight(), 1.0, DEFAULT_TOLERANCE);
 
         EXPECT_FALSE(pointIt->isStopped());
 
@@ -370,7 +372,7 @@ TEST(ThunderAutoProjectTests, LoadPre2026Project) {
 
         auto actionIt = actions.cbegin();
         {
-          EXPECT_FLOAT_EQ(actionIt->first, 1.0);  // position
+          EXPECT_NEAR(actionIt->first, 1.0, DEFAULT_TOLERANCE);  // position
 
           ThunderAutoTrajectoryAction action("Action1", false);
           EXPECT_EQ(actionIt->second, action);  // action
@@ -389,7 +391,7 @@ TEST(ThunderAutoProjectTests, LoadPre2026Project) {
 
         auto rotationIt = rotations.cbegin();
         {
-          EXPECT_FLOAT_EQ(rotationIt->first, 0.65);  // position
+          EXPECT_NEAR(rotationIt->first, 0.65, DEFAULT_TOLERANCE);  // position
 
           ThunderAutoTrajectoryRotation rotation(CanonicalAngle(90_deg), false);
           EXPECT_EQ(rotationIt->second, rotation);  // angle
@@ -410,14 +412,14 @@ TEST(ThunderAutoProjectTests, LoadPre2026Project) {
       // Point 1
       {
         Point2d position = pointIt->position();
-        EXPECT_FLOAT_EQ(position.x(), 2.0);
-        EXPECT_FLOAT_EQ(position.y(), 5.0);
+        EXPECT_NEAR(position.x(), 2.0, DEFAULT_TOLERANCE);
+        EXPECT_NEAR(position.y(), 5.0, DEFAULT_TOLERANCE);
 
         ThunderAutoTrajectorySkeletonWaypoint::HeadingAngles headings = pointIt->headings();
         EXPECT_EQ(headings.outgoingAngle(), CanonicalAngle(0_deg));
 
         ThunderAutoTrajectorySkeletonWaypoint::HeadingWeights headingWeights = pointIt->headingWeights();
-        EXPECT_FLOAT_EQ(headingWeights.outgoingWeight(), 1.0);
+        EXPECT_NEAR(headingWeights.outgoingWeight(), 1.0, DEFAULT_TOLERANCE);
 
         EXPECT_FALSE(pointIt->isStopped());
 
@@ -432,16 +434,16 @@ TEST(ThunderAutoProjectTests, LoadPre2026Project) {
       // Point 2
       {
         Point2d position = pointIt->position();
-        EXPECT_FLOAT_EQ(position.x(), 3.0);
-        EXPECT_FLOAT_EQ(position.y(), 1.5);
+        EXPECT_NEAR(position.x(), 3.0, DEFAULT_TOLERANCE);
+        EXPECT_NEAR(position.y(), 1.5, DEFAULT_TOLERANCE);
 
         ThunderAutoTrajectorySkeletonWaypoint::HeadingAngles headings = pointIt->headings();
         EXPECT_EQ(headings.incomingAngle(), CanonicalAngle(180_deg));
         EXPECT_EQ(headings.outgoingAngle(), CanonicalAngle(45_deg));
 
         ThunderAutoTrajectorySkeletonWaypoint::HeadingWeights headingWeights = pointIt->headingWeights();
-        EXPECT_FLOAT_EQ(headingWeights.incomingWeight(), 1.0);
-        EXPECT_FLOAT_EQ(headingWeights.outgoingWeight(), 1.0);
+        EXPECT_NEAR(headingWeights.incomingWeight(), 1.0, DEFAULT_TOLERANCE);
+        EXPECT_NEAR(headingWeights.outgoingWeight(), 1.0, DEFAULT_TOLERANCE);
 
         EXPECT_TRUE(pointIt->isStopped());
         EXPECT_EQ(pointIt->stopRotation(), CanonicalAngle(90_deg));
@@ -456,14 +458,14 @@ TEST(ThunderAutoProjectTests, LoadPre2026Project) {
       // Point 3
       {
         Point2d position = pointIt->position();
-        EXPECT_FLOAT_EQ(position.x(), 6.0);
-        EXPECT_FLOAT_EQ(position.y(), 1.5);
+        EXPECT_NEAR(position.x(), 6.0, DEFAULT_TOLERANCE);
+        EXPECT_NEAR(position.y(), 1.5, DEFAULT_TOLERANCE);
 
         ThunderAutoTrajectorySkeletonWaypoint::HeadingAngles headings = pointIt->headings();
         EXPECT_EQ(headings.incomingAngle(), CanonicalAngle(135_deg));
 
         ThunderAutoTrajectorySkeletonWaypoint::HeadingWeights headingWeights = pointIt->headingWeights();
-        EXPECT_FLOAT_EQ(headingWeights.incomingWeight(), 1.0);
+        EXPECT_NEAR(headingWeights.incomingWeight(), 1.0, DEFAULT_TOLERANCE);
 
         EXPECT_FALSE(pointIt->isStopped());
 
@@ -482,14 +484,14 @@ TEST(ThunderAutoProjectTests, LoadPre2026Project) {
 
         auto actionIt = actions.cbegin();
         {
-          EXPECT_FLOAT_EQ(actionIt->first, 1.0);  // position
+          EXPECT_NEAR(actionIt->first, 1.0, DEFAULT_TOLERANCE);  // position
 
           ThunderAutoTrajectoryAction action("Action1", false);
           EXPECT_EQ(actionIt->second, action);  // action
         }
         ++actionIt;
         {
-          EXPECT_FLOAT_EQ(actionIt->first, 1.0);  // position
+          EXPECT_NEAR(actionIt->first, 1.0, DEFAULT_TOLERANCE);  // position
 
           ThunderAutoTrajectoryAction action("Action2", false);
           EXPECT_EQ(actionIt->second, action);  // action
