@@ -2095,17 +2095,13 @@ static size_t DeserializeTrajectoryPoint(DataInputStream& stream,
     point.setPosition(position);
   }
 
-  {
-    double incomingHeadingValue, outgoingHeadingValue;
-    sum += stream >> incomingHeadingValue;
-    sum += stream >> outgoingHeadingValue;
+  double incomingHeadingValue, outgoingHeadingValue;
+  sum += stream >> incomingHeadingValue;
+  sum += stream >> outgoingHeadingValue;
 
-    CanonicalAngle incomingAngle(units::radian_t{incomingHeadingValue});
-    CanonicalAngle outgoingAngle(units::radian_t{outgoingHeadingValue});
-    ThunderAutoTrajectorySkeletonWaypoint::HeadingAngles headings(incomingAngle, outgoingAngle);
-
-    point.setHeadings(headings);
-  }
+  CanonicalAngle incomingAngle(units::radian_t{incomingHeadingValue});
+  CanonicalAngle outgoingAngle(units::radian_t{outgoingHeadingValue});
+  ThunderAutoTrajectorySkeletonWaypoint::HeadingAngles headings(incomingAngle, outgoingAngle);
 
   {
     double incomingHeadingWeight, outgoingHeadingWeight;
@@ -2140,6 +2136,8 @@ static size_t DeserializeTrajectoryPoint(DataInputStream& stream,
       point.setStopAction(stopActionName);
     }
   }
+
+  point.setHeadings(headings);  // Must be set after stop rotation is set in case they are not supplementary.
 
   return sum;
 }
