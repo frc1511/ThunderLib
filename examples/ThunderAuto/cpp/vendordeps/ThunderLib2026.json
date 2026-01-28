@@ -7,7 +7,7 @@
     "mavenUrls": [
         "https://frc1511.github.io/thunderlib/repo"
     ],
-    "jsonUrl": "https://frc1511.github.io/ThunderLib/ThunderLib2026.json",
+    "jsonUrl": "https://frc1511.github.io/thunderlib/ThunderLib2026.json",
     "javaDependencies": [
         {
             "groupId": "com.thunder.lib",
@@ -71,7 +71,7 @@
             "version": "2026.0.0",
             "libName": "ThunderLibCore",
             "headerClassifier": "headers",
-            "sharedLibrary": false,
+            "sharedLibrary": true,
             "skipInvalidPlatforms": true,
             "binaryPlatforms": [
                 "windowsx86-64",
@@ -88,7 +88,7 @@
             "version": "2026.0.0",
             "libName": "ThunderLibDriver",
             "headerClassifier": "headers",
-            "sharedLibrary": false,
+            "sharedLibrary": true,
             "skipInvalidPlatforms": true,
             "binaryPlatforms": [
                 "windowsx86-64",

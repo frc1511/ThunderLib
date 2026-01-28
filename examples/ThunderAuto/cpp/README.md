@@ -1,8 +1,8 @@
-# ThunderLib Java Example - ThunderAuto
+# ThunderLib C++ Example - ThunderAuto
 
 This robot project demonstrates how to load a ThunderAuto project, use the ThunderAutoSendableChooser, and run trajectories and auto modes.
 
-This project is based off the basic WPILib Java Command Robot template, as well as the SwerveBot example.
+This project is based off the basic WPILib C++ Command Robot template, as well as the SwerveBot example.
 
 The ThunderAuto project file used in this example, see `src/main/deploy/ChargedUp.thunderauto`, is based on the 2023 FRC game field. The project includes several trajectories, and an auto mode that runs them in sequence. The auto mode demonstrates the use of branches, changing behavior if the robot fails to pick up a game piece. Several actions are also run during trajectories and at different points in the auto mode.
 

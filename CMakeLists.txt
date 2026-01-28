@@ -69,10 +69,10 @@ project(${CMAKE_PROJECT_NAME})
 option(BUILD_TESTS "Build tests" ON)
 option(BUILD_SHARED "Build shared libraries" OFF)
 
-option(BUILD_WITH_ASSERTIONS "Build with assertions" OFF) # ON for debug builds
-option(DOWNLOAD_WPILIB_BINARIES "Download prebuilt WPILib libraries" OFF) # ON for release builds
+option(BUILD_WITH_ASSERTIONS "Build with assertions" OFF)
+option(DOWNLOAD_WPILIB_BINARIES "Download prebuilt WPILib libraries" OFF)
 set(DOWNLOAD_WPILIB_BINARIES_ARCH "" CACHE STRING "Architecture of WPILib binaries to download")
-set(DOWNLOAD_WPILIB_VERSION "2026.1.1" CACHE STRING "Version of WPILib repo/binaries to download")
+set(DOWNLOAD_WPILIB_VERSION "2026.2.1" CACHE STRING "Version of WPILib repo/binaries to download")
 
 ###
 ### Platform
@@ -121,13 +121,10 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-  set(BUILD_SHARED ON)
-
   set(THUNDERLIB_DEBUG ON)
   list(APPEND THUNDERLIB_DEF_LIST "THUNDERLIB_DEBUG")
   set(BUILD_WITH_ASSERTIONS ON)
 elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
-  set(DOWNLOAD_WPILIB ON)
 endif()
 
 if(BUILD_WITH_ASSERTIONS)
@@ -177,11 +174,13 @@ set(LIB_SOURCES "${CPP_DIR}/Types.cpp"
 
 target_sources(${CMAKE_PROJECT_NAME} PRIVATE ${LIB_SOURCES})
 
+include(FetchContent)
+
 ###
 ### Link WPILib libraries
 ###
 
-if(DOWNLOAD_WPILIB) 
+if(DOWNLOAD_WPILIB_BINARIES) 
   if(NOT DOWNLOAD_WPILIB_BINARIES_ARCH)
     # Check architecture.
     if(THUNDERLIB_MACOS)
@@ -255,7 +254,6 @@ if(DOWNLOAD_WPILIB)
   endforeach()
 
 else()
-  include(FetchContent)
   FetchContent_Declare(
     allwpilib
     GIT_REPOSITORY https://github.com/wpilibsuite/allwpilib.git
@@ -275,7 +273,7 @@ else()
   set(WITH_TESTS OFF CACHE BOOL "" FORCE)
   set(WITH_GUI OFF CACHE BOOL "" FORCE)
   set(WITH_SIMULATION_MODULES OFF CACHE BOOL "" FORCE)
-  set(WITH_PROTOBUF ON CACHE BOOL "" FORCE)
+  set(WITH_PROTOBUF OFF CACHE BOOL "" FORCE)
   set(NO_WERROR ON CACHE BOOL "" FORCE)
 
   FetchContent_MakeAvailable(allwpilib)
@@ -306,7 +304,7 @@ endif()
 
 target_link_libraries(spdlog PUBLIC wpiutil) # has fmtlib
 
-if (DOWNLOAD_WPILIB)
+if (DOWNLOAD_WPILIB_BINARIES)
   target_include_directories(spdlog PUBLIC "${WPILIB_DOWNLOAD_DIR}/wpiutil_include")
   message(STATUS "spdlog include directory: ${WPILIB_DOWNLOAD_DIR}/wpiutil_include")
 endif()
