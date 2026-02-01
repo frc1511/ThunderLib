@@ -136,13 +136,12 @@ void ThunderAutoTrajectoryCommand::beginStartAction() {
 }
 
 void ThunderAutoTrajectoryCommand::executeStartAction() {
+  m_startActionCommand.get()->Execute();
+
   if (m_startActionCommand.get()->IsFinished()) {
     m_startActionCommand.get()->End(false);
     beginFollowTrajectory();
-    return;
   }
-
-  m_startActionCommand.get()->Execute();
 }
 
 void ThunderAutoTrajectoryCommand::endStartAction(bool interrupted) {
@@ -194,11 +193,11 @@ void ThunderAutoTrajectoryCommand::executeFollowTrajectory() {
   for (const PositionedActionIterator& actionIt : m_runningActions) {
     const auto& [_, actionCommand] = *actionIt;
 
+    actionCommand.get()->Execute();
+
     if (actionCommand.get()->IsFinished()) {
       actionCommand.get()->End(false);
       doneRunningActions.push_back(actionIt);
-    } else {
-      actionCommand.get()->Execute();
     }
   }
 
@@ -256,14 +255,14 @@ void ThunderAutoTrajectoryCommand::beginStopped() {
 
 void ThunderAutoTrajectoryCommand::executeStopped() {
   const frc2::CommandPtr& stopActionCommand = m_nextStop->command;
+
+  stopActionCommand.get()->Execute();
+
   if (stopActionCommand.get()->IsFinished()) {
     stopActionCommand.get()->End(false);
     m_nextStop++;
     resumeFollowTrajectory();
-    return;
   }
-
-  stopActionCommand.get()->Execute();
 }
 
 void ThunderAutoTrajectoryCommand::endStopped(bool interrupted) {
@@ -277,13 +276,12 @@ void ThunderAutoTrajectoryCommand::beginEndAction() {
 }
 
 void ThunderAutoTrajectoryCommand::executeEndAction() {
+  m_endActionCommand.get()->Execute();
+
   if (m_endActionCommand.get()->IsFinished()) {
     m_endActionCommand.get()->End(false);
     m_executionState = ExecutionState::FINISHED;
-    return;
   }
-
-  m_endActionCommand.get()->Execute();
 }
 
 void ThunderAutoTrajectoryCommand::endEndAction(bool interrupted) {

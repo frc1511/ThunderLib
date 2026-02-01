@@ -240,13 +240,12 @@ public class ThunderAutoTrajectoryCommand extends Command {
   }
 
   private void executeStartAction() {
+    m_startActionCommand.execute();
+
     if (m_startActionCommand.isFinished()) {
       m_startActionCommand.end(false);
       beginFollowTrajectory();
-      return;
     }
-
-    m_startActionCommand.execute();
   }
 
   private void endStartAction(boolean interrupted) {
@@ -307,11 +306,11 @@ public class ThunderAutoTrajectoryCommand extends Command {
 
     HashSet<PositionedActionCommand> doneRunningActions = new HashSet<>();
     for (PositionedActionCommand action : m_runningActions) {
+      action.command.execute();
+
       if (action.command.isFinished()) {
         action.command.end(false);
         doneRunningActions.add(action);
-      } else {
-        action.command.execute();
       }
     }
 
@@ -370,14 +369,13 @@ public class ThunderAutoTrajectoryCommand extends Command {
   private void executeStopped() {
     StopActionCommand action = m_currentStopAction.get();
 
+    action.command.execute();
+
     if (action.command.isFinished()) {
       action.command.end(false);
       m_currentStopAction = Optional.empty();
       resumeFollowTrajectory();
-      return;
     }
-
-    action.command.execute();
   }
 
   private void endStopped(boolean interrupted) {
@@ -391,13 +389,12 @@ public class ThunderAutoTrajectoryCommand extends Command {
   }
 
   private void executeEndAction() {
+    m_endActionCommand.execute();
+
     if (m_endActionCommand.isFinished()) {
       m_endActionCommand.end(false);
       m_executionState = ExecutionState.FINISHED;
-      return;
     }
-
-    m_endActionCommand.execute();
   }
 
   private void endEndAction(boolean interrupted) {

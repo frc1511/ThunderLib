@@ -93,12 +93,12 @@ public class ThunderAutoModeCommand extends Command {
     if (m_isFinished || m_currentStep.isEmpty())
       return;
 
+    m_currentStepCommand.execute();
+
     if (m_currentStepCommand.isFinished()) {
       m_currentStepCommand.end(false);
       m_currentStepWasInitialized = false;
       nextStep();
-    } else {
-      m_currentStepCommand.execute();
     }
   }
 

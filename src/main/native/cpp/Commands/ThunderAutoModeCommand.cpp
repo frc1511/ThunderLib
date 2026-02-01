@@ -75,12 +75,12 @@ void ThunderAutoModeCommand::Execute() {
   if (m_isFinished || !m_currentStep)
     return;
 
+  m_currentStepCommand.get()->Execute();
+
   if (m_currentStepCommand.get()->IsFinished()) {
     m_currentStepCommand.get()->End(false);
     m_currentStepWasInitialized = false;
     nextStep();
-  } else {
-    m_currentStepCommand.get()->Execute();
   }
 }
 
