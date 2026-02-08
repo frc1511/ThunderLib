@@ -45,7 +45,6 @@ class ThunderAutoModeCommand : public frc2::CommandHelper<frc2::Command, Thunder
   std::unique_ptr<ThunderAutoMode> m_autoMode;
   std::shared_ptr<ThunderAutoProject> m_project;
   TrajectoryRunnerProperties m_runnerProperties;
-  TrajectoryRunnerProperties m_runnerPropertiesNoResetPose;
 
   bool m_isFinished = true;
   std::shared_ptr<ThunderAutoModeStep> m_currentStep;

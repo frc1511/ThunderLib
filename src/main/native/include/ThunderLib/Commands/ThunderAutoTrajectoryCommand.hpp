@@ -26,10 +26,12 @@ class ThunderAutoTrajectoryCommand : public frc2::CommandHelper<frc2::Command, T
    * @param trajectoryName The name of the trajectory to follow.
    * @param project The ThunderAutoProject that contains the trajectory and any referenced actions.
    * @param properties The TrajectoryRunnerProperties to use for following the trajectory.
+   * @param shouldResetPose Whether to reset the robot's pose at the start of the trajectory.
    */
   ThunderAutoTrajectoryCommand(const std::string& trajectoryName,
                                std::shared_ptr<ThunderAutoProject> project,
-                               const TrajectoryRunnerProperties& properties);
+                               const TrajectoryRunnerProperties& properties,
+                               bool shouldResetPose = true);
 
   bool isValid() const;
 
@@ -44,6 +46,7 @@ class ThunderAutoTrajectoryCommand : public frc2::CommandHelper<frc2::Command, T
   std::unique_ptr<ThunderAutoTrajectory> m_trajectory;
   std::shared_ptr<ThunderAutoProject> m_project;
   TrajectoryRunnerProperties m_runnerProperties;
+  bool m_shouldResetPose;
 
   frc::Timer m_timer;
 
@@ -100,6 +103,8 @@ class ThunderAutoTrajectoryCommand : public frc2::CommandHelper<frc2::Command, T
   void beginEndAction();
   void executeEndAction();
   void endEndAction(bool interrupted);
+
+  void stopRobot();
 
   static CanonicalAngle flipAngleForAlliance(CanonicalAngle originalAngle,
                                              std::optional<frc::DriverStation::Alliance> alliance,

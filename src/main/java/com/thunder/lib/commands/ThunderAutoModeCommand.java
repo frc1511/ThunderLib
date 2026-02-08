@@ -32,14 +32,7 @@ public class ThunderAutoModeCommand extends Command {
 
     m_autoModeName = autoModeName;
     m_project = project;
-
     m_runnerProperties = properties;
-    m_runnerPropertiesNoResetPose = new ThunderTrajectoryRunnerProperties(
-        properties.getPoseSupplier(),
-        (Pose2d) -> {
-        },
-        properties.getSpeedsConsumer(),
-        properties.getHolonomicDriveController());
   }
 
   /**
@@ -81,7 +74,7 @@ public class ThunderAutoModeCommand extends Command {
 
     m_isFinished = false;
     m_currentStep = Optional.empty();
-    m_fistTrajectoryWasSeen = false;
+    m_firstTrajectoryWasSeen = false;
     nextStep();
   }
 
@@ -162,13 +155,12 @@ public class ThunderAutoModeCommand extends Command {
       case TRAJECTORY: {
         String trajectoryName = step.getTrajectoryName();
 
-        // It's not usually in the user's best interests to reset pose during an auto
-        // mode, so just do it once.
-        ThunderTrajectoryRunnerProperties runnerProperties = m_fistTrajectoryWasSeen ? m_runnerPropertiesNoResetPose
-            : m_runnerProperties;
-        m_fistTrajectoryWasSeen = true;
+        // Only reset the pose on the first trajectory step of the auto mode.
+        boolean shouldResetPose = !m_firstTrajectoryWasSeen;
+        m_firstTrajectoryWasSeen = true;
 
-        m_currentStepCommand = new ThunderAutoTrajectoryCommand(trajectoryName, m_project, runnerProperties);
+        m_currentStepCommand = new ThunderAutoTrajectoryCommand(trajectoryName, m_project, m_runnerProperties,
+            shouldResetPose);
         break;
       }
       case BRANCH_BOOL: {
@@ -223,11 +215,10 @@ public class ThunderAutoModeCommand extends Command {
   private Optional<ThunderAutoMode> m_autoMode = Optional.empty();
   private ThunderAutoProject m_project;
   private ThunderTrajectoryRunnerProperties m_runnerProperties;
-  private ThunderTrajectoryRunnerProperties m_runnerPropertiesNoResetPose;
 
   private boolean m_isFinished = true;
   private Optional<ThunderAutoModeStep> m_currentStep;
   private Command m_currentStepCommand = Commands.none();
   private boolean m_currentStepWasInitialized = false;
-  private boolean m_fistTrajectoryWasSeen = false;
+  private boolean m_firstTrajectoryWasSeen = false;
 }

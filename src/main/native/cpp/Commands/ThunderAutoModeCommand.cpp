@@ -7,10 +7,7 @@ namespace thunder {
 ThunderAutoModeCommand::ThunderAutoModeCommand(const std::string& autoModeName,
                                                std::shared_ptr<ThunderAutoProject> project,
                                                const TrajectoryRunnerProperties& properties)
-    : m_autoModeName(autoModeName), m_project(project), m_runnerProperties(properties) {
-  m_runnerPropertiesNoResetPose = m_runnerProperties;
-  m_runnerPropertiesNoResetPose.resetPose = nullptr;
-}
+    : m_autoModeName(autoModeName), m_project(project), m_runnerProperties(properties) {}
 
 bool ThunderAutoModeCommand::isValid() const {
   return m_project != nullptr && m_project->isLoaded() && m_autoMode != nullptr && m_autoMode->isValid() &&
@@ -142,12 +139,12 @@ void ThunderAutoModeCommand::setupCurrentStep() {
     case TRAJECTORY: {
       std::string trajectoryName = m_currentStep->getTrajectoryName();
 
-      // It's not usually in the user's best interests to reset pose during an auto mode, so just do it once.
-      const TrajectoryRunnerProperties& runnerProperties =
-          m_firstTrajectoryWasSeen ? m_runnerPropertiesNoResetPose : m_runnerProperties;
+      // Only reset the pose on the first trajectory step of the auto mode.
+      bool shouldResetPose = !m_firstTrajectoryWasSeen;
       m_firstTrajectoryWasSeen = true;
 
-      ThunderAutoTrajectoryCommand trajectoryCommand(trajectoryName, m_project, runnerProperties);
+      ThunderAutoTrajectoryCommand trajectoryCommand(trajectoryName, m_project, m_runnerProperties,
+                                                     shouldResetPose);
       m_currentStepCommand = std::move(trajectoryCommand).ToPtr();
       break;
     }

@@ -39,7 +39,7 @@ ThunderAutoSendableChooser::~ThunderAutoSendableChooser() noexcept {
 
 void ThunderAutoSendableChooser::setTrajectoryRunnerProperties(
     const TrajectoryRunnerProperties& runnerProps) noexcept {
-  m_runnerProps = runnerProps;
+  m_runnerProps.emplace(runnerProps);
 }
 
 void ThunderAutoSendableChooser::publish(std::string_view smartDashboardKey) noexcept {

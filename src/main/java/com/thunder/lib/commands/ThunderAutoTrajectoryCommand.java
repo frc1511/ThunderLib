@@ -6,6 +6,8 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 import com.thunder.lib.auto.ThunderAutoProject;
 import com.thunder.lib.auto.ThunderAutoTrajectory;
@@ -15,6 +17,7 @@ import com.thunder.lib.trajectory.ThunderTrajectoryRunnerProperties;
 import com.thunder.lib.trajectory.ThunderTrajectoryState;
 import com.thunder.lib.types.CanonicalAngle;
 
+import edu.wpi.first.math.controller.HolonomicDriveController;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj.DriverStation;
@@ -31,8 +34,8 @@ public class ThunderAutoTrajectoryCommand extends Command {
    * Constructs a ThunderAutoTrajectoryCommand.
    *
    * @param trajectoryName The name of the trajectory to follow.
-   * @param project        The ThunderAutoProject that contains the trajectory and
-   *                       any referenced actions.
+   * @param project        The ThunderAutoProject that contains the trajectory
+   *                       and any referenced actions.
    * @param properties     The ThunderTrajectoryRunnerProperties to use for
    *                       following the trajectory.
    */
@@ -40,9 +43,30 @@ public class ThunderAutoTrajectoryCommand extends Command {
       String trajectoryName,
       ThunderAutoProject project,
       ThunderTrajectoryRunnerProperties properties) {
+    this(trajectoryName, project, properties, true);
+  }
+
+  /**
+   * Constructs a ThunderAutoTrajectoryCommand.
+   *
+   * @param trajectoryName  The name of the trajectory to follow.
+   * @param project         The ThunderAutoProject that contains the trajectory
+   *                        and
+   *                        any referenced actions.
+   * @param properties      The ThunderTrajectoryRunnerProperties to use for
+   *                        following the trajectory.
+   * @param shouldResetPose Whether to reset the robot's pose to the trajectory's
+   *                        initial pose when the command is initialized.
+   */
+  public ThunderAutoTrajectoryCommand(
+      String trajectoryName,
+      ThunderAutoProject project,
+      ThunderTrajectoryRunnerProperties properties,
+      boolean shouldResetPose) {
 
     m_project = project;
     m_runnerProperties = properties;
+    m_shouldResetPose = shouldResetPose;
 
     Optional<ThunderAutoTrajectory> trajectoryOptional = project.getTrajectory(trajectoryName);
     if (!trajectoryOptional.isPresent()) {
@@ -114,14 +138,16 @@ public class ThunderAutoTrajectoryCommand extends Command {
 
     m_alliance = DriverStation.getAlliance();
 
-    Pose2d initialTrajectoryPose = m_trajectory.getInitialState().getPose();
-    Pose2d initialPose = flipPoseForAlliance(
-        initialTrajectoryPose,
-        m_alliance,
-        m_project.getFieldSymmetry(),
-        m_project.getFieldDimensions());
+    if (m_shouldResetPose) {
+      Pose2d initialTrajectoryPose = m_trajectory.getInitialState().getPose();
+      Pose2d initialPose = flipPoseForAlliance(
+          initialTrajectoryPose,
+          m_alliance,
+          m_project.getFieldSymmetry(),
+          m_project.getFieldDimensions());
 
-    m_runnerProperties.getResetPoseConsumer().accept(initialPose);
+      m_runnerProperties.getResetPoseConsumer().accept(initialPose);
+    }
 
     beginStartAction();
   }
@@ -186,6 +212,7 @@ public class ThunderAutoTrajectoryCommand extends Command {
   private ThunderAutoTrajectory m_trajectory;
   private ThunderAutoProject m_project;
   private ThunderTrajectoryRunnerProperties m_runnerProperties;
+  private boolean m_shouldResetPose = true;
 
   private Timer m_timer = new Timer();
   private Optional<DriverStation.Alliance> m_alliance = Optional.empty();
@@ -280,7 +307,7 @@ public class ThunderAutoTrajectoryCommand extends Command {
     if (m_currentStopAction.isPresent()) {
       if (trajectoryTime >= m_currentStopAction.get().stopTime - 0.02) {
         // Stop the robot
-        m_runnerProperties.getSpeedsConsumer().accept(new ChassisSpeeds(0, 0, 0));
+        stopRobot();
         // Switch to the STOPPED state.
         beginStopped();
         return;
@@ -320,7 +347,7 @@ public class ThunderAutoTrajectoryCommand extends Command {
 
     if (trajectoryTime >= m_trajectory.getDurationSeconds()) {
       // Stop the robot.
-      m_runnerProperties.getSpeedsConsumer().accept(new ChassisSpeeds(0, 0, 0));
+      stopRobot();
       // Begin the end action.
       beginEndAction();
       return;
@@ -337,19 +364,43 @@ public class ThunderAutoTrajectoryCommand extends Command {
     Pose2d targetPose = flipPoseForAlliance(state.getPose(), m_alliance, fieldSymmetry, fieldDimensions);
     CanonicalAngle heading = flipAngleForAlliance(new CanonicalAngle(state.getHeading()), m_alliance, fieldSymmetry);
 
-    ChassisSpeeds velocities = m_runnerProperties.getHolonomicDriveController().calculate(
+    double linearVelocityMetersPerSecond = state.getLinearVelocityMetersPerSecond();
+
+    ThunderTrajectoryRunnerProperties.DriveControllerInputData controllerData = new ThunderTrajectoryRunnerProperties.DriveControllerInputData(
+        currentPose,
+        targetPose,
+        heading,
+        linearVelocityMetersPerSecond);
+
+    Optional<HolonomicDriveController> driveController = m_runnerProperties.getHolonomicDriveController();
+    if (!driveController.isPresent()) {
+      Optional<Consumer<ThunderTrajectoryRunnerProperties.DriveControllerInputData>> controlDataConsumer = m_runnerProperties
+          .getControlConsumer();
+      if (controlDataConsumer.isPresent()) {
+        controlDataConsumer.get().accept(controllerData);
+      }
+      return;
+    }
+
+    ChassisSpeeds velocities = driveController.get().calculate(
         currentPose,
         new Pose2d(targetPose.getTranslation(), heading.toRotation2d()),
-        state.getLinearVelocityMetersPerSecond(),
+        linearVelocityMetersPerSecond,
         targetPose.getRotation());
 
-    m_runnerProperties.getSpeedsConsumer().accept(velocities);
+    Optional<Consumer<ChassisSpeeds>> speedsConsumer = m_runnerProperties.getSpeedsConsumer();
+    Optional<BiConsumer<ChassisSpeeds, ThunderTrajectoryRunnerProperties.DriveControllerInputData>> speedsWithDiagnosticsConsumer = m_runnerProperties
+        .getSpeedsWithDiagnosticsConsumer();
+    if (speedsConsumer.isPresent()) {
+      speedsConsumer.get().accept(velocities);
+    } else if (speedsWithDiagnosticsConsumer.isPresent()) {
+      speedsWithDiagnosticsConsumer.get().accept(velocities, controllerData);
+    }
   }
 
   private void endFollowTrajectory(boolean interrupted) {
     // Stop the robot.
-
-    m_runnerProperties.getSpeedsConsumer().accept(new ChassisSpeeds(0, 0, 0));
+    stopRobot();
 
     // End any running actions.
 
@@ -399,6 +450,22 @@ public class ThunderAutoTrajectoryCommand extends Command {
 
   private void endEndAction(boolean interrupted) {
     m_endActionCommand.end(interrupted);
+  }
+
+  private void stopRobot() {
+    Optional<Consumer<ChassisSpeeds>> speedsConsumer = m_runnerProperties.getSpeedsConsumer();
+    Optional<BiConsumer<ChassisSpeeds, ThunderTrajectoryRunnerProperties.DriveControllerInputData>> speedsWithDiagnosticsConsumer = m_runnerProperties
+        .getSpeedsWithDiagnosticsConsumer();
+    Optional<Runnable> stopRunnable = m_runnerProperties.getStopRunnable();
+
+    if (speedsConsumer.isPresent()) {
+      speedsConsumer.get().accept(new ChassisSpeeds(0, 0, 0));
+    } else if (speedsWithDiagnosticsConsumer.isPresent()) {
+      speedsWithDiagnosticsConsumer.get().accept(new ChassisSpeeds(0, 0, 0),
+          new ThunderTrajectoryRunnerProperties.DriveControllerInputData());
+    } else if (stopRunnable.isPresent()) {
+      stopRunnable.get().run();
+    }
   }
 
   private static CanonicalAngle flipAngleForAlliance(CanonicalAngle originalAngle,

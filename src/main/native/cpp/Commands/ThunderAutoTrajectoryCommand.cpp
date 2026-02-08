@@ -4,8 +4,9 @@ namespace thunder {
 
 ThunderAutoTrajectoryCommand::ThunderAutoTrajectoryCommand(const std::string& trajectoryName,
                                                            std::shared_ptr<ThunderAutoProject> project,
-                                                           const TrajectoryRunnerProperties& properties)
-    : m_project(project), m_runnerProperties(properties) {
+                                                           const TrajectoryRunnerProperties& properties,
+                                                           bool shouldResetPose)
+    : m_project(project), m_runnerProperties(properties), m_shouldResetPose(shouldResetPose) {
   if (m_project) {
     m_trajectory = project->getTrajectory(trajectoryName);
   }
@@ -62,7 +63,7 @@ void ThunderAutoTrajectoryCommand::Initialize() {
 
   m_alliance = frc::DriverStation::GetAlliance();
 
-  if (m_runnerProperties.resetPose) {
+  if (m_shouldResetPose && m_runnerProperties.resetPose) {
     frc::Pose2d initialTrajectoryPose = m_trajectory->getInitialState().pose;
 
     frc::Pose2d initialPose = flipPoseForAlliance(
@@ -173,7 +174,7 @@ void ThunderAutoTrajectoryCommand::executeFollowTrajectory() {
   if (m_nextStop != m_stopActionCommands.end()) {
     if (trajectoryTime >= m_nextStop->stopTime - 20_ms) {
       // Stop the robot.
-      m_runnerProperties.setSpeeds(frc::ChassisSpeeds{});
+      stopRobot();
       // Switch to the STOPPED state.
       beginStopped();
       return;
@@ -208,7 +209,7 @@ void ThunderAutoTrajectoryCommand::executeFollowTrajectory() {
 
   if (trajectoryTime >= m_trajectory->getDuration()) {  // TODO: Wait for it to reach final position?
     // Stop the robot.
-    m_runnerProperties.setSpeeds(frc::ChassisSpeeds{});
+    stopRobot();
     // Begin the end action.
     beginEndAction();
     return;
@@ -225,17 +226,31 @@ void ThunderAutoTrajectoryCommand::executeFollowTrajectory() {
   frc::Pose2d targetPose = flipPoseForAlliance(state.pose, m_alliance, fieldSymmetry, fieldDimensions);
   frc::Rotation2d heading = flipAngleForAlliance(state.heading, m_alliance, fieldSymmetry);
 
-  frc::ChassisSpeeds velocities =
-      m_runnerProperties.controller->Calculate(currentPose, frc::Pose2d(targetPose.Translation(), heading),
-                                               state.linearVelocity, targetPose.Rotation());
+  units::meters_per_second_t linearVelocity = state.linearVelocity;
 
-  m_runnerProperties.setSpeeds(velocities);
+  TrajectoryRunnerProperties::DriveControllerInputData controllerData{currentPose, targetPose, heading,
+                                                                      linearVelocity};
+
+  if (!m_runnerProperties.controller) {
+    if (m_runnerProperties.control) {
+      m_runnerProperties.control(controllerData);
+    }
+    return;
+  }
+
+  frc::ChassisSpeeds velocities = m_runnerProperties.controller->Calculate(
+      currentPose, frc::Pose2d(targetPose.Translation(), heading), linearVelocity, targetPose.Rotation());
+
+  if (m_runnerProperties.setSpeeds) {
+    m_runnerProperties.setSpeeds(velocities);
+  } else if (m_runnerProperties.setSpeedsWithDiagnostics) {
+    m_runnerProperties.setSpeedsWithDiagnostics(velocities, controllerData);
+  }
 }
 
 void ThunderAutoTrajectoryCommand::endFollowTrajectory(bool interrupted) {
   // Stop the robot.
-
-  m_runnerProperties.setSpeeds(frc::ChassisSpeeds{});
+  stopRobot();
 
   // End any running actions
 
@@ -286,6 +301,17 @@ void ThunderAutoTrajectoryCommand::executeEndAction() {
 
 void ThunderAutoTrajectoryCommand::endEndAction(bool interrupted) {
   m_endActionCommand.get()->End(interrupted);
+}
+
+void ThunderAutoTrajectoryCommand::stopRobot() {
+  if (m_runnerProperties.setSpeeds) {
+    m_runnerProperties.setSpeeds(frc::ChassisSpeeds{});
+  } else if (m_runnerProperties.setSpeedsWithDiagnostics) {
+    m_runnerProperties.setSpeedsWithDiagnostics(frc::ChassisSpeeds{},
+                                                TrajectoryRunnerProperties::DriveControllerInputData{});
+  } else if (m_runnerProperties.stop) {
+    m_runnerProperties.stop();
+  }
 }
 
 CanonicalAngle ThunderAutoTrajectoryCommand::flipAngleForAlliance(
