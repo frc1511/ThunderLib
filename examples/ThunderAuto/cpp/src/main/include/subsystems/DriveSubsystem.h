@@ -128,5 +128,8 @@ class DriveSubsystem : public frc2::SubsystemBase {
   const thunder::TrajectoryRunnerProperties trajectoryRunnerProperties{
       std::bind(&DriveSubsystem::GetCurrentPose, this),
       std::bind(&DriveSubsystem::SetCurrentPose, this, std::placeholders::_1),
-      std::bind(&DriveSubsystem::SetChassisSpeeds, this, std::placeholders::_1), holonomicDriveController};
+      (thunder::TrajectoryRunnerProperties::SetSpeedsFunc)std::bind(&DriveSubsystem::SetChassisSpeeds,
+                                                                    this,
+                                                                    std::placeholders::_1),
+      holonomicDriveController};
 };
