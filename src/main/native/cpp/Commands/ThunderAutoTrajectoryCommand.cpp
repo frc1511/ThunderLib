@@ -1,4 +1,5 @@
 #include <ThunderLib/Commands/ThunderAutoTrajectoryCommand.hpp>
+#include <frc2/command/CommandScheduler.h>
 
 namespace thunder {
 
@@ -133,20 +134,17 @@ bool ThunderAutoTrajectoryCommand::IsFinished() {
 void ThunderAutoTrajectoryCommand::beginStartAction() {
   m_executionState = ExecutionState::START_ACTIONS;
 
-  m_startActionCommand.get()->Initialize();
+  frc2::CommandScheduler::GetInstance().Schedule(m_startActionCommand);
 }
 
 void ThunderAutoTrajectoryCommand::executeStartAction() {
-  m_startActionCommand.get()->Execute();
-
-  if (m_startActionCommand.get()->IsFinished()) {
-    m_startActionCommand.get()->End(false);
+  if (!frc2::CommandScheduler::GetInstance().IsScheduled(m_startActionCommand)) {
     beginFollowTrajectory();
   }
 }
 
 void ThunderAutoTrajectoryCommand::endStartAction(bool interrupted) {
-  m_startActionCommand.get()->End(interrupted);
+  frc2::CommandScheduler::GetInstance().Cancel(m_startActionCommand);
 }
 
 void ThunderAutoTrajectoryCommand::beginFollowTrajectory() {
@@ -185,7 +183,7 @@ void ThunderAutoTrajectoryCommand::executeFollowTrajectory() {
 
   while ((m_nextAction != m_positionedActionCommands.end()) &&
          (trajectoryTime >= m_nextAction->actionTime - 20_ms)) {
-    m_nextAction->command.get()->Initialize();
+    frc2::CommandScheduler::GetInstance().Schedule(m_nextAction->command);
     m_runningActions.push_back(m_nextAction);
     m_nextAction++;
   }
@@ -194,10 +192,7 @@ void ThunderAutoTrajectoryCommand::executeFollowTrajectory() {
   for (const PositionedActionIterator& actionIt : m_runningActions) {
     const auto& [_, actionCommand] = *actionIt;
 
-    actionCommand.get()->Execute();
-
-    if (actionCommand.get()->IsFinished()) {
-      actionCommand.get()->End(false);
+    if (!frc2::CommandScheduler::GetInstance().IsScheduled(actionCommand)) {
       doneRunningActions.push_back(actionIt);
     }
   }
@@ -256,7 +251,7 @@ void ThunderAutoTrajectoryCommand::endFollowTrajectory(bool interrupted) {
 
   for (const PositionedActionIterator& actionIt : m_runningActions) {
     const auto& [_, actionCommand] = *actionIt;
-    actionCommand.get()->End(interrupted);
+    frc2::CommandScheduler::GetInstance().Cancel(actionCommand);
   }
 }
 
@@ -265,42 +260,36 @@ void ThunderAutoTrajectoryCommand::beginStopped() {
 
   m_timer.Stop();
 
-  m_nextStop->command.get()->Initialize();
+  frc2::CommandScheduler::GetInstance().Schedule(m_nextStop->command);
 }
 
 void ThunderAutoTrajectoryCommand::executeStopped() {
   const frc2::CommandPtr& stopActionCommand = m_nextStop->command;
 
-  stopActionCommand.get()->Execute();
-
-  if (stopActionCommand.get()->IsFinished()) {
-    stopActionCommand.get()->End(false);
+  if (!frc2::CommandScheduler::GetInstance().IsScheduled(stopActionCommand)) {
     m_nextStop++;
     resumeFollowTrajectory();
   }
 }
 
 void ThunderAutoTrajectoryCommand::endStopped(bool interrupted) {
-  m_nextStop->command.get()->End(interrupted);
+  frc2::CommandScheduler::GetInstance().Cancel(m_nextStop->command);
 }
 
 void ThunderAutoTrajectoryCommand::beginEndAction() {
   m_executionState = ExecutionState::END_ACTIONS;
 
-  m_endActionCommand.get()->Initialize();
+  frc2::CommandScheduler::GetInstance().Schedule(m_endActionCommand);
 }
 
 void ThunderAutoTrajectoryCommand::executeEndAction() {
-  m_endActionCommand.get()->Execute();
-
-  if (m_endActionCommand.get()->IsFinished()) {
-    m_endActionCommand.get()->End(false);
+  if (!frc2::CommandScheduler::GetInstance().IsScheduled(m_endActionCommand)) {
     m_executionState = ExecutionState::FINISHED;
   }
 }
 
 void ThunderAutoTrajectoryCommand::endEndAction(bool interrupted) {
-  m_endActionCommand.get()->End(interrupted);
+  frc2::CommandScheduler::GetInstance().Cancel(m_endActionCommand);
 }
 
 void ThunderAutoTrajectoryCommand::stopRobot() {

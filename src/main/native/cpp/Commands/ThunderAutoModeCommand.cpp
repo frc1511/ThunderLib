@@ -1,6 +1,7 @@
 #include <ThunderLib/Commands/ThunderAutoModeCommand.hpp>
 #include <ThunderLib/Commands/ThunderAutoTrajectoryCommand.hpp>
 #include <ThunderLibDriver/Logger.hpp>
+#include <frc2/command/CommandScheduler.h>
 
 namespace thunder {
 
@@ -72,10 +73,7 @@ void ThunderAutoModeCommand::Execute() {
   if (m_isFinished || !m_currentStep)
     return;
 
-  m_currentStepCommand.get()->Execute();
-
-  if (m_currentStepCommand.get()->IsFinished()) {
-    m_currentStepCommand.get()->End(false);
+  if (!frc2::CommandScheduler::GetInstance().IsScheduled(m_currentStepCommand)) {
     m_currentStepWasInitialized = false;
     nextStep();
   }
@@ -88,7 +86,7 @@ void ThunderAutoModeCommand::End(bool interrupted) {
   if (m_isFinished || !m_currentStep)
     return;
 
-  m_currentStepCommand.get()->End(interrupted);
+  frc2::CommandScheduler::GetInstance().Cancel(m_currentStepCommand);
   m_isFinished = true;
 }
 
@@ -120,7 +118,7 @@ void ThunderAutoModeCommand::nextStep() {
   setupCurrentStep();
 
   if (!m_isFinished && m_currentStepCommand && !m_currentStepWasInitialized) {
-    m_currentStepCommand.get()->Initialize();
+    frc2::CommandScheduler::GetInstance().Schedule(m_currentStepCommand);
     m_currentStepWasInitialized = true;  // Prevent double initialization during recursive calls.
   }
 }

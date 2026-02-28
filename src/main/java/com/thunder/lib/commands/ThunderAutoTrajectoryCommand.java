@@ -24,6 +24,7 @@ import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
+import edu.wpi.first.wpilibj2.command.CommandScheduler;
 
 /**
  * A command that follows a ThunderAuto Trajectory using the specified
@@ -263,20 +264,17 @@ public class ThunderAutoTrajectoryCommand extends Command {
   private void beginStartAction() {
     m_executionState = ExecutionState.START_ACTION;
 
-    m_startActionCommand.initialize();
+    CommandScheduler.getInstance().schedule(m_startActionCommand);
   }
 
   private void executeStartAction() {
-    m_startActionCommand.execute();
-
-    if (m_startActionCommand.isFinished()) {
-      m_startActionCommand.end(false);
+    if (!CommandScheduler.getInstance().isScheduled(m_startActionCommand)) {
       beginFollowTrajectory();
     }
   }
 
   private void endStartAction(boolean interrupted) {
-    m_startActionCommand.end(interrupted);
+    CommandScheduler.getInstance().cancel(m_startActionCommand);
   }
 
   private void beginFollowTrajectory() {
@@ -323,7 +321,7 @@ public class ThunderAutoTrajectoryCommand extends Command {
 
       PositionedActionCommand action = m_currentAction.get();
       if (trajectoryTime >= action.actionTime - 0.02) {
-        action.command.initialize();
+        CommandScheduler.getInstance().schedule(action.command);
         m_runningActions.add(action);
         m_currentAction = Optional.empty();
       } else {
@@ -333,10 +331,7 @@ public class ThunderAutoTrajectoryCommand extends Command {
 
     HashSet<PositionedActionCommand> doneRunningActions = new HashSet<>();
     for (PositionedActionCommand action : m_runningActions) {
-      action.command.execute();
-
-      if (action.command.isFinished()) {
-        action.command.end(false);
+      if (!CommandScheduler.getInstance().isScheduled(action.command)) {
         doneRunningActions.add(action);
       }
     }
@@ -405,7 +400,7 @@ public class ThunderAutoTrajectoryCommand extends Command {
     // End any running actions.
 
     for (PositionedActionCommand action : m_runningActions) {
-      action.command.end(interrupted);
+      CommandScheduler.getInstance().cancel(action.command);
     }
   }
 
@@ -414,42 +409,36 @@ public class ThunderAutoTrajectoryCommand extends Command {
 
     m_timer.stop();
 
-    m_currentStopAction.get().command.initialize();
+    CommandScheduler.getInstance().schedule(m_currentStopAction.get().command);
   }
 
   private void executeStopped() {
     StopActionCommand action = m_currentStopAction.get();
 
-    action.command.execute();
-
-    if (action.command.isFinished()) {
-      action.command.end(false);
+    if (!CommandScheduler.getInstance().isScheduled(action.command)) {
       m_currentStopAction = Optional.empty();
       resumeFollowTrajectory();
     }
   }
 
   private void endStopped(boolean interrupted) {
-    m_currentStopAction.get().command.end(interrupted);
+    CommandScheduler.getInstance().cancel(m_currentStopAction.get().command);
   }
 
   private void beginEndAction() {
     m_executionState = ExecutionState.END_ACTION;
 
-    m_endActionCommand.initialize();
+    CommandScheduler.getInstance().schedule(m_endActionCommand);
   }
 
   private void executeEndAction() {
-    m_endActionCommand.execute();
-
-    if (m_endActionCommand.isFinished()) {
-      m_endActionCommand.end(false);
+    if (!CommandScheduler.getInstance().isScheduled(m_endActionCommand)) {
       m_executionState = ExecutionState.FINISHED;
     }
   }
 
   private void endEndAction(boolean interrupted) {
-    m_endActionCommand.end(interrupted);
+    CommandScheduler.getInstance().cancel(m_endActionCommand);
   }
 
   private void stopRobot() {

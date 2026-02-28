@@ -11,6 +11,7 @@ import com.thunder.lib.trajectory.ThunderTrajectoryRunnerProperties;
 
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
+import edu.wpi.first.wpilibj2.command.CommandScheduler;
 
 /**
  * A command that executes a ThunderAuto Auto Mode.
@@ -86,10 +87,7 @@ public class ThunderAutoModeCommand extends Command {
     if (m_isFinished || m_currentStep.isEmpty())
       return;
 
-    m_currentStepCommand.execute();
-
-    if (m_currentStepCommand.isFinished()) {
-      m_currentStepCommand.end(false);
+    if (!CommandScheduler.getInstance().isScheduled(m_currentStepCommand)) {
       m_currentStepWasInitialized = false;
       nextStep();
     }
@@ -103,7 +101,7 @@ public class ThunderAutoModeCommand extends Command {
     if (m_isFinished || m_currentStep.isEmpty())
       return;
 
-    m_currentStepCommand.end(interrupted);
+    CommandScheduler.getInstance().cancel(m_currentStepCommand);
     m_isFinished = true;
   }
 
@@ -136,7 +134,7 @@ public class ThunderAutoModeCommand extends Command {
     setupCurrentStep();
 
     if (!m_isFinished && !m_currentStepWasInitialized) {
-      m_currentStepCommand.initialize();
+      CommandScheduler.getInstance().schedule(m_currentStepCommand);
       m_currentStepWasInitialized = true; // Prevent double initialization during recursive calls.
     }
   }
